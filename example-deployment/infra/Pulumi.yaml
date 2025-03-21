@@ -1,0 +1,7 @@
+name: origan-example
+description: A minimal Scaleway TypeScript program
+runtime: nodejs
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: scaleway-typescript
