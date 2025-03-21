@@ -1,13 +1,13 @@
 {
-    "name": "scaleway-typescript",
-    "main": "index.ts",
-    "devDependencies": {
-        "@types/node": "^18",
-        "@types/mime": "^3.0.1",
-        "typescript": "^5.0.0"
-    },
-    "dependencies": {
-        "@lbrlabs/pulumi-scaleway": "1.7.0",
-        "@pulumi/pulumi": "^3.113.0"
-    }
+  "name": "scaleway-typescript",
+  "main": "index.ts",
+  "devDependencies": {
+    "@types/node": "^18",
+    "@types/mime": "^3.0.1",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@lbrlabs/pulumi-scaleway": "1.7.0",
+    "@pulumi/pulumi": "^3.113.0"
+  }
 }

@@ -1,9 +1,9 @@
-import * as pulumi from "@pulumi/pulumi";
+import { execSync } from "node:child_process";
+import * as crypto from "node:crypto";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import * as scaleway from "@lbrlabs/pulumi-scaleway";
-import * as fs from "fs";
-import * as path from "path";
-import { execSync } from "child_process";
-import * as crypto from "crypto";
+import * as pulumi from "@pulumi/pulumi";
 
 const projectName = "origan-test";
 
@@ -69,7 +69,7 @@ class ViteProject extends pulumi.ComponentResource {
     const recurse = (dirPath: string, arrayOfFiles: FileInfo[]) => {
       const files = fs.readdirSync(dirPath);
 
-      files.forEach((file) => {
+      for (const file of files) {
         const fullPath = path.join(dirPath, file);
         if (fs.statSync(fullPath).isDirectory()) {
           recurse(fullPath, arrayOfFiles);
@@ -84,7 +84,7 @@ class ViteProject extends pulumi.ComponentResource {
             hashKey: hashKey,
           });
         }
-      });
+      }
 
       return arrayOfFiles;
     };
@@ -107,7 +107,7 @@ const viteProject = new ViteProject("vite-project", {
 
 // Upload each file to the bucket
 viteProject.files.apply((files) => {
-  files.forEach((fileInfo) => {
+  for (const fileInfo of files) {
     // Include hash in resource name to force update when content changes
     new scaleway.ObjectItem(
       `${projectName}-bucket-item-${fileInfo.key.replace(/\//g, "-")}`,
@@ -123,7 +123,7 @@ viteProject.files.apply((files) => {
       },
       { deleteBeforeReplace: true, replaceOnChanges: ["metadata.hash"] },
     );
-  });
+  }
 });
 
 // Export the name of the bucket
