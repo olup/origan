@@ -1,7 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
-import * as scaleway from "@lbrlabs/pulumi-scaleway";
-// Create a Scaleway resource (Object Bucket).
-const bucket = new scaleway.ObjectBucket("my-bucket",);
+import * as scaleway from "@pulumiverse/scaleway";
+const bucket = new scaleway.object.Bucket("my-bucket");
 
 // Export the name of the bucket.
 export const bucketName = bucket.id;

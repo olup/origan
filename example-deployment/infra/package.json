@@ -7,7 +7,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@lbrlabs/pulumi-scaleway": "1.7.0",
+    "@pulumiverse/scaleway": "^1.25.0",
     "@pulumi/pulumi": "^3.113.0"
   }
 }

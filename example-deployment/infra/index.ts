@@ -2,23 +2,23 @@ import { execSync } from "node:child_process";
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as scaleway from "@lbrlabs/pulumi-scaleway";
+import * as scaleway from "@pulumiverse/scaleway";
 import * as pulumi from "@pulumi/pulumi";
 
 const projectName = "origan-test";
 
 // Create a Scaleway resource (Object Bucket).
-const bucket = new scaleway.ObjectBucket(`${projectName}-bucket`, {
+const bucket = new scaleway.object.Bucket(`${projectName}-bucket`, {
   name: "origan-test-bucket",
   region: "fr-par",
 });
-new scaleway.ObjectBucketAcl(`${projectName}-bucket-acl`, {
+new scaleway.object.BucketAcl(`${projectName}-bucket-acl`, {
   bucket: bucket.name,
   acl: "public-read",
 });
 
 // Configure website hosting
-const bucketWebsiteConfig = new scaleway.ObjectBucketWebsiteConfiguration(
+const bucketWebsiteConfig = new scaleway.object.BucketWebsiteConfiguration(
   `${projectName}-bucket-website-config`,
   {
     bucket: bucket.name,
@@ -109,7 +109,7 @@ const viteProject = new ViteProject("vite-project", {
 viteProject.files.apply((files) => {
   for (const fileInfo of files) {
     // Include hash in resource name to force update when content changes
-    new scaleway.ObjectItem(
+    new scaleway.object.Item(
       `${projectName}-bucket-item-${fileInfo.key.replace(/\//g, "-")}`,
       {
         key: fileInfo.key,
