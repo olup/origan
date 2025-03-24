@@ -1,15 +1,21 @@
 {
   "name": "origan-control",
-  "version": "1.0.50",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
-  },
-  "dependencies": {
-    "elysia": "latest"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "format-and-lint": "biome check .",
+    "format-and-lint:fix": "biome check . --write",
+    "check-types": "turbo run check-types"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "@biomejs/biome": "1.9.4",
+    "turbo": "2.4.4",
+    "typescript": "5.8.2"
   },
-  "module": "src/index.js"
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "bun@1.2.5",
+  "workspaces": ["apps/*", "packages/*"]
 }
