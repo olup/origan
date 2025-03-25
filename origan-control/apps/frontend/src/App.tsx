@@ -1,42 +1,63 @@
-import { ErrorBoundary, Suspense } from "solid-js";
+import client from "./api";
 import "./App.css";
+import type { InferResponseType, InferRequestType } from "hono/client";
 import {
   QueryClient,
   QueryClientProvider,
-  createQuery,
-} from "@tanstack/solid-query";
+  useMutation,
+  useQuery,
+} from "@tanstack/react-query";
 
-import server from "./backend";
+const queryClient = new QueryClient();
 
-const client = new QueryClient();
-
-function Main() {
-  const query = createQuery(() => ({
-    queryKey: ["hello"],
+function Counter() {
+  const { isPending, data } = useQuery({
+    queryKey: ["counter"],
     queryFn: async () => {
-      const res = await server.api.hello.get();
-      if (!res.data) throw new Error("No data");
-      return res.data;
+      const res = await client.api.counter.$get();
+      return await res.json();
     },
-    throwOnError: true,
-  }));
+  });
+
+  const post = client.api.counter.$post;
+
+  const mutation = useMutation<
+    InferResponseType<typeof post>,
+    Error,
+    InferRequestType<typeof post>
+  >({
+    mutationFn: async () => {
+      const res = await post();
+      return await res.json();
+    },
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ["counter"] });
+    },
+    onError: (err) => {
+      console.error(err);
+    },
+  });
 
   return (
-    <div>
-      <Suspense fallback={<div>Loading...</div>}>
-        <h1>Hello {query.data?.message}</h1>
-      </Suspense>
-    </div>
+    <>
+      <h1>Vite + React</h1>
+      <div className="card">
+        <button type="button" onClick={() => mutation.mutate({})}>
+          count is {isPending ? 0 : data?.counter}
+        </button>
+        <p>
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </div>
+    </>
   );
 }
 
 function App() {
   return (
-    <ErrorBoundary fallback={<div>Something went wrong</div>}>
-      <QueryClientProvider client={client}>
-        <Main />
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <Counter />
+    </QueryClientProvider>
   );
 }
 

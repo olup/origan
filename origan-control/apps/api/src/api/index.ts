@@ -1,7 +1,15 @@
-import Elysia from "elysia";
+import { Hono } from "hono";
 
-const api = new Elysia({ prefix: "/api" }).get("/hello", () => ({
-  message: "World",
-}));
+let counter = 0;
+
+const api = new Hono()
+  .basePath("/api")
+  .get("/hello", (c) => c.json({ message: "Hello" }))
+  .get("/counter", (c) => c.json({ counter: counter }))
+  .post("/counter", (c) => {
+    counter++;
+    return c.json({ counter });
+  });
 
 export default api;
+export type ApiType = typeof api;

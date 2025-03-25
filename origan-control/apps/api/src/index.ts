@@ -1,8 +1,8 @@
-import staticPlugin from "@elysiajs/static";
-import { Elysia } from "elysia";
 import api from "./api";
+import { Hono } from "hono";
+import { serveStatic } from "hono/bun";
 
-async function serveProdFrontendAssetsIfAvailable(app: Elysia) {
+async function serveProdFrontendAssetsIfAvailable(app: Hono) {
   const base = "../frontend";
   const indexHTML = Bun.file(`${base}/dist/index.html`);
   console.log(await indexHTML.exists());
@@ -11,23 +11,21 @@ async function serveProdFrontendAssetsIfAvailable(app: Elysia) {
   }
 
   app
-    .use(staticPlugin({ assets: `${base}/public`, indexHTML: false }))
+    .use(serveStatic({ root: `${base}/public` }))
     .use(
-      staticPlugin({
-        assets: `${base}/dist/assets`,
-        prefix: "/assets",
-        indexHTML: false,
+      serveStatic({
+        root: `${base}/dist/assets`,
+        path: "/assets",
       }),
     )
-    .get("/", () => "Hello Elysia");
+    .get("/", (c) => c.text("Hello Hono"));
 }
 
-export const app = new Elysia().use(api);
+export const app = new Hono().route("/", api);
 
 await serveProdFrontendAssetsIfAvailable(app);
 
-app.listen({ port: 8000 });
-
-console.log(`🦊 Elysia is running at ${app.server?.url}`);
-
-export type Server = typeof app;
+export default {
+  fetch: app.fetch,
+  port: 8000
+}
