@@ -1,4 +1,4 @@
-name: origan-infra
+name: infra
 description: Origan Scaleway's infra
 runtime: nodejs
 config:

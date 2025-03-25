@@ -1,3 +1,7 @@
+environment:
+  - infra/prod
+
 config:
+  scaleway:organization_id: 13fc1c67-80dc-4976-b872-3ebac6456d3d
   scaleway:project_id: 22240e18-b47d-4463-b149-5d78f8be7633
   scaleway:region: fr-par
