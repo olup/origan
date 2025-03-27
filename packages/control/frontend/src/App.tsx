@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import type { InferRequestType, InferResponseType } from "hono/client";
 import "./App.css";
+import viteLogo from "/vite.svg";
 import client from "./api";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,9 @@ function Counter() {
   return (
     <>
       <h1>Vite + React</h1>
+      <a href="https://vite.dev" target="_blank" rel="noreferrer">
+        <img src={viteLogo} className="logo" alt="Vite logo" />
+      </a>
       <div className="card">
         <button type="button" onClick={() => mutation.mutate({})}>
           count is {isPending ? 0 : data?.counter}
