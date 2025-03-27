@@ -1,6 +1,6 @@
+import * as docker from "@pulumi/docker";
 import * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
-import * as docker from "@pulumi/docker";
 
 const stack = pulumi.getStack();
 
@@ -20,7 +20,7 @@ function deployControl() {
     cn("pulumi-registry"),
     {
       name: "Pulumi Registry Access",
-    }
+    },
   );
   const registryAccessPolicy = new scaleway.iam.Policy(
     cn("registry-access-policy"),
@@ -33,7 +33,7 @@ function deployControl() {
           permissionSetNames: ["ContainerRegistryFullAccess"],
         },
       ],
-    }
+    },
   );
   const registryApiKey = new scaleway.iam.ApiKey(cn("registry-api-key"), {
     applicationId: pulumiRegistryApp.id,
@@ -71,7 +71,7 @@ function deployControl() {
       protocol: "http1",
       deploy: true,
     },
-    { deletedWith: ns }
+    { deletedWith: ns },
   );
 }
 

@@ -2,8 +2,8 @@ import { execSync } from "node:child_process";
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as scaleway from "@pulumiverse/scaleway";
 import * as pulumi from "@pulumi/pulumi";
+import * as scaleway from "@pulumiverse/scaleway";
 
 const projectName = "origan-test";
 
