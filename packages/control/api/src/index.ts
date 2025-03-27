@@ -16,7 +16,9 @@ export type ApiType = typeof api;
 
 new Hono().route("/", api);
 
+const port = Number.parseInt(process.env.PORT ?? "9999");
+console.log(`Starting API server on port ${port}`);
 serve({
   fetch: api.fetch,
-  port: 9999,
+  port: port,
 });
