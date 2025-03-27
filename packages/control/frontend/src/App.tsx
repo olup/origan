@@ -1,12 +1,12 @@
-import client from "./api";
-import "./App.css";
-import type { InferResponseType, InferRequestType } from "hono/client";
 import {
   QueryClient,
   QueryClientProvider,
   useMutation,
   useQuery,
 } from "@tanstack/react-query";
+import type { InferRequestType, InferResponseType } from "hono/client";
+import "./App.css";
+import client from "./api";
 
 const queryClient = new QueryClient();
 

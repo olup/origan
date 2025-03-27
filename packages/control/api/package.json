@@ -2,18 +2,22 @@
   "name": "api",
   "version": "1.0.50",
   "scripts": {
-    "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile dist/server ./src/index.ts",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^1.0.0",
     "@hono/zod-validator": "^0.4.3",
     "hono": "^4.7.5",
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.5",
-    "bun-types": "latest"
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.20.0",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
   },
   "module": "src/index.js"
 }

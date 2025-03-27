@@ -1,6 +1,6 @@
+import * as docker from "@pulumi/docker";
 import * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
-import * as docker from "@pulumi/docker";
 
 const stack = pulumi.getStack();
 
@@ -58,17 +58,21 @@ function deployControl() {
     name: "control",
   });
 
-  const container = new scaleway.containers.Container(cn("container"), {
-    name: "control-container",
-    namespaceId: ns.id,
-    registryImage: pulumi.interpolate`${image.imageName}:latest`,
-    port: 8000,
-    minScale: 0,
-    maxScale: 1,
-    privacy: "public",
-    protocol: "http1",
-    deploy: true,
-  }, {deletedWith: ns});
+  const container = new scaleway.containers.Container(
+    cn("container"),
+    {
+      name: "control-container",
+      namespaceId: ns.id,
+      registryImage: pulumi.interpolate`${image.imageName}:latest`,
+      port: 9999,
+      minScale: 0,
+      maxScale: 1,
+      privacy: "public",
+      protocol: "http1",
+      deploy: true,
+    },
+    { deletedWith: ns },
+  );
 }
 
 deployControl();
