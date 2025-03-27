@@ -20,7 +20,7 @@ function deployControl() {
     cn("pulumi-registry"),
     {
       name: "Pulumi Registry Access",
-    },
+    }
   );
   const registryAccessPolicy = new scaleway.iam.Policy(
     cn("registry-access-policy"),
@@ -33,7 +33,7 @@ function deployControl() {
           permissionSetNames: ["ContainerRegistryFullAccess"],
         },
       ],
-    },
+    }
   );
   const registryApiKey = new scaleway.iam.ApiKey(cn("registry-api-key"), {
     applicationId: pulumiRegistryApp.id,
@@ -58,17 +58,21 @@ function deployControl() {
     name: "control",
   });
 
-  const container = new scaleway.containers.Container(cn("container"), {
-    name: "control-container",
-    namespaceId: ns.id,
-    registryImage: pulumi.interpolate`${image.imageName}:latest`,
-    port: 8000,
-    minScale: 0,
-    maxScale: 1,
-    privacy: "public",
-    protocol: "http1",
-    deploy: true,
-  }, {deletedWith: ns});
+  const container = new scaleway.containers.Container(
+    cn("container"),
+    {
+      name: "control-container",
+      namespaceId: ns.id,
+      registryImage: pulumi.interpolate`${image.imageName}:latest`,
+      port: 9999,
+      minScale: 0,
+      maxScale: 1,
+      privacy: "public",
+      protocol: "http1",
+      deploy: true,
+    },
+    { deletedWith: ns }
+  );
 }
 
 deployControl();

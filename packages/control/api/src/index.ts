@@ -1,3 +1,4 @@
+import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
 let counter = 0;
@@ -11,5 +12,11 @@ const api = new Hono()
     return c.json({ counter });
   });
 
-export default api;
 export type ApiType = typeof api;
+
+new Hono().route("/", api);
+
+serve({
+  fetch: api.fetch,
+  port: 9999,
+});
