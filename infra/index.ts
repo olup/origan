@@ -42,8 +42,8 @@ function deployControl() {
 
   const image = new docker.Image(cn("image"), {
     build: {
-      context: "../origan-control/",
-      dockerfile: "../origan-control/apps/api/Dockerfile",
+      context: "../",
+      dockerfile: "../Dockerfile",
       platform: "linux/amd64",
     },
     imageName: pulumi.interpolate`${registry.endpoint}/control-api`,
@@ -73,6 +73,55 @@ function deployControl() {
     },
     { deletedWith: ns },
   );
+
+  const deploymentBucket = new scaleway.object.Bucket(cn("deployment-bucket"), {
+    name: "deployment-bucket",
+    acl: "private",
+  });
+
+  const controlWebsiteBucket = new scaleway.object.Bucket(
+    cn("frontend-bucket"),
+    {
+      name: "origan-control-frontend",
+    },
+  );
+
+  new scaleway.object.BucketWebsiteConfiguration(cn("frontend-website"), {
+    bucket: controlWebsiteBucket.name,
+    indexDocument: {
+      suffix: "index.html",
+    },
+    errorDocument: {
+      key: "index.html",
+    },
+  });
+
+  // TODO make this declaration liked to actual objects rather than hardcoded
+  new scaleway.object.BucketPolicy(cn("frontend-bucket-policy"), {
+    bucket: controlWebsiteBucket.name,
+    policy: JSON.stringify({
+      Version: "2023-04-17",
+      Id: "MyBucketPolicy",
+      Statement: [
+        {
+          Sid: "Allow owner",
+          Effect: "Allow",
+          Principal: {
+            SCW: "user_id:c40b6172-1529-4f74-b986-96e3e60b2e72",
+          },
+          Action: "*",
+          Resource: ["origan-control-frontend", "origan-control-frontend/*"],
+        },
+        {
+          Sid: "Delegate access",
+          Effect: "Allow",
+          Principal: "*",
+          Action: "s3:GetObject",
+          Resource: "origan-control-frontend/*",
+        },
+      ],
+    }),
+  });
 }
 
 deployControl();
