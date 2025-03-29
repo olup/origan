@@ -34,6 +34,7 @@ interface S3ItemArgs {
 interface S3ItemOutputs {
   key: string;
   bucket: string;
+  region: string;
   file: string;
   hash?: string;
   visibility?: string;
@@ -87,6 +88,7 @@ class S3ItemProvider implements pulumi.dynamic.ResourceProvider {
       outs: objectWithoutUndefined({
         key: inputs.key,
         bucket: inputs.bucket,
+        region: inputs.region,
         file: inputs.file,
         hash: inputs.hash,
         visibility: inputs.visibility,
@@ -105,12 +107,12 @@ class S3ItemProvider implements pulumi.dynamic.ResourceProvider {
     return {};
   }
 
-  async delete(id: string, props: S3ItemArgs): Promise<void> {
+  async delete(id: string, props: S3ItemOutputs): Promise<void> {
     const command = new DeleteObjectCommand({
       Bucket: props.bucket,
       Key: props.key,
     });
-    await this.client(props.region || "fr-par").send(command);
+    await this.client(props.region).send(command);
   }
 
   async diff(
@@ -148,6 +150,6 @@ class S3ItemProvider implements pulumi.dynamic.ResourceProvider {
 
 export class S3Item extends pulumi.dynamic.Resource {
   constructor(name: string, args: S3ItemInputs, opts?: pulumi.ResourceOptions) {
-    super(new S3ItemProvider(), name, args, opts);
+    super(new S3ItemProvider(), name, args, opts, "origan", "S3Item");
   }
 }

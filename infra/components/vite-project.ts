@@ -13,30 +13,41 @@ export interface FileInfo {
   hashKey: string;
 }
 
+export interface ViteProjectInputs {
+  folderPath: string;
+  buildEnv?: pulumi.Input<{ [key: string]: string }>;
+}
+
 export class ViteProject extends pulumi.ComponentResource {
   name: string;
   files: pulumi.Output<FileInfo[]>;
 
   constructor(
     name: string,
-    args: { folderPath: string },
+    args: ViteProjectInputs,
     opts?: pulumi.ComponentResourceOptions,
   ) {
     super("origan:ViteProject", name, args, opts);
     this.name = name;
 
+    // TODO: Find a way to not have to rebuild the vite project each time.
+    // FIXME: Find a way to not hardcode the output folder of the vite project, and instead read it
+    // from Vite itself.
     const distPath = path.join(args.folderPath, "dist");
-    this.buildViteProject(args.folderPath, distPath);
+    pulumi.output(args.buildEnv).apply((env) => {
+      this.buildViteProject(args.folderPath, env);
+    });
 
     this.files = pulumi.output(this.getAllFiles(distPath));
     this.registerOutputs({ files: this.files });
   }
 
-  buildViteProject(folderPath: string, distPath: string) {
+  buildViteProject(folderPath: string, env?: { [key: string]: string }) {
     console.log(`Building Vite project in ${folderPath}...`);
     execSync("pnpm run build", {
       cwd: folderPath,
       stdio: "inherit",
+      env: { ...process.env, ...env },
     });
     console.log("Vite project built successfully!");
   }

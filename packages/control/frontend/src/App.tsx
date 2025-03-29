@@ -47,7 +47,7 @@ function Counter() {
       </a>
       <div className="card">
         <button type="button" onClick={() => mutation.mutate({})}>
-          count is {isPending ? 0 : data?.counter}
+          count is {isPending ? "pending" : data?.counter}
         </button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR

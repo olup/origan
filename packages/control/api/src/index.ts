@@ -1,9 +1,11 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 let counter = 0;
 
 const api = new Hono()
+  .use(cors({ origin: process.env.CORS_ORIGIN || "" }))
   .basePath("/api")
   .get("/hello", (c) => c.json({ message: "Hello" }))
   .get("/counter", (c) => c.json({ counter: counter }))
