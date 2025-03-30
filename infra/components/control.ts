@@ -14,6 +14,44 @@ interface DeployApiOutputs {
   apiUrl: pulumi.Output<string>;
 }
 
+export function deployControl(registry: scaleway.registry.Namespace) {
+  const { registryApiKey } = deployRegistry();
+  const frontend = configureFrontendDeploy();
+  const controlApiUrl = deployApi(
+    registry,
+    registryApiKey,
+    pulumi.interpolate`https://${frontend.bucketWebsite.websiteEndpoint}`,
+  ).apiUrl;
+
+  const viteProject = new ViteProject(cn("frontend-vite-project"), {
+    folderPath: path.join(
+      __dirname,
+      "..",
+      "..",
+      "packages",
+      "control",
+      "frontend",
+    ),
+    buildEnv: controlApiUrl.apply((url) => {
+      return {
+        VITE_API_URL: `https://${url}`,
+      };
+    }),
+  });
+  viteProject.deploy(frontend.bucket);
+
+  const deploymentBucket = new scaleway.object.Bucket(cn("deployment-bucket"), {
+    name: "deployment-bucket",
+  });
+  const deploymentBucketAcl = new scaleway.object.BucketAcl(
+    cn("deployment-bucket"),
+    {
+      bucket: deploymentBucket.name,
+      acl: "private",
+    },
+  );
+}
+
 function configureFrontendDeploy(): DeployFrontendOutputs {
   const bucket = new scaleway.object.Bucket(cn("frontend-bucket"), {
     name: "origan-control-frontend",
@@ -124,7 +162,7 @@ function deployApi(
   };
 }
 
-export function deployControl(registry: scaleway.registry.Namespace) {
+function deployRegistry(): { registryApiKey: scaleway.iam.ApiKey } {
   const _project = scaleway.account.getProject({
     name: "origan",
   });
@@ -152,38 +190,8 @@ export function deployControl(registry: scaleway.registry.Namespace) {
     description: "Registry API Key",
   });
 
-  const frontend = configureFrontendDeploy();
-  const controlApiUrl = deployApi(
-    registry,
-    registryApiKey,
-    pulumi.interpolate`https://${frontend.bucketWebsite.websiteEndpoint}`,
-  ).apiUrl;
-
-  const viteProject = new ViteProject(cn("frontend-vite-project"), {
-    folderPath: path.join(
-      __dirname,
-      "..",
-      "..",
-      "packages",
-      "control",
-      "frontend",
-    ),
-    buildEnv: controlApiUrl.apply((url) => {
-      return {
-        VITE_API_URL: `https://${url}`,
-      };
-    }),
-  });
-  viteProject.deploy(frontend.bucket);
-
-  const deploymentBucket = new scaleway.object.Bucket(cn("deployment-bucket"), {
-    name: "deployment-bucket",
-  });
-  const deploymentBucketAcl = new scaleway.object.BucketAcl(
-    cn("deployment-bucket"),
-    {
-      bucket: deploymentBucket.name,
-      acl: "private",
-    },
-  );
+  return {
+    registryApiKey: registryApiKey,
+  };
 }
+
