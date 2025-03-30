@@ -1,0 +1,48 @@
+services:
+  control-api:
+    image: node:22-slim
+    working_dir: /app
+    ports:
+      - "9999:9999"
+    volumes:
+      - ./packages/control/api:/app
+      - /app/node_modules
+    command: sh -c "corepack enable && pnpm install && pnpm run dev"
+    environment:
+      CORS_ORIGIN: '*'
+    networks:
+      - origan-network
+
+  control-frontend:
+    image: node:22-slim
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./packages/control/frontend:/app
+      - /app/node_modules
+    command: sh -c "corepack enable && pnpm install && pnpm run dev --host 0.0.0.0"
+    environment:
+      - PROXY_API_URL=http://control-api:9999
+    depends_on:
+      - control-api
+    networks:
+      - origan-network
+
+  gateway:
+    image: node:22-slim
+    working_dir: /app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./packages/gateway:/app
+      - /app/node_modules
+    command: sh -c "corepack enable && pnpm install && pnpm run dev"
+    networks:
+      - origan-network
+    depends_on:
+      - control-api
+
+networks:
+  origan-network:
+    driver: bridge

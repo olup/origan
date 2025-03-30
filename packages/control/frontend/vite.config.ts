@@ -8,10 +8,11 @@ export default defineConfig(({ mode }) => {
     server = {
       proxy: {
         "/api": {
-          target: "http://localhost:9999",
-          changeOrigin: true,
+          target: process.env.PROXY_API_URL || "http://localhost:9999",
+          changeOrigin: false,
         },
       },
+      cors: true,
     };
   }
 
