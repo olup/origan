@@ -22,5 +22,6 @@ FROM base AS control-api
 COPY --from=build /prod/control/api /prod/control/api
 WORKDIR /prod/control/api
 EXPOSE 9999
-CMD [ "node", "dist/index.js" ]
+ENTRYPOINT ["/usr/bin/bash"]
+CMD ["./run-prod.sh"]
 
