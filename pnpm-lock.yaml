@@ -33,6 +33,9 @@ importers:
       '@pulumi/pulumi':
         specifier: ^3.113.0
         version: 3.158.0(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)
+      '@pulumi/random':
+        specifier: ^4.18.0
+        version: 4.18.0(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)
       '@pulumiverse/scaleway':
         specifier: ^1.26.0
         version: 1.26.0(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)
@@ -875,6 +878,9 @@ packages:
 
   '@pulumi/query@0.3.0':
     resolution: {integrity: sha512-xfo+yLRM2zVjVEA4p23IjQWzyWl1ZhWOGobsBqRpIarzLvwNH/RAGaoehdxlhx4X92302DrpdIFgTICMN4P38w==}
+
+  '@pulumi/random@4.18.0':
+    resolution: {integrity: sha512-6joE5/jhadtWmwuMh3YtDB1kA3G4pDLVhk+l5mSxe/kuf+ejQ1w+LnfbpRi9iinwPl2AqzfDp9IheksTxIwzFA==}
 
   '@pulumiverse/scaleway@1.26.0':
     resolution: {integrity: sha512-xmoFA4xKgB4bZxYV6kAL/yEVg+ijqxSnnxOGH+1ayRiwj5lCp3BSERppgIfJPPp39kmwHJghXGdYqeijvU7n4Q==}
@@ -3687,6 +3693,15 @@ snapshots:
       - supports-color
 
   '@pulumi/query@0.3.0': {}
+
+  '@pulumi/random@4.18.0(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)':
+    dependencies:
+      '@pulumi/pulumi': 3.158.0(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)
+    transitivePeerDependencies:
+      - bluebird
+      - supports-color
+      - ts-node
+      - typescript
 
   '@pulumiverse/scaleway@1.26.0(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)':
     dependencies:
