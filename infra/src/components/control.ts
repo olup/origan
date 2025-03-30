@@ -4,6 +4,7 @@ import * as scaleway from "@pulumiverse/scaleway";
 import { ViteProject } from "./vite-project";
 import path = require("node:path");
 import { cn } from "../utils";
+import type { DatabaseOutputs } from "./database";
 
 interface DeployFrontendOutputs {
   bucket: scaleway.object.Bucket;
@@ -12,6 +13,49 @@ interface DeployFrontendOutputs {
 
 interface DeployApiOutputs {
   apiUrl: pulumi.Output<string>;
+}
+
+export function deployControl(
+  registry: scaleway.registry.Namespace,
+  db: DatabaseOutputs,
+) {
+  const { registryApiKey } = deployRegistry();
+  const frontend = configureFrontendDeploy();
+  const controlApiUrl = deployApi(
+    registry,
+    registryApiKey,
+    pulumi.interpolate`https://${frontend.bucketWebsite.websiteEndpoint}`,
+    db,
+  ).apiUrl;
+
+  const viteProject = new ViteProject(cn("frontend-vite-project"), {
+    folderPath: path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "packages",
+      "control",
+      "frontend",
+    ),
+    buildEnv: controlApiUrl.apply((url) => {
+      return {
+        VITE_API_URL: `https://${url}`,
+      };
+    }),
+  });
+  viteProject.deploy(frontend.bucket);
+
+  const deploymentBucket = new scaleway.object.Bucket(cn("deployment-bucket"), {
+    name: "deployment-bucket",
+  });
+  const deploymentBucketAcl = new scaleway.object.BucketAcl(
+    cn("deployment-bucket"),
+    {
+      bucket: deploymentBucket.name,
+      acl: "private",
+    },
+  );
 }
 
 function configureFrontendDeploy(): DeployFrontendOutputs {
@@ -80,6 +124,7 @@ function deployApi(
   registry: scaleway.registry.Namespace,
   registryApiKey: scaleway.iam.ApiKey,
   frontendDomain: pulumi.Output<string>,
+  db: DatabaseOutputs,
 ): DeployApiOutputs {
   const image = new docker.Image(cn("image"), {
     build: {
@@ -114,6 +159,11 @@ function deployApi(
       deploy: true,
       environmentVariables: {
         CORS_ORIGIN: frontendDomain,
+        DATABASE_HOST: db.host,
+        DATABASE_PORT: db.port.apply((p) => p.toString()),
+        DATABASE_USER: db.user,
+        DATABASE_PASSWORD: db.password,
+        DATABASE_NAME: db.database,
       },
     },
     { deletedWith: ns },
@@ -124,7 +174,7 @@ function deployApi(
   };
 }
 
-export function deployControl(registry: scaleway.registry.Namespace) {
+function deployRegistry(): { registryApiKey: scaleway.iam.ApiKey } {
   const _project = scaleway.account.getProject({
     name: "origan",
   });
@@ -152,38 +202,7 @@ export function deployControl(registry: scaleway.registry.Namespace) {
     description: "Registry API Key",
   });
 
-  const frontend = configureFrontendDeploy();
-  const controlApiUrl = deployApi(
-    registry,
-    registryApiKey,
-    pulumi.interpolate`https://${frontend.bucketWebsite.websiteEndpoint}`,
-  ).apiUrl;
-
-  const viteProject = new ViteProject(cn("frontend-vite-project"), {
-    folderPath: path.join(
-      __dirname,
-      "..",
-      "..",
-      "packages",
-      "control",
-      "frontend",
-    ),
-    buildEnv: controlApiUrl.apply((url) => {
-      return {
-        VITE_API_URL: `https://${url}`,
-      };
-    }),
-  });
-  viteProject.deploy(frontend.bucket);
-
-  const deploymentBucket = new scaleway.object.Bucket(cn("deployment-bucket"), {
-    name: "deployment-bucket",
-  });
-  const deploymentBucketAcl = new scaleway.object.BucketAcl(
-    cn("deployment-bucket"),
-    {
-      bucket: deploymentBucket.name,
-      acl: "private",
-    },
-  );
+  return {
+    registryApiKey: registryApiKey,
+  };
 }
