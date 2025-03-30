@@ -10,6 +10,10 @@ services:
     command: sh -c "corepack enable && pnpm install && pnpm run dev"
     environment:
       CORS_ORIGIN: '*'
+      DATABASE_HOST: db
+      DATABASE_USER: origan-root
+      DATABASE_PASSWORD: origan
+      DATABASE_NAME: origan
     networks:
       - origan-network
 
@@ -42,6 +46,17 @@ services:
       - origan-network
     depends_on:
       - control-api
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: origan-root
+      POSTGRES_PASSWORD: origan
+      POSTGRES_DB: origan
+    ports:
+      - "5432:5432"
+    networks:
+      - origan-network
 
 networks:
   origan-network:
