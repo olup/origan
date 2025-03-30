@@ -28,6 +28,7 @@ export function deployControl(registry: scaleway.registry.Namespace) {
       __dirname,
       "..",
       "..",
+      "..",
       "packages",
       "control",
       "frontend",
