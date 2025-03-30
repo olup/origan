@@ -1,6 +1,8 @@
+import * as random from "@pulumi/random";
 import * as scaleway from "@pulumiverse/scaleway";
 import { deployControl } from "./components/control";
 import { gn } from "./utils";
+import { deployDatabase } from "./components/database";
 
 export default function deployAll() {
   const registry = new scaleway.registry.Namespace(gn("registry"), {
@@ -8,5 +10,7 @@ export default function deployAll() {
     name: "origan-registry",
   });
 
-  deployControl(registry);
+  const db = deployDatabase();
+
+  deployControl(registry, db);
 }
