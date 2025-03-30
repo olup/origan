@@ -12,9 +12,11 @@ export const config = z.object({
   DATABASE_USER: z.string(),
   DATABASE_PASSWORD: z.string(),
   DATABASE_NAME: z.string(),
+  DATABASE_SSL: z.boolean().default(true),
 });
 
 type Env = z.infer<typeof config>;
 export const env = config.parse(process.env);
 
-export const db_url = `postgres://${env.DATABASE_USER}:${env.DATABASE_PASSWORD}@${env.DATABASE_HOST}:${env.DATABASE_PORT}/${env.DATABASE_NAME}`;
+const dbSsl = env.DATABASE_SSL ? "?sslmode=require" : "";
+export const db_url = `postgres://${env.DATABASE_USER}:${env.DATABASE_PASSWORD}@${env.DATABASE_HOST}:${env.DATABASE_PORT}/${env.DATABASE_NAME}${dbSsl}`;

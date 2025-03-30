@@ -162,8 +162,12 @@ function deployApi(
         DATABASE_HOST: db.host,
         DATABASE_PORT: db.port.apply((p) => p.toString()),
         DATABASE_USER: db.user,
-        DATABASE_PASSWORD: db.password,
         DATABASE_NAME: db.database,
+        DATABASE_SSL: "true",
+        DATABASE_RUN_MIGRATIONS: "true",
+      },
+      secretEnvironmentVariables: {
+        DATABASE_PASSWORD: db.password,
       },
     },
     { deletedWith: ns },

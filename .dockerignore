@@ -7,3 +7,5 @@ dist
 infra
 example-deployment
 packages/control/frontend
+.pnpm-store
+.aider*

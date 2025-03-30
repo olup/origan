@@ -43,7 +43,7 @@ export function deployDatabase(): DatabaseOutputs {
   );
 
   return {
-    host: lb.hostname,
+    host: lb.ip,
     port: lb.port,
     user: sharedDb.userName,
     password: password.result,

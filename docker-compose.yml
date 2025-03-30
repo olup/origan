@@ -14,6 +14,7 @@ services:
       DATABASE_USER: origan-root
       DATABASE_PASSWORD: origan
       DATABASE_NAME: origan
+      DATABASE_SSL: false
     networks:
       - origan-network
 
