@@ -1,8 +1,0 @@
-[
-  {
-    "name": "scaleway",
-    "package": "@pulumiverse/scaleway",
-    "version": "1.25.0",
-    "alias": "scaleway"
-  }
-]
