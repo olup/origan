@@ -17,7 +17,7 @@ interface DeployApiOutputs {
 
 export function deployControl(
   registry: scaleway.registry.Namespace,
-  db: DatabaseOutputs
+  db: DatabaseOutputs,
 ) {
   const { registryApiKey } = deployRegistry();
   const frontend = configureFrontendDeploy();
@@ -25,7 +25,7 @@ export function deployControl(
     registry,
     registryApiKey,
     pulumi.interpolate`https://${frontend.bucketWebsite.websiteEndpoint}`,
-    db
+    db,
   ).apiUrl;
 
   const viteProject = new ViteProject(cn("frontend-vite-project"), {
@@ -36,7 +36,7 @@ export function deployControl(
       "..",
       "packages",
       "control",
-      "frontend"
+      "frontend",
     ),
     buildEnv: controlApiUrl.apply((url) => {
       return {
@@ -54,7 +54,7 @@ export function deployControl(
     {
       bucket: deploymentBucket.name,
       acl: "private",
-    }
+    },
   );
 }
 
@@ -79,7 +79,7 @@ function configureFrontendDeploy(): DeployFrontendOutputs {
       errorDocument: {
         key: "index.html",
       },
-    }
+    },
   );
 
   // TODO make this declaration liked to actual objects rather than hardcoded
@@ -124,7 +124,7 @@ function deployApi(
   registry: scaleway.registry.Namespace,
   registryApiKey: scaleway.iam.ApiKey,
   frontendDomain: pulumi.Output<string>,
-  db: DatabaseOutputs
+  db: DatabaseOutputs,
 ): DeployApiOutputs {
   const latest = new docker.Image(cn("image-latest"), {
     build: {
@@ -141,7 +141,7 @@ function deployApi(
     },
   });
   const digestTag = latest.repoDigest.apply((digest) =>
-    digest.split(":")[1].substring(0, 8)
+    digest.split(":")[1].substring(0, 8),
   );
   // Mandatory second image to push the existing one.
   const image = new docker.Image(
@@ -160,7 +160,7 @@ function deployApi(
         password: registryApiKey.secretKey,
       },
     },
-    { dependsOn: latest }
+    { dependsOn: latest },
   );
 
   const ns = new scaleway.containers.Namespace(cn("ns"), {
@@ -191,10 +191,12 @@ function deployApi(
         DATABASE_RUN_MIGRATIONS: "true",
       },
       secretEnvironmentVariables: {
-        DATABASE_URL: pulumi.interpolate`postgresql://${db.user}:${db.password}@${db.host}:${db.port}/${db.database}?sslmode=require`,
+        // TODO: Add back ?sslmode=require. Currently, it gives a "Error: self-signed certificate"
+        // error with node-postgres.
+        DATABASE_URL: pulumi.interpolate`postgresql://${db.user}:${db.password.apply(encodeURIComponent)}@${db.host}:${db.port}/${db.database}`,
       },
     },
-    { deletedWith: ns }
+    { deletedWith: ns },
   );
 
   return {
@@ -210,7 +212,7 @@ function deployRegistry(): { registryApiKey: scaleway.iam.ApiKey } {
     cn("pulumi-registry"),
     {
       name: "Pulumi Registry Access",
-    }
+    },
   );
   const registryAccessPolicy = new scaleway.iam.Policy(
     cn("registry-access-policy"),
@@ -223,7 +225,7 @@ function deployRegistry(): { registryApiKey: scaleway.iam.ApiKey } {
           permissionSetNames: ["ContainerRegistryFullAccess"],
         },
       ],
-    }
+    },
   );
   const registryApiKey = new scaleway.iam.ApiKey(cn("registry-api-key"), {
     applicationId: pulumiRegistryApp.id,

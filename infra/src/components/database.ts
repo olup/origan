@@ -41,6 +41,12 @@ export function deployDatabase(): DatabaseOutputs {
       name: "origan",
     },
   );
+  new scaleway.databases.Privilege(gn("shared-db-origan-privilege"), {
+    instanceId: sharedDb.id,
+    databaseName: sharedMainDatabase.name,
+    userName: "origan-root",
+    permission: "all",
+  });
 
   return {
     host: lb.ip,
