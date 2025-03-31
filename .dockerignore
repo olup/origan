@@ -1,11 +1,22 @@
-node_modules
+# VCS
 .git
-.jj
 .gitignore
+.jj
+
+# Node/pnpm modules
+node_modules
+.pnpm-store
+
+
+# Other filetype
 *.md
+
+# Own folders
 dist
 infra
 example-deployment
 packages/control/frontend
-.pnpm-store
+
+# Misc
+Session.nvim
 .aider*

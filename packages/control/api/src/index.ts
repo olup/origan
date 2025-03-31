@@ -16,7 +16,6 @@ await db
   .onConflictDoNothing();
 
 const api = new Hono()
-  .basePath("/api")
   .get("/hello", (c) => c.json({ message: "Hello" }))
   .get("/counter", async (c) => {
     const counterValue = await db.query.counterSchema.findFirst({
@@ -42,7 +41,8 @@ export type ApiType = typeof api;
 const root = new Hono()
   .use(logger())
   .use(cors({ origin: process.env.CORS_ORIGIN || "" }))
-  .route("/", api);
+  .get("/.healthz", (c) => c.json({ message: "OK" }))
+  .route("/api", api);
 
 const port = Number.parseInt(process.env.PORT ?? "9999");
 console.log(`Starting API server on port ${port}`);

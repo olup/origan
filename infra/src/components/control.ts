@@ -17,7 +17,7 @@ interface DeployApiOutputs {
 
 export function deployControl(
   registry: scaleway.registry.Namespace,
-  db: DatabaseOutputs,
+  db: DatabaseOutputs
 ) {
   const { registryApiKey } = deployRegistry();
   const frontend = configureFrontendDeploy();
@@ -25,7 +25,7 @@ export function deployControl(
     registry,
     registryApiKey,
     pulumi.interpolate`https://${frontend.bucketWebsite.websiteEndpoint}`,
-    db,
+    db
   ).apiUrl;
 
   const viteProject = new ViteProject(cn("frontend-vite-project"), {
@@ -36,7 +36,7 @@ export function deployControl(
       "..",
       "packages",
       "control",
-      "frontend",
+      "frontend"
     ),
     buildEnv: controlApiUrl.apply((url) => {
       return {
@@ -54,7 +54,7 @@ export function deployControl(
     {
       bucket: deploymentBucket.name,
       acl: "private",
-    },
+    }
   );
 }
 
@@ -79,7 +79,7 @@ function configureFrontendDeploy(): DeployFrontendOutputs {
       errorDocument: {
         key: "index.html",
       },
-    },
+    }
   );
 
   // TODO make this declaration liked to actual objects rather than hardcoded
@@ -124,9 +124,9 @@ function deployApi(
   registry: scaleway.registry.Namespace,
   registryApiKey: scaleway.iam.ApiKey,
   frontendDomain: pulumi.Output<string>,
-  db: DatabaseOutputs,
+  db: DatabaseOutputs
 ): DeployApiOutputs {
-  const image = new docker.Image(cn("image"), {
+  const latest = new docker.Image(cn("image-latest"), {
     build: {
       context: "../",
       dockerfile: "../Dockerfile",
@@ -140,6 +140,28 @@ function deployApi(
       password: registryApiKey.secretKey,
     },
   });
+  const digestTag = latest.repoDigest.apply((digest) =>
+    digest.split(":")[1].substring(0, 8)
+  );
+  // Mandatory second image to push the existing one.
+  const image = new docker.Image(
+    cn("image"),
+    {
+      build: {
+        context: "../",
+        dockerfile: "../Dockerfile",
+        platform: "linux/amd64",
+        target: "control-api",
+      },
+      imageName: pulumi.interpolate`${registry.endpoint}/control-api:${digestTag}`,
+      registry: {
+        server: registry.endpoint,
+        username: registryApiKey.accessKey,
+        password: registryApiKey.secretKey,
+      },
+    },
+    { dependsOn: latest }
+  );
 
   const ns = new scaleway.containers.Namespace(cn("ns"), {
     name: "control",
@@ -150,8 +172,15 @@ function deployApi(
     {
       name: "control-container",
       namespaceId: ns.id,
-      registryImage: pulumi.interpolate`${image.imageName}:latest`,
+      registryImage: image.imageName,
       port: 9999,
+      healthChecks: [
+        {
+          https: [{ path: "/.healthz" }],
+          failureThreshold: 3,
+          interval: "5s",
+        },
+      ],
       minScale: 0,
       maxScale: 1,
       privacy: "public",
@@ -165,7 +194,7 @@ function deployApi(
         DATABASE_URL: pulumi.interpolate`postgresql://${db.user}:${db.password}@${db.host}:${db.port}/${db.database}?sslmode=require`,
       },
     },
-    { deletedWith: ns },
+    { deletedWith: ns }
   );
 
   return {
@@ -181,7 +210,7 @@ function deployRegistry(): { registryApiKey: scaleway.iam.ApiKey } {
     cn("pulumi-registry"),
     {
       name: "Pulumi Registry Access",
-    },
+    }
   );
   const registryAccessPolicy = new scaleway.iam.Policy(
     cn("registry-access-policy"),
@@ -194,7 +223,7 @@ function deployRegistry(): { registryApiKey: scaleway.iam.ApiKey } {
           permissionSetNames: ["ContainerRegistryFullAccess"],
         },
       ],
-    },
+    }
   );
   const registryApiKey = new scaleway.iam.ApiKey(cn("registry-api-key"), {
     applicationId: pulumiRegistryApp.id,

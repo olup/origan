@@ -5,7 +5,7 @@ set -eo pipefail
 # Run Drizzle migrations if needed based on env variable
 if [[ "$DATABASE_RUN_MIGRATIONS" == "true" ]]; then
   echo "Running migrations"
-  drizzle-kit migrate
+  pnpm run db:migrate
 fi
 
 # Run the app
