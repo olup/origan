@@ -4,19 +4,13 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const config = z.object({
-  DATABASE_HOST: z.string(),
-  DATABASE_PORT: z
-    .string()
-    .default("5432")
-    .refine((p) => Number.parseInt(p) > 0 && Number.parseInt(p) <= 65535),
-  DATABASE_USER: z.string(),
-  DATABASE_PASSWORD: z.string(),
-  DATABASE_NAME: z.string(),
-  DATABASE_SSL: z.boolean().default(true),
+  DATABASE_URL: z.string(),
+  BUCKET_URL: z.string(),
+  BUCKET_ACCESS_KEY: z.string(),
+  BUCKET_SECRET_KEY: z.string(),
+  BUCKET_NAME: z.string(),
 });
 
 type Env = z.infer<typeof config>;
 export const env = config.parse(process.env);
-
-const dbSsl = env.DATABASE_SSL ? "?sslmode=require" : "";
-export const db_url = `postgres://${env.DATABASE_USER}:${env.DATABASE_PASSWORD}@${env.DATABASE_HOST}:${env.DATABASE_PORT}/${env.DATABASE_NAME}${dbSsl}`;
+export const db_url = env.DATABASE_URL;
