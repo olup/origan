@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { login, logout } from "./services/auth.service.js";
+import { deploy } from "./services/deploy.service.js";
+import { startDev } from "./services/dev.service.js";
 
 const program = new Command();
 
@@ -17,24 +20,30 @@ program
   .command("login")
   .description("Login to Origan")
   .action(async () => {
-    console.log("Logging in to Origan...");
-    // TODO: Implement login logic with authentication
+    await login();
+  });
+
+program
+  .command("logout")
+  .description("Logout from Origan")
+  .action(async () => {
+    await logout();
   });
 
 program
   .command("deploy")
   .description("Deploy your application")
-  .action(async () => {
-    console.log("Deploying your application...");
-    // TODO: Implement deployment logic
+  .requiredOption("-p, --project <ref>", "Project reference")
+  .option("-b, --branch <name>", "Branch name", "main")
+  .action(async (options) => {
+    await deploy(options.project, options.branch);
   });
 
 program
   .command("dev")
   .description("Start development environment")
   .action(async () => {
-    console.log("Starting development environment...");
-    // TODO: Implement dev environment setup
+    await startDev();
   });
 
 program.parse();

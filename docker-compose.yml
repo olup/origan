@@ -38,8 +38,15 @@ services:
   gateway:
     image: node:22-slim
     working_dir: /app
+    environment:
+      - ORIGAN_DOMAIN=localtest.me
+      - CONTROL_API_URL=http://control-api:9999
+      - BUCKET_URL=http://minio:9000
+      - BUCKET_ACCESS_KEY=minioadmin
+      - BUCKET_SECRET_KEY=minioadmin
+      - BUCKET_NAME=origan
     ports:
-      - "8080:8080"
+      - "7777:7777"
     volumes:
       - ./packages/gateway:/app
       - /app/node_modules
@@ -70,6 +77,7 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+    # The entrypoint command is used to create the bucket and set up the MinIO client
     entrypoint: >
       /bin/sh -c "
       mkdir -p /data/.minio.sys/buckets;

@@ -193,7 +193,11 @@ function deployApi(
       secretEnvironmentVariables: {
         // TODO: Add back ?sslmode=require. Currently, it gives a "Error: self-signed certificate"
         // error with node-postgres.
-        DATABASE_URL: pulumi.interpolate`postgresql://${db.user}:${db.password.apply(encodeURIComponent)}@${db.host}:${db.port}/${db.database}`,
+        DATABASE_URL: pulumi.interpolate`postgresql://${
+          db.user
+        }:${db.password.apply(encodeURIComponent)}@${db.host}:${db.port}/${
+          db.database
+        }`,
       },
     },
     { deletedWith: ns },

@@ -1,12 +1,12 @@
-import * as pulumi from "@pulumi/pulumi";
 import * as fs from "node:fs";
-import * as mime from "mime-types";
 import {
   DeleteObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import * as pulumi from "@pulumi/pulumi";
 import type { DiffResult } from "@pulumi/pulumi/dynamic";
+import * as mime from "mime-types";
 import { objectWithoutUndefined } from "../utils";
 
 interface S3ItemInputs {

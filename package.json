@@ -13,7 +13,14 @@
   "devDependencies": {
     "@biomejs/biome": "1.5.3",
     "@types/node": "^20.0.0",
-    "concurrently": "^9.1.2",
     "typescript": "^5.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@origan/cli": "link:packages/cli"
+    }
+  },
+  "dependencies": {
+    "@origan/cli": "link:packages/cli"
   }
 }

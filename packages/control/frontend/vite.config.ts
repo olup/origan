@@ -1,9 +1,9 @@
 import react from "@vitejs/plugin-react-swc";
-import { defineConfig, type ServerOptions } from "vite";
+import { type ServerOptions, defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  let server: ServerOptions = {};
+  const server: ServerOptions = {};
 
   return {
     plugins: [react()],

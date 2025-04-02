@@ -1,5 +1,5 @@
-import { db_url } from "./src/config";
 import { defineConfig } from "drizzle-kit";
+import { db_url } from "./src/config";
 
 export default defineConfig({
   out: "./drizzle",
