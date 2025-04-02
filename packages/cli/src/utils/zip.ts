@@ -33,7 +33,7 @@ export async function createDeploymentArchive(
   appFiles: string[],
   routes: Route[],
   distPath: string,
-  configPath: string,
+  configPath: string
 ): Promise<BundleResult> {
   return new Promise((resolve, reject) => {
     const zipPath = join(artifactsDir, `${uuid}.zip`);
@@ -53,7 +53,7 @@ export async function createDeploymentArchive(
     // Add app files to zip
     for (const file of appFiles) {
       const relativePath = relative(distPath, file);
-      archive.file(file, { name: join("files", relativePath) });
+      archive.file(file, { name: join("app", relativePath) });
     }
 
     // Add config.json

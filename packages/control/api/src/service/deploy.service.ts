@@ -10,7 +10,7 @@ import { db_url } from "../config.js";
 import { deploymentSchema, hostSchema } from "../schema.js";
 
 export interface DeploymentConfig {
-  files: string[];
+  app: string[];
   routes: { url: string; file: string }[];
 }
 
@@ -28,14 +28,14 @@ export function validateConfig(config: unknown): config is DeploymentConfig {
 
   const candidate = config as DeploymentConfig;
   return (
-    Array.isArray(candidate.files) &&
+    Array.isArray(candidate.app) &&
     Array.isArray(candidate.routes) &&
-    candidate.files.every((f) => typeof f === "string") &&
+    candidate.app.every((f) => typeof f === "string") &&
     candidate.routes.every(
       (r) =>
         typeof r === "object" &&
         typeof r.url === "string" &&
-        typeof r.file === "string",
+        typeof r.file === "string"
     )
   );
 }
@@ -104,7 +104,7 @@ async function processBundle(bundle: File): Promise<string> {
     throw new Error(
       `Failed to process bundle: ${
         error instanceof Error ? error.message : String(error)
-      }`,
+      }`
     );
   }
 }
@@ -116,7 +116,7 @@ async function uploadToS3(
   extractedPath: string,
   deploymentId: string,
   s3Client: S3Client,
-  bucketName: string,
+  bucketName: string
 ): Promise<void> {
   try {
     // List all entries in the extracted directory
@@ -148,7 +148,7 @@ async function uploadToS3(
         throw new Error(
           `Failed to upload ${entry}: ${
             error instanceof Error ? error.message : String(error)
-          }`,
+          }`
         );
       }
     }
@@ -212,16 +212,30 @@ export async function deploy({
     })
     .returning();
 
-  console.log("Processing bundle...");
+  let extractedPath: string | undefined;
+  try {
+    console.log("Processing bundle...");
 
-  // Process bundle and upload to S3
-  const extractedPath = await processBundle(bundle);
+    // Process bundle and upload to S3
+    extractedPath = await processBundle(bundle);
 
-  console.log("Bundle processed");
-  console.log("Uploading files to bucket...");
-  await uploadToS3(extractedPath, deployment.id, s3Client, bucketName);
+    console.log("Bundle processed");
+    console.log("Uploading files to bucket...");
+    await uploadToS3(extractedPath, deployment.id, s3Client, bucketName);
 
-  console.log("Files uploaded");
+    console.log("Files uploaded");
+  } catch (error) {
+    // Clean up extracted files if they exist
+    if (extractedPath) {
+      try {
+        await rm(extractedPath, { recursive: true, force: true });
+        console.log("Cleaned up temporary files after error");
+      } catch (cleanupError) {
+        console.error("Failed to clean up after error:", cleanupError);
+      }
+    }
+    throw error;
+  }
 
   // Create or update host record
   // origan.main is a placeholder for origan main domain

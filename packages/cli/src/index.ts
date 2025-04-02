@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { login, logout } from "./services/auth.service.js";
 import { deploy } from "./services/deploy.service.js";
 import { startDev } from "./services/dev.service.js";
+import { init } from "./services/init.service.js";
 
 const program = new Command();
 
@@ -33,10 +34,9 @@ program
 program
   .command("deploy")
   .description("Deploy your application")
-  .requiredOption("-p, --project <ref>", "Project reference")
   .option("-b, --branch <name>", "Branch name", "main")
   .action(async (options) => {
-    await deploy(options.project, options.branch);
+    await deploy(options.branch);
   });
 
 program
@@ -44,6 +44,13 @@ program
   .description("Start development environment")
   .action(async () => {
     await startDev();
+  });
+
+program
+  .command("init")
+  .description("Initialize Origan configuration")
+  .action(async () => {
+    await init();
   });
 
 program.parse();

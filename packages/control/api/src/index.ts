@@ -64,7 +64,7 @@ const api = new Hono()
           error: "Invalid JSON in config",
           details: error instanceof Error ? error.message : String(error),
         },
-        400,
+        400
       );
     }
 
@@ -72,9 +72,9 @@ const api = new Hono()
       return c.json(
         {
           error: "Invalid config format",
-          details: "Config must contain files and routes arrays",
+          details: "Config must contain app and routes arrays",
         },
-        400,
+        400
       );
     }
 
@@ -88,7 +88,7 @@ const api = new Hono()
 
       return c.json({
         status: "success",
-        message: "Deployment files uploaded successfully",
+        message: "Deployment uploaded successfully",
         projectRef: result.projectRef,
         version: result.deploymentId,
       });
@@ -98,7 +98,7 @@ const api = new Hono()
           error: "Failed to process deployment",
           details: error instanceof Error ? error.message : String(error),
         },
-        500,
+        500
       );
     }
   })

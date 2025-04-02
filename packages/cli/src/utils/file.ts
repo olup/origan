@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync, statSync, writeFileSync } from "fs";
+import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
 
 export function createDirectories(dirs: string[]): void {
@@ -31,9 +31,17 @@ export function validateDirectory(path: string): boolean {
   }
 }
 
+export function cleanDirectory(dir: string): void {
+  try {
+    rmSync(dir, { recursive: true, force: true });
+  } catch (error) {
+    console.error(`Failed to clean directory ${dir}:`, error);
+  }
+}
+
 export function writeConfig(
   buildDir: string,
-  config: Record<string, unknown>,
+  config: Record<string, unknown>
 ): string {
   const configPath = join(buildDir, "config.json");
   const configContent = JSON.stringify(config, null, 2);

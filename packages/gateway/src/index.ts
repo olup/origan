@@ -15,7 +15,7 @@ interface RouteConfig {
 }
 
 interface Config {
-  files: string[];
+  app: string[];
   routes: RouteConfig[];
   domain_placeholder?: string;
 }
@@ -42,7 +42,7 @@ const app = new Hono();
 // const CONFIG_CACHE_TTL = 60000; // 1 minute cache
 
 async function getConfig(
-  domain: string,
+  domain: string
 ): Promise<{ config: Config; deploymentId: string } | null> {
   // Return cached config if still valid
   // const cached = configCache.get(domain);
@@ -123,13 +123,18 @@ app.all("*", async (c) => {
   const { config, deploymentId } = result;
   const path = c.req.path;
 
-  // Check if path matches any files in config
-  const matchingFile = config.files.find((file) => file === path.slice(1)); // Remove leading slash
-  if (matchingFile) {
+  // Check if this is an API route
+  if (path.startsWith("/api/")) {
+    // Handle API routes differently
+    return c.json({ error: "API routes not implemented" }, 501);
+  }
+
+  // Function to fetch file from S3
+  async function fetchFromS3(key: string) {
     try {
       const command = new GetObjectCommand({
         Bucket: BUCKET_NAME,
-        Key: `deployments/${deploymentId}/files/${matchingFile}`,
+        Key: key,
       });
 
       const response = await s3Client.send(command);
@@ -142,41 +147,47 @@ app.all("*", async (c) => {
       for await (const chunk of response.Body as AsyncIterable<Buffer>) {
         chunks.push(chunk);
       }
-      const buffer = Buffer.concat(chunks);
-
-      // Set appropriate content type
-      c.header("Content-Type", getContentType(matchingFile));
-      return c.body(buffer);
+      return Buffer.concat(chunks);
     } catch (error) {
       console.error("Error fetching file from S3:", error);
-      return c.json({ error: "Failed to fetch file" }, 500);
+      return null;
     }
   }
 
-  // If no matching file found, check for index.html
-  if (config.files.includes("index.html")) {
-    try {
-      const command = new GetObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: `deployments/${deploymentId}/index.html`,
-      });
+  // 1. Check if the exact file exists in config
+  const requestedFile = path.slice(1); // Remove leading slash
+  if (config.app.includes(requestedFile)) {
+    const buffer = await fetchFromS3(
+      `deployments/${deploymentId}/app/${requestedFile}`
+    );
+    if (buffer) {
+      c.header("Content-Type", getContentType(requestedFile));
+      return c.body(buffer);
+    }
+  }
 
-      const response = await s3Client.send(command);
-      if (!response.Body) {
-        throw new Error("No response body");
-      }
-
-      // Convert Readable to Buffer
-      const chunks: Buffer[] = [];
-      for await (const chunk of response.Body as AsyncIterable<Buffer>) {
-        chunks.push(chunk);
-      }
-      const buffer = Buffer.concat(chunks);
-
+  // 2. Check if <path>/index.html exists
+  const indexPath = path.endsWith("/")
+    ? `${path}index.html`.slice(1)
+    : `${path}/index.html`.slice(1);
+  if (config.app.includes(indexPath)) {
+    const buffer = await fetchFromS3(
+      `deployments/${deploymentId}/app/${indexPath}`
+    );
+    if (buffer) {
       c.header("Content-Type", "text/html");
       return c.body(buffer);
-    } catch (error) {
-      console.error("Error fetching index.html from S3:", error);
+    }
+  }
+
+  // 3. Check for root index.html
+  if (config.app.includes("index.html")) {
+    const buffer = await fetchFromS3(
+      `deployments/${deploymentId}/app/index.html`
+    );
+    if (buffer) {
+      c.header("Content-Type", "text/html");
+      return c.body(buffer);
     }
   }
 
@@ -184,9 +195,9 @@ app.all("*", async (c) => {
     {
       error: "Not found",
       path,
-      files: config.files,
+      app: config.app,
     },
-    404,
+    404
   );
 });
 
