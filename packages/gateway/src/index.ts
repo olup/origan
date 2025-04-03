@@ -2,28 +2,29 @@ import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
-const CONTROL_API_URL = process.env.CONTROL_API_URL || "http://localhost:9999";
-const ORIGAN_DOMAIN = process.env.ORIGAN_DOMAIN;
+const CONTROL_API_URL = process.env.CONTROL_API_URL || "undefined";
+const ORIGAN_DOMAIN = process.env.ORIGAN_DOMAIN || "undefined";
+const RUNNER_URL = process.env.RUNNER_URL || "undefined";
 
 if (!ORIGAN_DOMAIN) {
   throw new Error("ORIGAN_DOMAIN environment variable is required");
 }
 
 interface RouteConfig {
-  url: string;
-  file: string;
+  urlPath: string;
+  functionPath: string;
 }
 
 interface Config {
   app: string[];
-  routes: RouteConfig[];
+  api: RouteConfig[];
   domain_placeholder?: string;
 }
 
 // Initialize S3 client
 const s3Client = new S3Client({
   endpoint: process.env.BUCKET_URL,
-  region: "us-east-1", // MinIO default region
+  region: process.env.BUCKET_REGION || "us-east-1", // Use configured region or default to MinIO's default
   forcePathStyle: true, // Required for MinIO
   credentials: {
     accessKeyId: process.env.BUCKET_ACCESS_KEY || "",
@@ -42,7 +43,7 @@ const app = new Hono();
 // const CONFIG_CACHE_TTL = 60000; // 1 minute cache
 
 async function getConfig(
-  domain: string
+  domain: string,
 ): Promise<{ config: Config; deploymentId: string } | null> {
   // Return cached config if still valid
   // const cached = configCache.get(domain);
@@ -124,9 +125,37 @@ app.all("*", async (c) => {
   const path = c.req.path;
 
   // Check if this is an API route
-  if (path.startsWith("/api/")) {
-    // Handle API routes differently
-    return c.json({ error: "API routes not implemented" }, 501);
+  // find in config.routes
+  const route = config.api.find((r) => path === r.urlPath);
+
+  if (route) {
+    console.log("Route found:", route);
+    console.log("Runner API URL:", RUNNER_URL);
+
+    console.log(route);
+
+    try {
+      const response = await fetch(`${RUNNER_URL}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          functionPath: `deployments/${deploymentId}/api/${route.functionPath}`,
+          request: {
+            path: c.req.path,
+            url: c.req.url,
+            method: c.req.method,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      return c.json(data);
+    } catch (error) {
+      console.error("Error calling runner API:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
   }
 
   // Function to fetch file from S3
@@ -158,7 +187,7 @@ app.all("*", async (c) => {
   const requestedFile = path.slice(1); // Remove leading slash
   if (config.app.includes(requestedFile)) {
     const buffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/${requestedFile}`
+      `deployments/${deploymentId}/app/${requestedFile}`,
     );
     if (buffer) {
       c.header("Content-Type", getContentType(requestedFile));
@@ -172,7 +201,7 @@ app.all("*", async (c) => {
     : `${path}/index.html`.slice(1);
   if (config.app.includes(indexPath)) {
     const buffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/${indexPath}`
+      `deployments/${deploymentId}/app/${indexPath}`,
     );
     if (buffer) {
       c.header("Content-Type", "text/html");
@@ -183,7 +212,7 @@ app.all("*", async (c) => {
   // 3. Check for root index.html
   if (config.app.includes("index.html")) {
     const buffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/index.html`
+      `deployments/${deploymentId}/app/index.html`,
     );
     if (buffer) {
       c.header("Content-Type", "text/html");
@@ -197,7 +226,7 @@ app.all("*", async (c) => {
       path,
       app: config.app,
     },
-    404
+    404,
   );
 });
 

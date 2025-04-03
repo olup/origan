@@ -6,6 +6,13 @@ import path = require("node:path");
 import { cn } from "../utils";
 import type { DatabaseOutputs } from "./database";
 
+interface BucketConfig {
+  bucketUrl: pulumi.Output<string>;
+  bucketName: pulumi.Output<string>;
+  bucketAccessKey: pulumi.Output<string>;
+  bucketSecretKey: pulumi.Output<string>;
+}
+
 interface DeployFrontendOutputs {
   bucket: scaleway.object.Bucket;
   bucketWebsite: scaleway.object.BucketWebsiteConfiguration;
@@ -15,17 +22,23 @@ interface DeployApiOutputs {
   apiUrl: pulumi.Output<string>;
 }
 
+export interface DeployControlOutputs {
+  apiUrl: pulumi.Output<string>;
+}
+
 export function deployControl(
   registry: scaleway.registry.Namespace,
+  registryApiKey: scaleway.iam.ApiKey,
   db: DatabaseOutputs,
-) {
-  const { registryApiKey } = deployRegistry();
+  bucketConfig: BucketConfig,
+): DeployControlOutputs {
   const frontend = configureFrontendDeploy();
   const controlApiUrl = deployApi(
     registry,
     registryApiKey,
     pulumi.interpolate`https://${frontend.bucketWebsite.websiteEndpoint}`,
     db,
+    bucketConfig,
   ).apiUrl;
 
   const viteProject = new ViteProject(cn("frontend-vite-project"), {
@@ -56,6 +69,10 @@ export function deployControl(
       acl: "private",
     },
   );
+
+  return {
+    apiUrl: controlApiUrl,
+  };
 }
 
 function configureFrontendDeploy(): DeployFrontendOutputs {
@@ -125,6 +142,7 @@ function deployApi(
   registryApiKey: scaleway.iam.ApiKey,
   frontendDomain: pulumi.Output<string>,
   db: DatabaseOutputs,
+  bucketConfig: BucketConfig,
 ): DeployApiOutputs {
   const latest = new docker.Image(cn("image-latest"), {
     build: {
@@ -189,6 +207,16 @@ function deployApi(
       environmentVariables: {
         CORS_ORIGIN: frontendDomain,
         DATABASE_RUN_MIGRATIONS: "true",
+        DATABASE_URL: pulumi.interpolate`postgresql://${
+          db.user
+        }:${db.password.apply(encodeURIComponent)}@${db.host}:${db.port}/${
+          db.database
+        }`,
+
+        BUCKET_URL: bucketConfig.bucketUrl,
+        BUCKET_NAME: bucketConfig.bucketName,
+        BUCKET_ACCESS_KEY: bucketConfig.bucketAccessKey,
+        BUCKET_SECRET_KEY: bucketConfig.bucketSecretKey,
       },
       secretEnvironmentVariables: {
         // TODO: Add back ?sslmode=require. Currently, it gives a "Error: self-signed certificate"
@@ -205,38 +233,5 @@ function deployApi(
 
   return {
     apiUrl: container.domainName,
-  };
-}
-
-function deployRegistry(): { registryApiKey: scaleway.iam.ApiKey } {
-  const _project = scaleway.account.getProject({
-    name: "origan",
-  });
-  const pulumiRegistryApp = new scaleway.iam.Application(
-    cn("pulumi-registry"),
-    {
-      name: "Pulumi Registry Access",
-    },
-  );
-  const registryAccessPolicy = new scaleway.iam.Policy(
-    cn("registry-access-policy"),
-    {
-      applicationId: pulumiRegistryApp.id,
-      description: "Registry Access Policy",
-      rules: [
-        {
-          projectIds: [_project.then((_project) => _project.id)],
-          permissionSetNames: ["ContainerRegistryFullAccess"],
-        },
-      ],
-    },
-  );
-  const registryApiKey = new scaleway.iam.ApiKey(cn("registry-api-key"), {
-    applicationId: pulumiRegistryApp.id,
-    description: "Registry API Key",
-  });
-
-  return {
-    registryApiKey: registryApiKey,
   };
 }

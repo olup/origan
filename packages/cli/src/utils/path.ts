@@ -7,8 +7,8 @@ export interface Route {
 }
 
 export interface RouteConfig {
-  url: string;
-  file: string;
+  urlPath: string;
+  functionPath: string;
 }
 
 export function normalizeApiPath(path: string): string {
@@ -16,23 +16,19 @@ export function normalizeApiPath(path: string): string {
   let normalized = path.replace(/\.ts$/, "");
   // Convert Windows paths to URL paths
   normalized = normalized.replace(/\\/g, "/");
-  // Ensure starts with /
-  if (!normalized.startsWith("/")) {
-    normalized = `/${normalized}`;
-  }
   // Remove trailing /index
   normalized = normalized.replace(/\/index$/, "");
   // Ensure root path is /
-  if (normalized === "") {
-    normalized = "/";
+  if (!normalized.startsWith("/")) {
+    normalized = `/${normalized}`;
+  }
+  // Add /api prefix (avoiding double slash)
+  if (normalized === "/") {
+    normalized = "/api";
+  } else {
+    normalized = `/api${normalized}`;
   }
   return normalized;
-}
-
-export function generateRouteBundlePath(urlPath: string): string {
-  const routeId =
-    urlPath === "/" ? "root" : urlPath.slice(1).replace(/\//g, "_");
-  return join("routes", `${routeId}.js`);
 }
 
 export function resolveAppFiles(
@@ -40,20 +36,24 @@ export function resolveAppFiles(
   distPath: string,
 ): string[] {
   return appFiles.map((f) =>
-    join("app", relative(join(process.cwd(), "dist"), f)),
+    join("app", relative(join(process.cwd(), distPath), f)),
   );
 }
 
 export function createRouteFromFile(apiDir: string, filePath: string): Route {
   const relPath = relative(apiDir, filePath);
-  const urlPath = normalizeApiPath(
-    basename(filePath) === "index.ts" ? dirname(relPath) : relPath,
-  );
-  const bundlePath = generateRouteBundlePath(urlPath);
+  const isIndex = basename(filePath) === "index.ts";
+
+  // If it's an index file, use the directory name, otherwise remove .ts extension
+  const pathForNormalization = isIndex
+    ? dirname(relPath)
+    : relPath.replace(/\.ts$/, "");
+
+  const urlPath = normalizeApiPath(pathForNormalization);
 
   return {
     filePath,
     urlPath,
-    bundlePath,
+    bundlePath: relPath.replace(/\.ts$/, ".js"),
   };
 }

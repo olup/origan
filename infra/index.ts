@@ -1,2 +1,3 @@
-import deployAll from "./src";
+import { deployAll } from "./src/index";
+
 deployAll();

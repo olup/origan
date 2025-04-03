@@ -1,6 +1,6 @@
 import { createRequire } from "module";
-import { writeFile, stat, readFile, appendFile } from "fs/promises";
 import { join } from "path";
+import { appendFile, readFile, stat, writeFile } from "fs/promises";
 import prompts from "prompts";
 import type { OriganConfig } from "../types.js";
 import { log } from "../utils/logger.js";
@@ -13,7 +13,7 @@ export async function init() {
     await stat(join(process.cwd(), "package.json"));
   } catch (error) {
     log.error(
-      "package.json not found. Please run 'origan init' from your project root directory."
+      "package.json not found. Please run 'origan init' from your project root directory.",
     );
     return;
   }

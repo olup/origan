@@ -41,7 +41,7 @@ export function cleanDirectory(dir: string): void {
 
 export function writeConfig(
   buildDir: string,
-  config: Record<string, unknown>
+  config: Record<string, unknown>,
 ): string {
   const configPath = join(buildDir, "config.json");
   const configContent = JSON.stringify(config, null, 2);

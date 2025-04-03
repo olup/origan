@@ -8,36 +8,16 @@ import pg from "pg";
 import * as unzipper from "unzipper";
 import { db_url } from "../config.js";
 import { deploymentSchema, hostSchema } from "../schema.js";
-
-export interface DeploymentConfig {
-  app: string[];
-  routes: { url: string; file: string }[];
-}
+import {
+  type DeployParams,
+  type DeploymentConfig,
+  deploymentConfigSchema,
+} from "../schemas/deploy.js";
 
 export interface DeploymentResult {
   projectRef: string;
   deploymentId: string;
   path: string;
-}
-
-/**
- * Validates deployment configuration format
- */
-export function validateConfig(config: unknown): config is DeploymentConfig {
-  if (typeof config !== "object" || !config) return false;
-
-  const candidate = config as DeploymentConfig;
-  return (
-    Array.isArray(candidate.app) &&
-    Array.isArray(candidate.routes) &&
-    candidate.app.every((f) => typeof f === "string") &&
-    candidate.routes.every(
-      (r) =>
-        typeof r === "object" &&
-        typeof r.url === "string" &&
-        typeof r.file === "string"
-    )
-  );
 }
 
 /**
@@ -104,7 +84,7 @@ async function processBundle(bundle: File): Promise<string> {
     throw new Error(
       `Failed to process bundle: ${
         error instanceof Error ? error.message : String(error)
-      }`
+      }`,
     );
   }
 }
@@ -116,7 +96,7 @@ async function uploadToS3(
   extractedPath: string,
   deploymentId: string,
   s3Client: S3Client,
-  bucketName: string
+  bucketName: string,
 ): Promise<void> {
   try {
     // List all entries in the extracted directory
@@ -148,7 +128,7 @@ async function uploadToS3(
         throw new Error(
           `Failed to upload ${entry}: ${
             error instanceof Error ? error.message : String(error)
-          }`
+          }`,
         );
       }
     }
@@ -166,15 +146,6 @@ const client = new pg.Client({ connectionString: db_url });
 await client.connect();
 const db = drizzle(client);
 
-interface DeployParams {
-  projectRef: string;
-  branchRef: string;
-  bundle: File;
-  config: DeploymentConfig;
-  deploymentsRoot?: string;
-  bucketName?: string;
-}
-
 export async function deploy({
   projectRef,
   branchRef,
@@ -187,7 +158,7 @@ export async function deploy({
 
   const s3Client = new S3Client({
     endpoint: process.env.BUCKET_URL,
-    region: "us-east-1", // MinIO default region
+    region: process.env.BUCKET_REGION || "us-east-1", // Use configured region or default to MinIO's default
     forcePathStyle: true, // Required for MinIO
     credentials: {
       accessKeyId: process.env.BUCKET_ACCESS_KEY || "",
@@ -196,8 +167,9 @@ export async function deploy({
   });
 
   // Validate config
-  if (!validateConfig(config)) {
-    throw new Error("Invalid config format");
+  const result = deploymentConfigSchema.safeParse(config);
+  if (!result.success) {
+    throw new Error(`Invalid config format: ${result.error.message}`);
   }
 
   console.log("Creating deployment record...");

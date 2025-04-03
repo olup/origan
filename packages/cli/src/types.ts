@@ -1,13 +1,20 @@
+import { z } from "zod";
+
 /**
- * Origan configuration file schema
+ * Origan configuration schema
  */
-export interface OriganConfig {
+export const origanConfigSchema = z.object({
   /** Config schema version */
-  version: 1;
+  version: z.literal(1),
   /** Directory containing built app files */
-  appDir: string;
+  appDir: z.string(),
   /** Optional directory containing serverless API functions */
-  apiDir?: string;
+  apiDir: z.string().optional(),
   /** Reference to the project in the Origan control panel */
-  projectRef: string;
-}
+  projectRef: z.string(),
+});
+
+/**
+ * Origan configuration type derived from schema
+ */
+export type OriganConfig = z.infer<typeof origanConfigSchema>;
