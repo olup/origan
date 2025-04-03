@@ -1,17 +1,10 @@
-import * as docker from "@pulumi/docker";
 import * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
 import { ViteProject } from "./vite-project";
 import path = require("node:path");
-import { cn } from "../utils";
+import { cn, dockerImageWithTag } from "../utils";
+import { BucketConfig } from "./bucket";
 import type { DatabaseOutputs } from "./database";
-
-interface BucketConfig {
-  bucketUrl: pulumi.Output<string>;
-  bucketName: pulumi.Output<string>;
-  bucketAccessKey: pulumi.Output<string>;
-  bucketSecretKey: pulumi.Output<string>;
-}
 
 interface DeployFrontendOutputs {
   bucket: scaleway.object.Bucket;
@@ -30,7 +23,7 @@ export function deployControl(
   registry: scaleway.registry.Namespace,
   registryApiKey: scaleway.iam.ApiKey,
   db: DatabaseOutputs,
-  bucketConfig: BucketConfig,
+  bucketConfig: BucketConfig
 ): DeployControlOutputs {
   const frontend = configureFrontendDeploy();
   const controlApiUrl = deployApi(
@@ -38,7 +31,7 @@ export function deployControl(
     registryApiKey,
     pulumi.interpolate`https://${frontend.bucketWebsite.websiteEndpoint}`,
     db,
-    bucketConfig,
+    bucketConfig
   ).apiUrl;
 
   const viteProject = new ViteProject(cn("frontend-vite-project"), {
@@ -49,7 +42,7 @@ export function deployControl(
       "..",
       "packages",
       "control",
-      "frontend",
+      "frontend"
     ),
     buildEnv: controlApiUrl.apply((url) => {
       return {
@@ -67,7 +60,7 @@ export function deployControl(
     {
       bucket: deploymentBucket.name,
       acl: "private",
-    },
+    }
   );
 
   return {
@@ -96,7 +89,7 @@ function configureFrontendDeploy(): DeployFrontendOutputs {
       errorDocument: {
         key: "index.html",
       },
-    },
+    }
   );
 
   // TODO make this declaration liked to actual objects rather than hardcoded
@@ -142,9 +135,10 @@ function deployApi(
   registryApiKey: scaleway.iam.ApiKey,
   frontendDomain: pulumi.Output<string>,
   db: DatabaseOutputs,
-  bucketConfig: BucketConfig,
+  bucketConfig: BucketConfig
 ): DeployApiOutputs {
-  const latest = new docker.Image(cn("image-latest"), {
+  // Mandatory second image to push the existing one.
+  const image = dockerImageWithTag(cn("image"), {
     build: {
       context: "../",
       dockerfile: "../Dockerfile",
@@ -158,28 +152,6 @@ function deployApi(
       password: registryApiKey.secretKey,
     },
   });
-  const digestTag = latest.repoDigest.apply((digest) =>
-    digest.split(":")[1].substring(0, 8),
-  );
-  // Mandatory second image to push the existing one.
-  const image = new docker.Image(
-    cn("image"),
-    {
-      build: {
-        context: "../",
-        dockerfile: "../Dockerfile",
-        platform: "linux/amd64",
-        target: "control-api",
-      },
-      imageName: pulumi.interpolate`${registry.endpoint}/control-api:${digestTag}`,
-      registry: {
-        server: registry.endpoint,
-        username: registryApiKey.accessKey,
-        password: registryApiKey.secretKey,
-      },
-    },
-    { dependsOn: latest },
-  );
 
   const ns = new scaleway.containers.Namespace(cn("ns"), {
     name: "control",
@@ -204,6 +176,8 @@ function deployApi(
       privacy: "public",
       protocol: "http1",
       deploy: true,
+      memoryLimit: 512,
+      cpuLimit: 500,
       environmentVariables: {
         CORS_ORIGIN: frontendDomain,
         DATABASE_RUN_MIGRATIONS: "true",
@@ -216,19 +190,18 @@ function deployApi(
         BUCKET_URL: bucketConfig.bucketUrl,
         BUCKET_NAME: bucketConfig.bucketName,
         BUCKET_ACCESS_KEY: bucketConfig.bucketAccessKey,
-        BUCKET_SECRET_KEY: bucketConfig.bucketSecretKey,
+        BUCKET_REGION: bucketConfig.bucketRegion,
       },
       secretEnvironmentVariables: {
-        // TODO: Add back ?sslmode=require. Currently, it gives a "Error: self-signed certificate"
-        // error with node-postgres.
+        BUCKET_SECRET_KEY: bucketConfig.bucketSecretKey,
         DATABASE_URL: pulumi.interpolate`postgresql://${
           db.user
         }:${db.password.apply(encodeURIComponent)}@${db.host}:${db.port}/${
           db.database
-        }`,
+        }`, //?sslmode=require
       },
     },
-    { deletedWith: ns },
+    { deletedWith: ns }
   );
 
   return {

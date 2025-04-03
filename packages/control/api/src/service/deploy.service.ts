@@ -151,7 +151,6 @@ export async function deploy({
   branchRef,
   bundle,
   config,
-  deploymentsRoot = join(process.cwd(), "deployments"),
   bucketName = process.env.BUCKET_NAME || "deployment-bucket",
 }: DeployParams): Promise<DeploymentResult> {
   console.log("Starting deployment...");

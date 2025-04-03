@@ -15,11 +15,6 @@
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
   },
-  "pnpm": {
-    "overrides": {
-      "@origan/cli": "link:packages/cli"
-    }
-  },
   "dependencies": {
     "@origan/cli": "link:packages/cli"
   }

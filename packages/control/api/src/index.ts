@@ -21,7 +21,6 @@ import { deploy } from "./service/deploy.service.js";
 const db = drizzle({ connection: dbUrl, schema: schema });
 
 const api = new Hono()
-  .get("/hello", (c) => c.json({ message: "Hello" }))
   .post("/deploy", async (c) => {
     // Validate request
     const requestResult = deployRequestSchema.safeParse(
