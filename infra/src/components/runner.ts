@@ -36,7 +36,7 @@ export function deployRunner({
 
   // Deploy the runner
   const runnerDeployment = new k8s.apps.v1.Deployment(
-    "runner",
+    rn("k8s-deployment"),
     {
       metadata: {
         name: "runner",
@@ -103,12 +103,12 @@ export function deployRunner({
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [image.image] }
+    { provider: k8sProvider, dependsOn: [image.image] },
   );
 
   // Create a LoadBalancer service for the runner
   const runnerService = new k8s.core.v1.Service(
-    "runner",
+    rn("k8s-service"),
     {
       metadata: {
         name: "runner",
@@ -131,7 +131,7 @@ export function deployRunner({
         },
       },
     },
-    { provider: k8sProvider }
+    { provider: k8sProvider },
   );
 
   return {

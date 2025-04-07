@@ -41,7 +41,7 @@ export function deployControl({
 
   // Deploy the control API
   const controlDeployment = new k8s.apps.v1.Deployment(
-    "control-api",
+    cn("k8s-api-deployment"),
     {
       metadata: {
         name: "control-api",
@@ -133,7 +133,7 @@ export function deployControl({
 
   // Create a LoadBalancer service for the control API
   const controlService = new k8s.core.v1.Service(
-    "control-api",
+    cn("k8s-api-service"),
     {
       metadata: {
         name: "control-api",
@@ -161,7 +161,7 @@ export function deployControl({
 
   // Configure ingress with proper service routing using control service name
   const ingress = new k8s.networking.v1.Ingress(
-    "main-ingress",
+    cn("k8s-api-ingress"),
     {
       metadata: {
         name: "main-ingress",

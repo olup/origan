@@ -11,7 +11,7 @@ export function deployRegistry(): RegistryOutputs {
   // Create the registry namespace
   const namespace = new scaleway.registry.Namespace(gn("registry"), {
     isPublic: false,
-    name: "olup-origan-registry",
+    name: "origan-registry",
   });
 
   // Create IAM application for registry access

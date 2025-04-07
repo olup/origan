@@ -1,8 +1,9 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
 import * as k8s from "@pulumi/kubernetes";
+import { gn } from "../utils";
 
-const config = new pulumi.Config(pulumi.getStack());
+const scalewayConfig = new pulumi.Config("scaleway");
 
 interface DeployKubernetesParams {
   registry: scaleway.registry.Namespace;
@@ -28,19 +29,22 @@ export interface KubernetesOutputs {
   wildcardCert: k8s.apiextensions.CustomResource;
 }
 
+const k = (name: string) => gn(`k8s-${name}`);
+const ks = (name: string) => `g-k8s-${name}`;
+
 export function deployKubernetes(
-  params: DeployKubernetesParams
+  params: DeployKubernetesParams,
 ): KubernetesOutputs {
   // Create a private network for the cluster
   const privateNetwork = new scaleway.network.PrivateNetwork(
-    "cluster-network",
+    k("cluster-network"),
     {
       region: "fr-par",
-    }
+    },
   );
 
   // Create a Kubernetes cluster
-  const cluster = new scaleway.kubernetes.Cluster("test-cluster", {
+  const cluster = new scaleway.kubernetes.Cluster(k("test-cluster"), {
     version: "1.28.15",
     privateNetworkId: privateNetwork.id,
     cni: "cilium",
@@ -51,7 +55,7 @@ export function deployKubernetes(
   });
 
   // Create a small node pool
-  const nodePool = new scaleway.kubernetes.Pool("test-pool", {
+  const nodePool = new scaleway.kubernetes.Pool(k("test-pool"), {
     clusterId: cluster.id,
     nodeType: "DEV1-M", // Small development instance
     size: 1, // Minimum size
@@ -64,13 +68,13 @@ export function deployKubernetes(
   });
 
   // Create a Kubernetes provider using the cluster's kubeconfig
-  const k8sProvider = new k8s.Provider("k8s-provider", {
+  const k8sProvider = new k8s.Provider(k("provider"), {
     kubeconfig: cluster.kubeconfigs[0].configFile,
   });
 
   // Install nginx-ingress controller with minimal configuration
   const nginxIngress = new k8s.helm.v3.Release(
-    "nginx-ingress",
+    ks("nginx-ingress"),
     {
       chart: "ingress-nginx",
       repositoryOpts: {
@@ -90,12 +94,12 @@ export function deployKubernetes(
         },
       },
     },
-    { provider: k8sProvider }
+    { provider: k8sProvider },
   );
 
   // Install cert-manager
   const certManager = new k8s.helm.v3.Release(
-    "cert-manager",
+    k("cert-manager"),
     {
       chart: "cert-manager",
       repositoryOpts: {
@@ -107,12 +111,12 @@ export function deployKubernetes(
         installCRDs: true,
       },
     },
-    { provider: k8sProvider }
+    { provider: k8sProvider },
   );
 
   // Install Scaleway webhook for cert-manager
   const scalewayWebhook = new k8s.helm.v3.Release(
-    "scaleway-certmanager-webhook",
+    k("scaleway-certmanager-webhook"),
     {
       chart: "scaleway-certmanager-webhook",
       repositoryOpts: {
@@ -121,16 +125,16 @@ export function deployKubernetes(
       namespace: "cert-manager",
       values: {
         secret: {
-          accessKey: config.require("scaleway:access_key"), // TODO: Add your Scaleway access key
-          secretKey: config.requireSecret("scaleway:secret_key"), // TODO: Add your Scaleway secret key
+          accessKey: scalewayConfig.require("access_key"),
+          secretKey: scalewayConfig.requireSecret("secret_key"),
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [certManager] }
+    { provider: k8sProvider, dependsOn: [certManager] },
   );
 
   const clusterIssuer = new k8s.apiextensions.CustomResource(
-    "letsencrypt-prod",
+    k("letsencrypt-prod"),
     {
       apiVersion: "cert-manager.io/v1",
       kind: "ClusterIssuer",
@@ -160,12 +164,12 @@ export function deployKubernetes(
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [certManager, scalewayWebhook] }
+    { provider: k8sProvider, dependsOn: [certManager, scalewayWebhook] },
   );
 
   // Create wildcard certificate
   const wildcardCert = new k8s.apiextensions.CustomResource(
-    "wildcard-deploy-origan-dev",
+    k("wildcard-deploy-origan-dev"),
     {
       apiVersion: "cert-manager.io/v1",
       kind: "Certificate",
@@ -183,7 +187,7 @@ export function deployKubernetes(
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [clusterIssuer] }
+    { provider: k8sProvider, dependsOn: [clusterIssuer] },
   );
 
   // Return the cluster details and configuration

@@ -9,7 +9,7 @@ FROM base AS build
 WORKDIR /app
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-RUN pnpm run -r build
+RUN pnpm run --filter=@origan/control-api --filter=@origan/gateway -r build 
 RUN pnpm deploy --filter=@origan/control-api --prod /prod/control-api
 RUN pnpm deploy --filter=@origan/gateway --prod /prod/gateway
 
@@ -27,7 +27,7 @@ EXPOSE 9999
 CMD [ "node", "dist/index.js" ]
 
 FROM ghcr.io/supabase/edge-runtime:v1.67.4 AS runner
-COPY --from=base app/packages/runner /app
+COPY --from=build app/packages/runner /app
 WORKDIR /app
 EXPOSE 9000
 CMD ["start", "--main-service", "/app/functions/supervisor"]

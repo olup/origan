@@ -36,7 +36,7 @@ export function deployGateway({
 
   // Deploy the gateway
   const gatewayDeployment = new k8s.apps.v1.Deployment(
-    "gateway",
+    gan("k8s-deployment"),
     {
       metadata: {
         name: "gateway",
@@ -144,7 +144,7 @@ export function deployGateway({
 
   // Create a LoadBalancer service for the gateway
   const gatewayService = new k8s.core.v1.Service(
-    "gateway",
+    gan("k8s-service"),
     {
       metadata: {
         name: "gateway",

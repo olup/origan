@@ -50,7 +50,7 @@ export function deployBucket(): DeployBucketOutputs {
 
   // Create the deployment bucket
   const deploymentBucket = new scaleway.object.Bucket(gn("deployment-bucket"), {
-    name: "olup-origan-deployment-bucket",
+    name: "origan-deployment-bucket",
   });
 
   // Set bucket to private
