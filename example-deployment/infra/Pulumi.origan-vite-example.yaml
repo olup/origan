@@ -1,5 +1,0 @@
-environment:
-  - origan-vite-example/main
-config:
-  scaleway:project_id: 711711d4-14cf-456d-9e0f-ebf9ea965515
-  scaleway:region: fr-par

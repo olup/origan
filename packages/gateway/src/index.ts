@@ -1,76 +1,33 @@
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { serve } from "@hono/node-server";
-import { Hono } from "hono";
-
-const CONTROL_API_URL = process.env.CONTROL_API_URL || "undefined";
-const ORIGAN_DOMAIN = process.env.ORIGAN_DOMAIN || "undefined";
-const RUNNER_URL = process.env.RUNNER_URL || "undefined";
-
-if (!ORIGAN_DOMAIN) {
-  throw new Error("ORIGAN_DOMAIN environment variable is required");
-}
-
-interface RouteConfig {
-  urlPath: string;
-  functionPath: string;
-}
-
-interface Config {
-  app: string[];
-  api: RouteConfig[];
-  domain_placeholder?: string;
-}
-
-// Initialize S3 client
-const s3Client = new S3Client({
-  endpoint: process.env.BUCKET_URL,
-  region: process.env.BUCKET_REGION || "us-east-1", // Use configured region or default to MinIO's default
-  forcePathStyle: true, // Required for MinIO
-  credentials: {
-    accessKeyId: process.env.BUCKET_ACCESS_KEY || "",
-    secretAccessKey: process.env.BUCKET_SECRET_KEY || "",
-  },
-});
-
-const BUCKET_NAME = process.env.BUCKET_NAME || "deployment-bucket";
-
-const app = new Hono();
-
-// const configCache = new Map<
-//   string,
-//   { config: Config; timestamp: number; deploymentId: string }
-// >();
-// const CONFIG_CACHE_TTL = 60000; // 1 minute cache
+import { createServer, IncomingMessage, ServerResponse } from "node:http";
+import { ORIGAN_DOMAIN } from "./config/env.js";
+import { client } from "./libs/client.js";
+import { Config } from "./types/config.js";
+import { handleHealthCheck } from "./handlers/health.js";
+import { handleAcmeChallenge } from "./handlers/acme.js";
+import { handleApiRoute } from "./handlers/api.js";
+import { handleStaticFile } from "./handlers/static.js";
+import { createHttpsServer } from "./server/https.js";
+import { s3Client } from "./utils/s3.js";
+import { BUCKET_NAME } from "./config/env.js";
 
 async function getConfig(
-  domain: string,
+  domain: string
 ): Promise<{ config: Config; deploymentId: string } | null> {
-  // Return cached config if still valid
-  // const cached = configCache.get(domain);
-  // if (cached && Date.now() - cached.timestamp < CONFIG_CACHE_TTL) {
-  //   return { config: cached.config, deploymentId: cached.deploymentId };
-  // }
-
   try {
-    const response = await fetch(`${CONTROL_API_URL}/api/getConfig`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await client.deployments["get-config"].$post({
+      json: {
+        domain,
       },
-      body: JSON.stringify({ domain }),
     });
 
-    if (!response.ok) {
-      console.error("Failed to fetch config:", await response.text());
+    const data = await response.json();
+
+    if ("error" in data) {
+      console.error("Error fetching config:", data.error);
       return null;
     }
 
-    const { config, deploymentId } = await response.json();
-    // configCache.set(domain, {
-    //   config,
-    //   deploymentId,
-    //   timestamp: Date.now(),
-    // });
+    const { config, deploymentId } = data;
     return { config, deploymentId };
   } catch (error) {
     console.error("Error fetching config:", error);
@@ -78,162 +35,64 @@ async function getConfig(
   }
 }
 
-// Helper to determine content type based on file extension
-function getContentType(filename: string): string {
-  const ext = filename.split(".").pop()?.toLowerCase();
-  const types: { [key: string]: string } = {
-    html: "text/html",
-    css: "text/css",
-    js: "application/javascript",
-    json: "application/json",
-    png: "image/png",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    gif: "image/gif",
-    svg: "image/svg+xml",
-    ico: "image/x-icon",
-  };
+// Create ACME challenge handler
+const acmeHandler = handleAcmeChallenge(s3Client, BUCKET_NAME);
 
-  return types[ext || ""] || "application/octet-stream";
+// Main request handler
+async function handleRequest(req: IncomingMessage, res: ServerResponse) {
+  try {
+    // Health check
+    if (await handleHealthCheck(req, res)) {
+      return;
+    }
+
+    // ACME challenge
+    if (await acmeHandler(req, res)) {
+      return;
+    }
+
+    // Extract domain from request
+    const host = req.headers.host;
+    if (!host) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "No host header found" }));
+    }
+
+    // Remove port if present and replace domain
+    const domain = host.split(":")[0].replace(ORIGAN_DOMAIN, "origan.main");
+
+    console.log("Domain:", domain);
+
+    const result = await getConfig(domain);
+    if (!result) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      return res.end(
+        JSON.stringify({ error: "Failed to get domain configuration" })
+      );
+    }
+
+    console.log("Config:", result);
+
+    const { config, deploymentId } = result;
+    const path = req.url || "/";
+
+    // Handle API routes
+    if (await handleApiRoute(req, res, path, config, deploymentId)) {
+      return;
+    }
+
+    // Handle static files
+    await handleStaticFile(req, res, path, config, deploymentId);
+  } catch (error) {
+    console.error("Error handling request:", error);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Internal server error" }));
+  }
 }
 
-// Health check endpoint
-app.get("/health", (c) => c.json({ status: "ok" }));
+// Start HTTP server
+const httpServer = createServer(handleRequest);
+httpServer.listen(7777, () => console.log("HTTP Server is running on 7777"));
 
-// Main proxy route
-app.all("*", async (c) => {
-  // Extract domain from request
-  const host = c.req.header("host");
-  if (!host) {
-    return c.json({ error: "No host header found" }, 400);
-  }
-
-  // Remove port if present
-  // replace ORIGAN_DOMAIN with origan.main as it is saved with a placeholder in database
-  const domain = host.split(":")[0].replace(ORIGAN_DOMAIN, "origan.main");
-
-  console.log("Domain:", domain);
-
-  const result = await getConfig(domain);
-  if (!result) {
-    return c.json({ error: "Failed to get domain configuration" }, 500);
-  }
-
-  console.log("Config:", result);
-
-  const { config, deploymentId } = result;
-  const path = c.req.path;
-
-  // Check if this is an API route
-  // find in config.routes
-  const route = config.api.find((r) => path === r.urlPath);
-
-  if (route) {
-    console.log("Route found:", route);
-    console.log("Runner API URL:", RUNNER_URL);
-
-    console.log(route);
-
-    try {
-      const response = await fetch(`${RUNNER_URL}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          functionPath: `deployments/${deploymentId}/api/${route.functionPath}`,
-          request: {
-            path: c.req.path,
-            url: c.req.url,
-            method: c.req.method,
-          },
-        }),
-      });
-
-      const data = await response.json();
-      return c.json(data);
-    } catch (error) {
-      console.error("Error calling runner API:", error);
-      return c.json({ error: "Internal server error" }, 500);
-    }
-  }
-
-  // Function to fetch file from S3
-  async function fetchFromS3(key: string) {
-    try {
-      const command = new GetObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: key,
-      });
-
-      const response = await s3Client.send(command);
-      if (!response.Body) {
-        throw new Error("No response body");
-      }
-
-      // Convert Readable to Buffer
-      const chunks: Buffer[] = [];
-      for await (const chunk of response.Body as AsyncIterable<Buffer>) {
-        chunks.push(chunk);
-      }
-      return Buffer.concat(chunks);
-    } catch (error) {
-      console.error("Error fetching file from S3:", error);
-      return null;
-    }
-  }
-
-  // 1. Check if the exact file exists in config
-  const requestedFile = path.slice(1); // Remove leading slash
-  if (config.app.includes(requestedFile)) {
-    const buffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/${requestedFile}`,
-    );
-    if (buffer) {
-      c.header("Content-Type", getContentType(requestedFile));
-      return c.body(buffer);
-    }
-  }
-
-  // 2. Check if <path>/index.html exists
-  const indexPath = path.endsWith("/")
-    ? `${path}index.html`.slice(1)
-    : `${path}/index.html`.slice(1);
-  if (config.app.includes(indexPath)) {
-    const buffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/${indexPath}`,
-    );
-    if (buffer) {
-      c.header("Content-Type", "text/html");
-      return c.body(buffer);
-    }
-  }
-
-  // 3. Check for root index.html
-  if (config.app.includes("index.html")) {
-    const buffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/index.html`,
-    );
-    if (buffer) {
-      c.header("Content-Type", "text/html");
-      return c.body(buffer);
-    }
-  }
-
-  return c.json(
-    {
-      error: "Not found",
-      path,
-      app: config.app,
-    },
-    404,
-  );
-});
-
-const port = process.env.PORT || 7777;
-console.log(`Server is running on port ${port}`);
-
-serve({
-  fetch: app.fetch,
-  port: Number(port),
-});
+// Start HTTPS server with dynamic certificate loading via SNI
+createHttpsServer(handleRequest);

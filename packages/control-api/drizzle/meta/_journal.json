@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1743351466460,
+      "tag": "0000_test_add_counter",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1743437932356,
+      "tag": "0001_fancy_the_hood",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1743601437814,
+      "tag": "0002_jazzy_norman_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1743680295948,
+      "tag": "0003_omniscient_morph",
+      "breakpoints": true
+    }
+  ]
+}

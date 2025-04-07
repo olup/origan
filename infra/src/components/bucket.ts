@@ -38,18 +38,19 @@ export function deployBucket(): DeployBucketOutputs {
           projectIds: [_project.then((_project) => _project.id)],
         },
       ],
-    },
+    }
   );
 
   // Create API key for bucket access
   const bucketApiKey = new scaleway.iam.ApiKey(gn("bucket-api-key"), {
     applicationId: bucketApp.id,
     description: "API key for bucket access",
+    defaultProjectId: _project.then((_project) => _project.id),
   });
 
   // Create the deployment bucket
   const deploymentBucket = new scaleway.object.Bucket(gn("deployment-bucket"), {
-    name: "origan-deployment-bucket",
+    name: "olup-origan-deployment-bucket",
   });
 
   // Set bucket to private
@@ -58,11 +59,11 @@ export function deployBucket(): DeployBucketOutputs {
     {
       bucket: deploymentBucket.name,
       acl: "private",
-    },
+    }
   );
 
   const config: BucketConfig = {
-    bucketUrl: pulumi.interpolate`https://${deploymentBucket.endpoint}`,
+    bucketUrl: pulumi.interpolate`https://s3.${deploymentBucket.region}.scw.cloud`,
     bucketName: deploymentBucket.name,
     bucketAccessKey: bucketApiKey.accessKey,
     bucketSecretKey: bucketApiKey.secretKey,

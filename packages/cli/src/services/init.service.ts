@@ -4,6 +4,7 @@ import { appendFile, readFile, stat, writeFile } from "fs/promises";
 import prompts from "prompts";
 import type { OriganConfig } from "../types.js";
 import { log } from "../utils/logger.js";
+import { createProject, getProjects } from "./project.service.js";
 
 export async function init() {
   const origanConfigPath = join(process.cwd(), "origan.jsonc");
@@ -36,7 +37,103 @@ export async function init() {
     // File doesn't exist, proceed with creation
   }
 
-  const responses = await prompts([
+  // First determine if we're creating a new project or selecting an existing one
+  const { action } = await prompts({
+    type: "select",
+    name: "action",
+    message:
+      "Would you like to create a new project or select an existing one?",
+    choices: [
+      { title: "Create new project", value: "create" },
+      { title: "Select existing project", value: "select" },
+    ],
+  });
+
+  if (!action) {
+    log.info("Operation cancelled");
+    return;
+  }
+
+  let projectRef: string;
+  let projectName: string;
+
+  if (action === "create") {
+    // Create new project flow
+    const { name } = await prompts({
+      type: "text",
+      name: "name",
+      message: "Project name",
+      validate: (value) =>
+        value.length > 0 ? true : "Project name is required",
+    });
+
+    if (!name) {
+      log.info("Operation cancelled");
+      return;
+    }
+
+    projectName = name;
+
+    try {
+      const project = await createProject(projectName);
+      projectRef = project.reference;
+
+      log.success(`Created new project: ${projectName}`);
+    } catch (error) {
+      log.error(
+        `Failed to create project: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return;
+    }
+  } else {
+    // Select existing project flow
+    try {
+      const projects = await getProjects();
+
+      if (projects.length === 0) {
+        log.error(
+          "No existing projects found. Please create a new project instead.",
+        );
+        return;
+      }
+
+      const { selected } = await prompts({
+        type: "select",
+        name: "selected",
+        message: "Select a project",
+        choices: projects.map((p) => ({
+          title: `${p.name} (${p.reference})`,
+          value: p.reference,
+        })),
+      });
+
+      if (!selected) {
+        log.info("Operation cancelled");
+        return;
+      }
+
+      const selectedProject = projects.find((p) => p.reference === selected);
+      if (!selectedProject) {
+        log.error("Selected project not found");
+        return;
+      }
+
+      projectRef = selectedProject.reference;
+      projectName = selectedProject.name;
+    } catch (error) {
+      log.error(
+        `Failed to fetch projects: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return;
+    }
+  }
+
+  // Continue with the rest of the configuration
+  const configResponse = await prompts([
     {
       type: "text",
       name: "appDir",
@@ -48,17 +145,9 @@ export async function init() {
       name: "apiDir",
       message: "API function directory (optional)",
     },
-    {
-      type: "text",
-      name: "projectRef",
-      message: "Project reference",
-      validate: (value) =>
-        value.length > 0 ? true : "Project reference is required",
-    },
   ]);
 
-  // If user cancelled during prompts
-  if (!responses.appDir || !responses.projectRef) {
+  if (!configResponse.appDir) {
     log.info("Operation cancelled");
     return;
   }
@@ -68,13 +157,13 @@ export async function init() {
     version: 1,
 
     // Directory containing the built app files
-    appDir: responses.appDir || "dist",
+    appDir: configResponse.appDir,
 
     // Optional directory containing serverless API functions
-    ...(responses.apiDir ? { apiDir: responses.apiDir } : {}),
+    ...(configResponse.apiDir ? { apiDir: configResponse.apiDir } : {}),
 
     // Reference to the project in the Origan control panel
-    projectRef: responses.projectRef,
+    projectRef,
   };
 
   // Write the configuration with comments
@@ -86,13 +175,13 @@ export async function init() {
   "appDir": "${config.appDir}",
 
 ${
-  responses.apiDir
+  configResponse.apiDir
     ? `  // Directory containing serverless API functions
-  "apiDir": "${responses.apiDir}",
+  "apiDir": "${configResponse.apiDir}",
 
 `
     : ""
-}\  // Reference to the project in the Origan control panel
+}  // Reference to the project in the Origan control panel (${projectName})
   "projectRef": "${config.projectRef}"
 }`;
 

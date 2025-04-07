@@ -1,11 +1,13 @@
-import { deployBucket } from "./components/bucket";
+import * as pulumi from "@pulumi/pulumi";
+import { deployBucket, BucketConfig } from "./components/bucket";
 import { deployControl } from "./components/control";
 import { deployDatabase } from "./components/database";
 import { deployGateway } from "./components/gateway";
 import { deployRegistry } from "./components/registry";
 import { deployRunner } from "./components/runner";
+import { deployKubernetes } from "./components/kubernetes";
 
-export async function deployAll() {
+export function deployAll() {
   // Deploy database
   const db = deployDatabase();
 
@@ -15,27 +17,49 @@ export async function deployAll() {
   // Deploy registry and get credentials
   const registryDeployment = deployRegistry();
 
-  // Deploy runner first since gateway needs its URL
-  const runnerResult = deployRunner(
-    registryDeployment.namespace,
-    registryDeployment.registryApiKey,
-    bucketDeployment.config,
-  );
+  // Deploy Kubernetes cluster first
+  const kubernetes = deployKubernetes({
+    registry: registryDeployment.namespace,
+    controlApiUrl: pulumi.output("https://api.origan.dev"), // Initial value, will be updated by control deployment
+    runnerUrl: pulumi.output("https://runner.origan.dev"), // Initial value, will be updated by runner deployment
+    bucketConfig: bucketDeployment.config,
+  });
 
-  // Deploy control and get its API URL for the gateway
-  const controlResult = deployControl(
-    registryDeployment.namespace,
-    registryDeployment.registryApiKey,
+  // Deploy control API with Kubernetes configuration (including nginx ingress)
+  const controlResult = deployControl({
+    registry: registryDeployment.namespace,
+    registryApiKey: registryDeployment.registryApiKey,
+    k8sProvider: kubernetes.k8sProvider,
     db,
-    bucketDeployment.config,
-  );
+    bucketConfig: bucketDeployment.config,
+    nginxIngress: kubernetes.nginxIngress,
+  });
 
-  // Deploy gateway last since it needs both URLs
-  deployGateway(
-    registryDeployment.namespace,
-    registryDeployment.registryApiKey,
-    controlResult.apiUrl,
-    runnerResult.runnerUrl,
-    bucketDeployment.config,
-  );
+  // Deploy runner with Kubernetes configuration
+  const runnerResult = deployRunner({
+    registry: registryDeployment.namespace,
+    registryApiKey: registryDeployment.registryApiKey,
+    k8sProvider: kubernetes.k8sProvider,
+    bucketConfig: bucketDeployment.config,
+  });
+
+  // Deploy gateway last since it needs both URLs and k8s configuration
+  const gatewayDeployment = deployGateway({
+    registry: registryDeployment.namespace,
+    registryApiKey: registryDeployment.registryApiKey,
+    k8sProvider: kubernetes.k8sProvider,
+    controlApiUrl: controlResult.apiUrl,
+    runnerUrl: runnerResult.runnerUrl,
+    bucketConfig: bucketDeployment.config,
+  });
+
+  // Export outputs
+  return {
+    apiUrl: controlResult.apiUrl,
+    bucketUrl: bucketDeployment.config.bucketUrl,
+    bucketName: bucketDeployment.config.bucketName,
+    bucketRegion: bucketDeployment.config.bucketRegion,
+    bucketAccessKey: bucketDeployment.config.bucketAccessKey,
+    bucketSecretKey: bucketDeployment.config.bucketSecretKey,
+  };
 }

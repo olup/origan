@@ -31,6 +31,9 @@ importers:
       '@pulumi/docker':
         specifier: ^4.6.2
         version: 4.6.2(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)
+      '@pulumi/kubernetes':
+        specifier: ^4.22.1
+        version: 4.22.1(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)
       '@pulumi/pulumi':
         specifier: ^3.113.0
         version: 3.158.0(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)
@@ -57,6 +60,37 @@ importers:
         specifier: ^5.0.0
         version: 5.7.3
 
+  packages/admin-panel:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.69.0
+        version: 5.69.0(react@19.0.0)
+      hono:
+        specifier: ^4.7.5
+        version: 4.7.5
+      react:
+        specifier: ^19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.0.0(react@19.0.0)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.10
+        version: 19.0.12
+      '@types/react-dom':
+        specifier: ^19.0.4
+        version: 19.0.4(@types/react@19.0.12)
+      '@vitejs/plugin-react-swc':
+        specifier: ^3.8.0
+        version: 3.8.1(vite@6.2.3(@types/node@22.13.13)(tsx@4.19.3))
+      typescript:
+        specifier: ~5.7.2
+        version: 5.7.3
+      vite:
+        specifier: ^6.2.0
+        version: 6.2.3(@types/node@22.13.13)(tsx@4.19.3)
+
   packages/cli:
     dependencies:
       '@types/form-data':
@@ -77,12 +111,18 @@ importers:
       form-data:
         specifier: ^4.0.2
         version: 4.0.2
+      formdata-node:
+        specifier: ^6.0.3
+        version: 6.0.3
       glob:
         specifier: ^11.0.1
         version: 11.0.1
       globby:
         specifier: ^14.1.0
         version: 14.1.0
+      hono:
+        specifier: ^4.7.5
+        version: 4.7.5
       picocolors:
         specifier: ^1.1.1
         version: 1.1.1
@@ -109,7 +149,7 @@ importers:
         specifier: ^5.0.0
         version: 5.7.3
 
-  packages/control/api:
+  packages/control-api:
     dependencies:
       '@aws-sdk/client-s3':
         specifier: ^3.777.0
@@ -132,6 +172,9 @@ importers:
       hono:
         specifier: ^4.7.5
         version: 4.7.5
+      nanoid:
+        specifier: ^3.0.0
+        version: 3.3.11
       pg:
         specifier: ^8.14.1
         version: 8.14.1
@@ -163,37 +206,6 @@ importers:
       typescript:
         specifier: ^5.0.0
         version: 5.7.3
-
-  packages/control/frontend:
-    dependencies:
-      '@tanstack/react-query':
-        specifier: ^5.69.0
-        version: 5.69.0(react@19.0.0)
-      hono:
-        specifier: ^4.7.5
-        version: 4.7.5
-      react:
-        specifier: ^19.0.0
-        version: 19.0.0
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.0.0(react@19.0.0)
-    devDependencies:
-      '@types/react':
-        specifier: ^19.0.10
-        version: 19.0.12
-      '@types/react-dom':
-        specifier: ^19.0.4
-        version: 19.0.4(@types/react@19.0.12)
-      '@vitejs/plugin-react-swc':
-        specifier: ^3.8.0
-        version: 3.8.1(vite@6.2.3(@types/node@22.13.13)(tsx@4.19.3))
-      typescript:
-        specifier: ~5.7.2
-        version: 5.7.3
-      vite:
-        specifier: ^6.2.0
-        version: 6.2.3(@types/node@22.13.13)(tsx@4.19.3)
 
   packages/gateway:
     dependencies:
@@ -1226,6 +1238,9 @@ packages:
 
   '@pulumi/docker@4.6.2':
     resolution: {integrity: sha512-dMjkR8xkwmYT4mx8GvhQLY4EdmpN6QSDgADXhWaEo5hFxskWqzZUdi/eYlv5OMJPtm3m8V69Q3UOEQAPZPxbyw==}
+
+  '@pulumi/kubernetes@4.22.1':
+    resolution: {integrity: sha512-1X/x/B1mLEO2b0jSFXVzmo+RxJM9b6QyBrHQqOHIZ+6UaPWWu+D0WfDZ6l6vSKI7ASR0uDQmcXmIs2qjTIa63g==}
 
   '@pulumi/pulumi@3.158.0':
     resolution: {integrity: sha512-KfKw0gKtCd2pEwBvnn/9X22JvXdB42zQ6QRq5vOC8JTbTaJU5FM5/e2zJFtem/JJfJYr7oxS9suZaWrUA+DYig==}
@@ -2303,6 +2318,10 @@ packages:
   form-data@4.0.2:
     resolution: {integrity: sha512-hGfm/slu0ZabnNt4oaRZ6uREyfCj6P4fT/n6A1rGV+Z0VdGXjfOhVUpkn6qVQONHGIFwmveGXyDs75+nr6FM8w==}
     engines: {node: '>= 6'}
+
+  formdata-node@6.0.3:
+    resolution: {integrity: sha512-8e1++BCiTzUno9v5IZ2J6bv4RU+3UKDmqWUQD0MIMVCd9AdhWkO1gw57oo1mNEX1dMq2EGI+FbWz4B92pscSQg==}
+    engines: {node: '>= 18'}
 
   fs-extra@11.3.0:
     resolution: {integrity: sha512-Z4XaCL6dUDHfP/jT25jJKMmtxvuwbkrD1vNSMFlo9lNLY2c5FHYSQgHPRZUjAB26TpDEoW9HCOgplrdbaPV/ew==}
@@ -4623,6 +4642,17 @@ snapshots:
       - ts-node
       - typescript
 
+  '@pulumi/kubernetes@4.22.1(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)':
+    dependencies:
+      '@pulumi/pulumi': 3.158.0(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)
+      glob: 10.4.5
+      shell-quote: 1.8.2
+    transitivePeerDependencies:
+      - bluebird
+      - supports-color
+      - ts-node
+      - typescript
+
   '@pulumi/pulumi@3.158.0(ts-node@10.9.2(@swc/core@1.11.13)(@types/node@18.19.84)(typescript@5.7.3))(typescript@5.7.3)':
     dependencies:
       '@grpc/grpc-js': 1.13.2
@@ -5814,6 +5844,8 @@ snapshots:
       combined-stream: 1.0.8
       es-set-tostringtag: 2.1.0
       mime-types: 2.1.35
+
+  formdata-node@6.0.3: {}
 
   fs-extra@11.3.0:
     dependencies:

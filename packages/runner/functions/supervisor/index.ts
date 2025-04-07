@@ -56,10 +56,16 @@ console.log("main function started");
 startCleanupInterval("functions/workers");
 
 serve(async (req: Request) => {
+  // const get function path on s3 from header
+  const headers = req.headers;
+  const functionPath = headers.get("x-origan-function-path");
+  if (!functionPath) {
+    return new Response("Function path not provided", { status: 400 });
+  }
   const startTime = performance.now();
 
-  const { request, functionPath } = await req.json();
-  console.log("Request received:", request, functionPath);
+  console.log("Request received:", req, functionPath);
+
   // sha1 of path
   const queryHash = await sha1(functionPath);
   const workerPath = `functions/workers/${queryHash}`;
@@ -91,7 +97,7 @@ serve(async (req: Request) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 
@@ -110,12 +116,10 @@ serve(async (req: Request) => {
 
     console.log("Worker created successfully");
 
-    const newReq = new Request(request.url, {
-      method: "GET",
-    });
+    const newReq = new Request(req);
 
-    // @ts-expect-error Deno is not aware of the EdgeRuntime type
-    EdgeRuntime.applySupabaseTag(req, newReq);
+    // We should not need that anymore as we are copying the request
+    // EdgeRuntime.applySupabaseTag(req, newReq);
 
     const response = await worker.fetch(newReq);
 

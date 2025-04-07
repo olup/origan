@@ -1,19 +1,24 @@
 import * as pulumi from "@pulumi/pulumi";
+import * as k8s from "@pulumi/kubernetes";
 import * as scaleway from "@pulumiverse/scaleway";
 import { dockerImageWithTag, gan } from "../utils";
 import { BucketConfig } from "./bucket";
 
-interface DeployGatewayOutputs {
-  gatewayUrl: pulumi.Output<string>;
-}
-
-export function deployGateway(
-  registry: scaleway.registry.Namespace,
-  registryApiKey: scaleway.iam.ApiKey,
-  controlApiUrl: pulumi.Output<string>,
-  runnerUrl: pulumi.Output<string>,
-  bucketConfig: BucketConfig
-): DeployGatewayOutputs {
+export function deployGateway({
+  registry,
+  registryApiKey,
+  k8sProvider,
+  controlApiUrl,
+  runnerUrl,
+  bucketConfig,
+}: {
+  registry: scaleway.registry.Namespace;
+  registryApiKey: scaleway.iam.ApiKey;
+  k8sProvider: k8s.Provider;
+  controlApiUrl: pulumi.Output<string>;
+  runnerUrl: pulumi.Output<string>;
+  bucketConfig: BucketConfig;
+}) {
   const image = dockerImageWithTag(gan("image"), {
     build: {
       context: "../",
@@ -29,42 +34,153 @@ export function deployGateway(
     },
   });
 
-  const ns = new scaleway.containers.Namespace(gan("gateway-ns"), {
-    name: "gateway",
-  });
-
-  const container = new scaleway.containers.Container(
-    gan("gateway-container"),
+  // Deploy the gateway
+  const gatewayDeployment = new k8s.apps.v1.Deployment(
+    "gateway",
     {
-      name: "gateway-container",
-      namespaceId: ns.id,
-      registryImage: image.imageName,
-      port: 7777,
-      minScale: 0,
-      maxScale: 1,
-      privacy: "public",
-      protocol: "http1",
-      deploy: true,
-      memoryLimit: 512,
-      cpuLimit: 500,
-      environmentVariables: {
-        ORIGAN_DOMAIN: "origan.io", // TODO: Make this configurable
-        CONTROL_API_URL: pulumi.interpolate`https://${controlApiUrl}`,
-        RUNNER_URL: pulumi.interpolate`https://${runnerUrl}`,
-
-        BUCKET_URL: bucketConfig.bucketUrl,
-        BUCKET_NAME: bucketConfig.bucketName,
-        BUCKET_ACCESS_KEY: bucketConfig.bucketAccessKey,
-        BUCKET_REGION: bucketConfig.bucketRegion,
+      metadata: {
+        name: "gateway",
+        namespace: "default",
       },
-      secretEnvironmentVariables: {
-        BUCKET_SECRET_KEY: bucketConfig.bucketSecretKey,
+      spec: {
+        replicas: 2,
+        selector: {
+          matchLabels: {
+            app: "gateway",
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: "gateway",
+            },
+          },
+          spec: {
+            containers: [
+              {
+                name: "gateway",
+                image: pulumi.interpolate`${registry.endpoint}/gateway:${image.digestTag}`,
+                ports: [
+                  {
+                    containerPort: 7777,
+                    name: "http",
+                  },
+                  {
+                    containerPort: 7778,
+                    name: "https",
+                  },
+                ],
+                resources: {
+                  requests: {
+                    cpu: "100m",
+                    memory: "128Mi",
+                  },
+                  limits: {
+                    cpu: "200m",
+                    memory: "256Mi",
+                  },
+                },
+                volumeMounts: [
+                  {
+                    name: "tls-cert",
+                    mountPath: "/etc/certs",
+                    readOnly: true,
+                  },
+                ],
+                env: [
+                  {
+                    name: "CONTROL_API_URL",
+                    value: "http://control-api",
+                  },
+                  {
+                    name: "RUNNER_URL",
+                    value: "http://runner",
+                  },
+                  {
+                    name: "BUCKET_URL",
+                    value: bucketConfig.bucketUrl,
+                  },
+                  {
+                    name: "BUCKET_NAME",
+                    value: bucketConfig.bucketName,
+                  },
+                  {
+                    name: "BUCKET_ACCESS_KEY",
+                    value: bucketConfig.bucketAccessKey,
+                  },
+                  {
+                    name: "BUCKET_SECRET_KEY",
+                    value: bucketConfig.bucketSecretKey,
+                  },
+                  {
+                    name: "BUCKET_REGION",
+                    value: bucketConfig.bucketRegion,
+                  },
+                  {
+                    name: "TLS_CERT_FILE",
+                    value: "/etc/certs/tls.crt",
+                  },
+                  {
+                    name: "TLS_KEY_FILE",
+                    value: "/etc/certs/tls.key",
+                  },
+                ],
+              },
+            ],
+            volumes: [
+              {
+                name: "tls-cert",
+                secret: {
+                  secretName: "wildcard-deploy-origan-dev-tls",
+                },
+              },
+            ],
+          },
+        },
       },
     },
-    { deletedWith: ns }
+    { provider: k8sProvider, dependsOn: [image.image] }
+  );
+
+  // Create a LoadBalancer service for the gateway
+  const gatewayService = new k8s.core.v1.Service(
+    "gateway",
+    {
+      metadata: {
+        name: "gateway",
+        namespace: "default",
+        annotations: {
+          "pulumi.com/skipAwait": "true", // Allow the service to be created before pods are ready
+          "service.beta.kubernetes.io/scw-loadbalancer-use-hostname": "true",
+          "service.beta.kubernetes.io/scw-loadbalancer-type": "lb-s", // Use small loadbalancer
+        },
+      },
+      spec: {
+        type: "LoadBalancer",
+        ports: [
+          {
+            port: 80,
+            targetPort: 7777,
+            protocol: "TCP",
+            name: "http",
+          },
+          {
+            port: 443,
+            targetPort: 7778, // Match the HTTPS server port
+            protocol: "TCP",
+            name: "https",
+          },
+        ],
+        selector: {
+          app: "gateway",
+        },
+      },
+    },
+    { provider: k8sProvider }
   );
 
   return {
-    gatewayUrl: container.domainName,
+    image,
+    url: pulumi.output("https://main.g.origan.dev"),
   };
 }

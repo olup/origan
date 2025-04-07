@@ -1,143 +1,29 @@
 import * as pulumi from "@pulumi/pulumi";
+import * as k8s from "@pulumi/kubernetes";
 import * as scaleway from "@pulumiverse/scaleway";
-import { ViteProject } from "./vite-project";
-import path = require("node:path");
 import { cn, dockerImageWithTag } from "../utils";
 import { BucketConfig } from "./bucket";
 import type { DatabaseOutputs } from "./database";
-
-interface DeployFrontendOutputs {
-  bucket: scaleway.object.Bucket;
-  bucketWebsite: scaleway.object.BucketWebsiteConfiguration;
-}
-
-interface DeployApiOutputs {
-  apiUrl: pulumi.Output<string>;
-}
 
 export interface DeployControlOutputs {
   apiUrl: pulumi.Output<string>;
 }
 
-export function deployControl(
-  registry: scaleway.registry.Namespace,
-  registryApiKey: scaleway.iam.ApiKey,
-  db: DatabaseOutputs,
-  bucketConfig: BucketConfig
-): DeployControlOutputs {
-  const frontend = configureFrontendDeploy();
-  const controlApiUrl = deployApi(
-    registry,
-    registryApiKey,
-    pulumi.interpolate`https://${frontend.bucketWebsite.websiteEndpoint}`,
-    db,
-    bucketConfig
-  ).apiUrl;
-
-  const viteProject = new ViteProject(cn("frontend-vite-project"), {
-    folderPath: path.join(
-      __dirname,
-      "..",
-      "..",
-      "..",
-      "packages",
-      "control",
-      "frontend"
-    ),
-    buildEnv: controlApiUrl.apply((url) => {
-      return {
-        VITE_API_URL: `https://${url}`,
-      };
-    }),
-  });
-  viteProject.deploy(frontend.bucket);
-
-  const deploymentBucket = new scaleway.object.Bucket(cn("deployment-bucket"), {
-    name: "deployment-bucket",
-  });
-  const deploymentBucketAcl = new scaleway.object.BucketAcl(
-    cn("deployment-bucket"),
-    {
-      bucket: deploymentBucket.name,
-      acl: "private",
-    }
-  );
-
-  return {
-    apiUrl: controlApiUrl,
-  };
-}
-
-function configureFrontendDeploy(): DeployFrontendOutputs {
-  const bucket = new scaleway.object.Bucket(cn("frontend-bucket"), {
-    name: "origan-control-frontend",
-  });
-
-  const bucketAcl = new scaleway.object.BucketAcl(cn("frontend-bucket-acl"), {
-    bucket: bucket.name,
-    acl: "public-read",
-  });
-
-  const bucketWebsiteConfig = new scaleway.object.BucketWebsiteConfiguration(
-    cn("frontend-website"),
-    {
-      bucket: bucket.name,
-      region: "fr-par",
-      indexDocument: {
-        suffix: "index.html",
-      },
-      errorDocument: {
-        key: "index.html",
-      },
-    }
-  );
-
-  // TODO make this declaration liked to actual objects rather than hardcoded
-  new scaleway.object.BucketPolicy(cn("frontend-bucket-policy"), {
-    bucket: bucket.name,
-    policy: JSON.stringify({
-      Version: "2023-04-17",
-      Id: "MyBucketPolicy",
-      Statement: [
-        {
-          Sid: "Allow owner",
-          Effect: "Allow",
-          Principal: {
-            SCW: [
-              // Loup
-              "user_id:c40b6172-1529-4f74-b986-96e3e60b2e72",
-              // Jocelyn
-              "user_id:e857b7ce-0b4a-4160-9538-4930bc482cc8",
-            ],
-          },
-          Action: "*",
-          Resource: ["origan-control-frontend", "origan-control-frontend/*"],
-        },
-        {
-          Sid: "Delegate access",
-          Effect: "Allow",
-          Principal: "*",
-          Action: "s3:GetObject",
-          Resource: ["origan-control-frontend/*"],
-        },
-      ],
-    }),
-  });
-
-  return {
-    bucket: bucket,
-    bucketWebsite: bucketWebsiteConfig,
-  };
-}
-
-function deployApi(
-  registry: scaleway.registry.Namespace,
-  registryApiKey: scaleway.iam.ApiKey,
-  frontendDomain: pulumi.Output<string>,
-  db: DatabaseOutputs,
-  bucketConfig: BucketConfig
-): DeployApiOutputs {
-  // Mandatory second image to push the existing one.
+export function deployControl({
+  registry,
+  registryApiKey,
+  k8sProvider,
+  db,
+  bucketConfig,
+  nginxIngress,
+}: {
+  registry: scaleway.registry.Namespace;
+  registryApiKey: scaleway.iam.ApiKey;
+  k8sProvider: k8s.Provider;
+  db: DatabaseOutputs;
+  bucketConfig: BucketConfig;
+  nginxIngress: k8s.helm.v3.Release;
+}): DeployControlOutputs {
   const image = dockerImageWithTag(cn("image"), {
     build: {
       context: "../",
@@ -153,58 +39,171 @@ function deployApi(
     },
   });
 
-  const ns = new scaleway.containers.Namespace(cn("ns"), {
-    name: "control",
-  });
-
-  const container = new scaleway.containers.Container(
-    cn("container"),
+  // Deploy the control API
+  const controlDeployment = new k8s.apps.v1.Deployment(
+    "control-api",
     {
-      name: "control-container",
-      namespaceId: ns.id,
-      registryImage: image.imageName,
-      port: 9999,
-      healthChecks: [
-        {
-          https: [{ path: "/.healthz" }],
-          failureThreshold: 3,
-          interval: "5s",
-        },
-      ],
-      minScale: 0,
-      maxScale: 1,
-      privacy: "public",
-      protocol: "http1",
-      deploy: true,
-      memoryLimit: 512,
-      cpuLimit: 500,
-      environmentVariables: {
-        CORS_ORIGIN: frontendDomain,
-        DATABASE_RUN_MIGRATIONS: "true",
-        DATABASE_URL: pulumi.interpolate`postgresql://${
-          db.user
-        }:${db.password.apply(encodeURIComponent)}@${db.host}:${db.port}/${
-          db.database
-        }`,
-
-        BUCKET_URL: bucketConfig.bucketUrl,
-        BUCKET_NAME: bucketConfig.bucketName,
-        BUCKET_ACCESS_KEY: bucketConfig.bucketAccessKey,
-        BUCKET_REGION: bucketConfig.bucketRegion,
+      metadata: {
+        name: "control-api",
+        namespace: "default",
       },
-      secretEnvironmentVariables: {
-        BUCKET_SECRET_KEY: bucketConfig.bucketSecretKey,
-        DATABASE_URL: pulumi.interpolate`postgresql://${
-          db.user
-        }:${db.password.apply(encodeURIComponent)}@${db.host}:${db.port}/${
-          db.database
-        }`, //?sslmode=require
+      spec: {
+        replicas: 2,
+        selector: {
+          matchLabels: {
+            app: "control-api",
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: "control-api",
+            },
+          },
+          spec: {
+            containers: [
+              {
+                name: "control",
+                image: pulumi.interpolate`${registry.endpoint}/control-api:${image.digestTag}`,
+                ports: [
+                  {
+                    containerPort: 9999,
+                  },
+                ],
+                resources: {
+                  requests: {
+                    cpu: "100m",
+                    memory: "128Mi",
+                  },
+                  limits: {
+                    cpu: "200m",
+                    memory: "256Mi",
+                  },
+                },
+                env: [
+                  {
+                    name: "DATABASE_RUN_MIGRATIONS",
+                    value: "true",
+                  },
+                  {
+                    name: "DATABASE_URL",
+                    value: pulumi.interpolate`postgresql://${
+                      db.user
+                    }:${db.password.apply(encodeURIComponent)}@${db.host}:${
+                      db.port
+                    }/${db.database}`,
+                  },
+                  {
+                    name: "BUCKET_URL",
+                    value: bucketConfig.bucketUrl,
+                  },
+                  {
+                    name: "BUCKET_NAME",
+                    value: bucketConfig.bucketName,
+                  },
+                  {
+                    name: "BUCKET_ACCESS_KEY",
+                    value: bucketConfig.bucketAccessKey,
+                  },
+                  {
+                    name: "BUCKET_REGION",
+                    value: bucketConfig.bucketRegion,
+                  },
+                  {
+                    name: "BUCKET_SECRET_KEY",
+                    value: bucketConfig.bucketSecretKey,
+                  },
+                ],
+                // livenessProbe: {
+                //   httpGet: {
+                //     path: "/.healthz",
+                //     port: 9999,
+                //   },
+                //   initialDelaySeconds: 15,
+                //   periodSeconds: 20,
+                // },
+              },
+            ],
+          },
+        },
       },
     },
-    { deletedWith: ns }
+    { provider: k8sProvider, dependsOn: [image.image] }
+  );
+
+  // Create a LoadBalancer service for the control API
+  const controlService = new k8s.core.v1.Service(
+    "control-api",
+    {
+      metadata: {
+        name: "control-api",
+        namespace: "default",
+        annotations: {
+          "pulumi.com/skipAwait": "true",
+        },
+      },
+      spec: {
+        type: "ClusterIP",
+        ports: [
+          {
+            port: 80,
+            targetPort: 9999,
+            protocol: "TCP",
+          },
+        ],
+        selector: {
+          app: "control-api",
+        },
+      },
+    },
+    { provider: k8sProvider }
+  );
+
+  // Configure ingress with proper service routing using control service name
+  const ingress = new k8s.networking.v1.Ingress(
+    "main-ingress",
+    {
+      metadata: {
+        name: "main-ingress",
+        annotations: {
+          "cert-manager.io/cluster-issuer": "letsencrypt-prod",
+          "nginx.ingress.kubernetes.io/ssl-redirect": "false",
+          "nginx.ingress.kubernetes.io/force-ssl-redirect": "false",
+        },
+      },
+      spec: {
+        ingressClassName: "nginx",
+        tls: [
+          {
+            hosts: ["api.origan.dev"],
+            secretName: "api-origan-tls", // cert-manager will create this
+          },
+        ],
+        rules: [
+          {
+            host: "api.origan.dev",
+            http: {
+              paths: [
+                {
+                  path: "/",
+                  pathType: "Prefix",
+                  backend: {
+                    service: {
+                      name: controlService.metadata.name,
+                      port: { number: 80 },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    { provider: k8sProvider, dependsOn: [nginxIngress, controlService] }
   );
 
   return {
-    apiUrl: container.domainName,
+    apiUrl: pulumi.output("https://api.origan.dev"),
   };
 }
