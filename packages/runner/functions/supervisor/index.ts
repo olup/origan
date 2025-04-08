@@ -60,6 +60,7 @@ serve(async (req: Request) => {
   const headers = req.headers;
   const functionPath = headers.get("x-origan-function-path");
   if (!functionPath) {
+    console.error("Function path not provided in headers");
     return new Response("Function path not provided", { status: 400 });
   }
   const startTime = performance.now();
@@ -97,7 +98,7 @@ serve(async (req: Request) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 
@@ -119,7 +120,7 @@ serve(async (req: Request) => {
     const newReq = new Request(req);
 
     // We should not need that anymore as we are copying the request
-    // EdgeRuntime.applySupabaseTag(req, newReq);
+    EdgeRuntime.applySupabaseTag(req, newReq);
 
     const response = await worker.fetch(newReq);
 

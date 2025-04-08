@@ -116,7 +116,7 @@ export function deployControl({
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [image.image] },
+    { provider: k8sProvider, dependsOn: [image.image] }
   );
 
   // Create a LoadBalancer service for the control API
@@ -144,7 +144,7 @@ export function deployControl({
         },
       },
     },
-    { provider: k8sProvider },
+    { provider: k8sProvider }
   );
 
   // Configure ingress with proper service routing using control service name
@@ -157,6 +157,7 @@ export function deployControl({
           "cert-manager.io/cluster-issuer": "letsencrypt-prod",
           "nginx.ingress.kubernetes.io/ssl-redirect": "false",
           "nginx.ingress.kubernetes.io/force-ssl-redirect": "false",
+          "nginx.ingress.kubernetes.io/proxy-body-size": "100m",
         },
       },
       spec: {
@@ -188,7 +189,7 @@ export function deployControl({
         ],
       },
     },
-    { provider: k8sProvider, dependsOn: [nginxIngress, controlService] },
+    { provider: k8sProvider, dependsOn: [nginxIngress, controlService] }
   );
 
   return {

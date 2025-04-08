@@ -8,97 +8,46 @@ export async function handleStaticFile(
   res: ServerResponse,
   path: string,
   config: Config,
-  deploymentId: string,
+  deploymentId: string
 ) {
-  // Static file handling
   const requestedFile = path.slice(1); // Remove leading slash
 
-  // 1. Check if the exact file exists in config
-  if (config.app.includes(requestedFile)) {
-    const buffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/${requestedFile}`,
-    );
-    if (buffer) {
-      const contentType = getContentType(requestedFile);
-      const acceptEncoding = req.headers["accept-encoding"] || "";
-      const shouldGzip =
-        acceptEncoding.includes("gzip") &&
-        /^(text\/|application\/(javascript|json))/i.test(contentType);
+  const served = await tryServeFile(
+    req,
+    res,
+    requestedFile,
+    undefined,
+    config,
+    deploymentId
+  );
 
-      if (shouldGzip) {
-        const gzipped = createGzip();
-        res.writeHead(200, {
-          "Content-Type": contentType,
-          "Content-Encoding": "gzip",
-        });
-        gzipped.pipe(res);
-        gzipped.end(buffer);
-      } else {
-        res.writeHead(200, { "Content-Type": contentType });
-        res.end(buffer);
-      }
-      return true;
-    }
-  }
+  if (served) return true;
 
-  // 2. Check if <path>/index.html exists
   const indexPath = path.endsWith("/")
     ? `${path}index.html`.slice(1)
     : `${path}/index.html`.slice(1);
-  if (config.app.includes(indexPath)) {
-    const buffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/${indexPath}`,
-    );
-    if (buffer) {
-      const contentType = "text/html";
-      const acceptEncoding = req.headers["accept-encoding"] || "";
-      const shouldGzip =
-        acceptEncoding.includes("gzip") &&
-        /^(text\/|application\/(javascript|json))/i.test(contentType);
 
-      if (shouldGzip) {
-        const gzipped = createGzip();
-        res.writeHead(200, {
-          "Content-Type": contentType,
-          "Content-Encoding": "gzip",
-        });
-        gzipped.pipe(res);
-        gzipped.end(buffer);
-      } else {
-        res.writeHead(200, { "Content-Type": contentType });
-        res.end(buffer);
-      }
-      return true;
-    }
-  }
+  const servedIndex = await tryServeFile(
+    req,
+    res,
+    indexPath,
+    "text/html",
+    config,
+    deploymentId
+  );
 
-  // 3. Check for root index.html
-  if (config.app.includes("index.html")) {
-    const buffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/index.html`,
-    );
-    if (buffer) {
-      const contentType = "text/html";
-      const acceptEncoding = req.headers["accept-encoding"] || "";
-      const shouldGzip =
-        acceptEncoding.includes("gzip") &&
-        /^(text\/|application\/(javascript|json))/i.test(contentType);
+  if (servedIndex) return true;
 
-      if (shouldGzip) {
-        const gzipped = createGzip();
-        res.writeHead(200, {
-          "Content-Type": contentType,
-          "Content-Encoding": "gzip",
-        });
-        gzipped.pipe(res);
-        gzipped.end(buffer);
-      } else {
-        res.writeHead(200, { "Content-Type": contentType });
-        res.end(buffer);
-      }
-      return true;
-    }
-  }
+  const servedRoot = await tryServeFile(
+    req,
+    res,
+    "index.html",
+    "text/html",
+    config,
+    deploymentId
+  );
+
+  if (servedRoot) return true;
 
   // Not found
   res.writeHead(404, { "Content-Type": "application/json" });
@@ -107,7 +56,50 @@ export async function handleStaticFile(
       error: "Not found",
       path,
       app: config.app,
-    }),
+    })
   );
+  return true;
+}
+
+async function tryServeFile(
+  req: IncomingMessage,
+  res: ServerResponse,
+  filePath: string,
+  contentTypeOverride: string | undefined,
+  config: Config,
+  deploymentId: string
+): Promise<boolean> {
+  if (!config.app.includes(filePath)) {
+    return false;
+  }
+
+  const buffer = await fetchFromS3(
+    `deployments/${deploymentId}/app/${filePath}`
+  );
+
+  if (!buffer) {
+    return false;
+  }
+
+  const contentType = contentTypeOverride ?? getContentType(filePath);
+
+  const acceptEncoding = req.headers["accept-encoding"] || "";
+  const shouldGzip =
+    acceptEncoding.includes("gzip") &&
+    /^(text\/|application\/(javascript|json))/i.test(contentType);
+
+  if (shouldGzip) {
+    const gzipped = createGzip();
+    res.writeHead(200, {
+      "Content-Type": contentType,
+      "Content-Encoding": "gzip",
+    });
+    gzipped.pipe(res);
+    gzipped.end(buffer);
+  } else {
+    res.writeHead(200, { "Content-Type": contentType });
+    res.end(buffer);
+  }
+
   return true;
 }

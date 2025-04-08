@@ -8,7 +8,7 @@ export async function handleApiRoute(
   res: ServerResponse,
   path: string,
   config: Config,
-  deploymentId: string,
+  deploymentId: string
 ) {
   const route = config.api.find((r) => path === r.urlPath);
 
@@ -29,8 +29,8 @@ export async function handleApiRoute(
     }
 
     headers.set(
-      "x-origan-funtion-path",
-      `deployments/${deploymentId}/api/${route.functionPath}`,
+      "x-origan-function-path",
+      `deployments/${deploymentId}/api/${route.functionPath}`
     );
 
     // Get request body if needed
@@ -54,6 +54,9 @@ export async function handleApiRoute(
     for (const [key, value] of response.headers.entries()) {
       res.setHeader(key, value);
     }
+
+    res.removeHeader("Content-Encoding");
+    res.removeHeader("Content-Length");
 
     res.writeHead(response.status);
     res.end(Buffer.from(await response.arrayBuffer()));

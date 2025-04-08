@@ -10,7 +10,7 @@ import { Config } from "./types/config.js";
 import { s3Client } from "./utils/s3.js";
 
 async function getConfig(
-  domain: string,
+  domain: string
 ): Promise<{ config: Config; deploymentId: string } | null> {
   try {
     const response = await client.deployments["get-config"].$post({
@@ -68,11 +68,9 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     if (!result) {
       res.writeHead(500, { "Content-Type": "application/json" });
       return res.end(
-        JSON.stringify({ error: "Failed to get domain configuration" }),
+        JSON.stringify({ error: "Failed to get domain configuration" })
       );
     }
-
-    console.log("Config:", result);
 
     const { config, deploymentId } = result;
     const path = req.url || "/";
