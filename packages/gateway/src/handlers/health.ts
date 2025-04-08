@@ -2,7 +2,7 @@ import { IncomingMessage, ServerResponse } from "node:http";
 
 export async function handleHealthCheck(
   req: IncomingMessage,
-  res: ServerResponse
+  res: ServerResponse,
 ) {
   if (req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });

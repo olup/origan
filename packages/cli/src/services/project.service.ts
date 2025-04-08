@@ -8,7 +8,7 @@ export async function getProjects() {
   const data = await response.json();
   if ("error" in data) {
     throw new Error(
-      `Failed to fetch projects: ${(data as { error: string }).error}`
+      `Failed to fetch projects: ${(data as { error: string }).error}`,
     );
   }
   return data;
@@ -19,15 +19,16 @@ export async function getProjects() {
  */
 export async function createProject(name: string) {
   const response = await client.projects.$post({
-    body: {
+    json: {
       name,
     },
   });
+
   const data = await response.json();
 
   if ("error" in data) {
     throw new Error(
-      `Failed to create project: ${(data as { error: string }).error}`
+      `Failed to create project: ${(data as { error: string }).error}`,
     );
   }
 

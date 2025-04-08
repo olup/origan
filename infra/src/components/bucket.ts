@@ -38,7 +38,7 @@ export function deployBucket(): DeployBucketOutputs {
           projectIds: [_project.then((_project) => _project.id)],
         },
       ],
-    }
+    },
   );
 
   // Create API key for bucket access
@@ -59,7 +59,7 @@ export function deployBucket(): DeployBucketOutputs {
     {
       bucket: deploymentBucket.name,
       acl: "private",
-    }
+    },
   );
 
   const config: BucketConfig = {

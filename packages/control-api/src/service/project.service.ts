@@ -3,7 +3,7 @@ import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
 
 export async function createProject(
-  data: typeof schema.projectSchema.$inferInsert
+  data: typeof schema.projectSchema.$inferInsert,
 ) {
   const [project] = await db
     .insert(schema.projectSchema)
@@ -39,7 +39,7 @@ export async function getProjects() {
 
 export async function updateProject(
   id: string,
-  data: Partial<typeof schema.projectSchema.$inferInsert>
+  data: Partial<typeof schema.projectSchema.$inferInsert>,
 ) {
   const [project] = await db
     .update(schema.projectSchema)

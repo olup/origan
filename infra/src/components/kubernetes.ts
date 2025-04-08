@@ -1,40 +1,15 @@
+import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
-import * as k8s from "@pulumi/kubernetes";
+import { accessKey } from "@pulumiverse/scaleway/config";
 import { gn } from "../utils";
 
 const scalewayConfig = new pulumi.Config("scaleway");
 
-interface DeployKubernetesParams {
-  registry: scaleway.registry.Namespace;
-  controlApiUrl: pulumi.Output<string>;
-  runnerUrl: pulumi.Output<string>;
-  bucketConfig: {
-    bucketUrl: pulumi.Output<string>;
-    bucketName: pulumi.Output<string>;
-    bucketAccessKey: pulumi.Output<string>;
-    bucketRegion: pulumi.Output<string>;
-    bucketSecretKey: pulumi.Output<string>;
-  };
-}
-
-export interface KubernetesOutputs {
-  kubeconfig: pulumi.Output<string>;
-  clusterId: pulumi.Output<string>;
-  status: pulumi.Output<string>;
-  k8sProvider: k8s.Provider;
-  nginxIngress: k8s.helm.v3.Release;
-  certManager: k8s.helm.v3.Release;
-  scalewayWebhook: k8s.helm.v3.Release;
-  wildcardCert: k8s.apiextensions.CustomResource;
-}
-
 const k = (name: string) => gn(`k8s-${name}`);
 const ks = (name: string) => `g-k8s-${name}`;
 
-export function deployKubernetes(
-  params: DeployKubernetesParams,
-): KubernetesOutputs {
+export function deployKubernetes() {
   // Create a private network for the cluster
   const privateNetwork = new scaleway.network.PrivateNetwork(
     k("cluster-network"),
@@ -133,6 +108,51 @@ export function deployKubernetes(
     { provider: k8sProvider, dependsOn: [certManager] },
   );
 
+  // Add ClusterRole for Scaleway ACME resources
+  const scalewayAcmeRole = new k8s.rbac.v1.ClusterRole(
+    k("scaleway-acme-role"),
+    {
+      metadata: {
+        name: "scaleway-acme-solver",
+      },
+      rules: [
+        {
+          apiGroups: ["acme.scaleway.com"],
+          resources: ["scaleway"],
+          verbs: ["create", "get", "list", "watch", "update", "delete"],
+        },
+      ],
+    },
+    { provider: k8sProvider },
+  );
+
+  // Add ClusterRoleBinding to bind the role to cert-manager's ServiceAccount
+  const scalewayAcmeRoleBinding = new k8s.rbac.v1.ClusterRoleBinding(
+    k("scaleway-acme-binding"),
+    {
+      metadata: {
+        name: "scaleway-acme-solver",
+      },
+      roleRef: {
+        apiGroup: "rbac.authorization.k8s.io",
+        kind: "ClusterRole",
+        name: "scaleway-acme-solver",
+      },
+      subjects: [
+        {
+          kind: "ServiceAccount",
+          name: "global-k8s-cert-manager-prod-0b046ffd",
+          namespace: "cert-manager",
+        },
+      ],
+    },
+    { provider: k8sProvider, dependsOn: [scalewayAcmeRole] },
+  );
+
+  const _project = scaleway.account.getProject({
+    name: "origan",
+  });
+
   const clusterIssuer = new k8s.apiextensions.CustomResource(
     k("letsencrypt-prod"),
     {
@@ -152,10 +172,10 @@ export function deployKubernetes(
             {
               dns01: {
                 webhook: {
-                  groupName: "dns.scaleway.com",
+                  groupName: "acme.scaleway.com",
                   solverName: "scaleway",
                   config: {
-                    projectId: "", // TODO: Add your Scaleway project ID
+                    projectId: _project.then((_project) => _project.id),
                   },
                 },
               },
@@ -164,7 +184,15 @@ export function deployKubernetes(
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [certManager, scalewayWebhook] },
+    {
+      provider: k8sProvider,
+      dependsOn: [
+        certManager,
+        scalewayWebhook,
+        scalewayAcmeRole,
+        scalewayAcmeRoleBinding,
+      ],
+    },
   );
 
   // Create wildcard certificate

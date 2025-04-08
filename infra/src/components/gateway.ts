@@ -1,5 +1,5 @@
-import * as pulumi from "@pulumi/pulumi";
 import * as k8s from "@pulumi/kubernetes";
+import * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
 import { dockerImageWithTag, gan } from "../utils";
 import { BucketConfig } from "./bucket";
@@ -89,6 +89,10 @@ export function deployGateway({
                 ],
                 env: [
                   {
+                    name: "ORIGAN_DOMAIN",
+                    value: "deploy.origan.dev",
+                  },
+                  {
                     name: "CONTROL_API_URL",
                     value: "http://control-api",
                   },
@@ -117,6 +121,10 @@ export function deployGateway({
                     value: bucketConfig.bucketRegion,
                   },
                   {
+                    name: "HAS_TLS_SERVER",
+                    value: "true",
+                  },
+                  {
                     name: "TLS_CERT_FILE",
                     value: "/etc/certs/tls.crt",
                   },
@@ -139,7 +147,7 @@ export function deployGateway({
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [image.image] }
+    { provider: k8sProvider, dependsOn: [image.image] },
   );
 
   // Create a LoadBalancer service for the gateway
@@ -176,11 +184,22 @@ export function deployGateway({
         },
       },
     },
-    { provider: k8sProvider }
+    { provider: k8sProvider },
   );
+
+  // Create a DNS record for *.deploy.origan.dev
+  // const deployDnsRecord = new scaleway.domain.Record(gan("deploy-dns"), {
+  //   dnsZone: "origan.dev",
+  //   type: "A",
+  //   name: "*.deploy",
+  //   data: gatewayService.status.loadBalancer.ingress.apply(
+  //     (ingress) => ingress[0].ip
+  //   ),
+  //   ttl: 300,
+  // });
 
   return {
     image,
-    url: pulumi.output("https://main.g.origan.dev"),
+    gatewayService,
   };
 }

@@ -1,20 +1,15 @@
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import {
-  BUCKET_ACCESS_KEY,
-  BUCKET_NAME,
-  BUCKET_REGION,
-  BUCKET_SECRET_KEY,
-  BUCKET_URL,
-} from "../config/env.js";
+import { env } from "process";
+import { envConfig } from "../config/index.js";
 
 // Initialize S3 client
 export const s3Client = new S3Client({
-  endpoint: BUCKET_URL,
-  region: BUCKET_REGION,
-  forcePathStyle: true,
+  endpoint: envConfig.bucketUrl,
+  region: envConfig.bucketRegion || "us-east-1", // Use configured region or default to MinIO's default
+  forcePathStyle: envConfig.bucketUrl?.includes("minio") || false, // Required for MinIO
   credentials: {
-    accessKeyId: BUCKET_ACCESS_KEY || "",
-    secretAccessKey: BUCKET_SECRET_KEY || "",
+    accessKeyId: envConfig.bucketAccessKey || "",
+    secretAccessKey: envConfig.bucketSecretKey || "",
   },
 });
 
@@ -22,7 +17,7 @@ export const s3Client = new S3Client({
 export async function fetchFromS3(key: string) {
   try {
     const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: envConfig.bucketName,
       Key: key,
     });
 

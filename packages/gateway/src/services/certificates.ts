@@ -1,10 +1,11 @@
 import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
+import { envConfig } from "../config/index.js";
 
 export interface CertificateData {
   privateKey: string;
@@ -12,30 +13,30 @@ export interface CertificateData {
   chain?: string;
 }
 
-export const loadMainCertificateFromFiles = async (
-  certFile: string = process.env.TLS_CERT_FILE || "/etc/certs/tls.crt",
-  keyFile: string = process.env.TLS_KEY_FILE || "/etc/certs/tls.key"
-): Promise<CertificateData | null> => {
-  try {
-    const [certificate, privateKey] = await Promise.all([
-      fs.readFile(certFile, "utf-8"),
-      fs.readFile(keyFile, "utf-8"),
-    ]);
+export const loadMainCertificateFromFiles =
+  async (): Promise<CertificateData | null> => {
+    try {
+      const [certificate, privateKey] = await Promise.all([
+        fs.readFile(envConfig.tlsCertFile, "utf-8"),
+        fs.readFile(envConfig.tlsKeyFile, "utf-8"),
+      ]);
 
-    // The certificate file from cert-manager includes the chain
-    // We need to split it to get the certificate and chain separately
-    const certParts = certificate.split(/(?=-----BEGIN CERTIFICATE-----)/);
+      console.log("Loaded main certificate and private key from files");
 
-    return {
-      certificate: certParts[0],
-      privateKey,
-      chain: certParts.slice(1).join(""), // Join remaining parts as chain
-    };
-  } catch (error) {
-    console.error("Failed to load main certificate from files:", error);
-    return null;
-  }
-};
+      // The certificate file from cert-manager includes the chain
+      // We need to split it to get the certificate and chain separately
+      const certParts = certificate.split(/(?=-----BEGIN CERTIFICATE-----)/);
+
+      return {
+        certificate: certParts[0],
+        privateKey,
+        chain: certParts.slice(1).join(""), // Join remaining parts as chain
+      };
+    } catch (error) {
+      console.error("Failed to load main certificate from files:", error);
+      return null;
+    }
+  };
 
 const getKeyPrefix = (domain: string): string => `certificates/${domain}`;
 
@@ -43,7 +44,7 @@ export const storeCertificate = async (
   s3Client: S3Client,
   bucketName: string,
   domain: string,
-  data: CertificateData
+  data: CertificateData,
 ): Promise<void> => {
   const keyPrefix = getKeyPrefix(domain);
 
@@ -54,7 +55,7 @@ export const storeCertificate = async (
       Key: `${keyPrefix}/private-key.pem`,
       Body: data.privateKey,
       ContentType: "application/x-pem-file",
-    })
+    }),
   );
 
   // Store certificate
@@ -64,7 +65,7 @@ export const storeCertificate = async (
       Key: `${keyPrefix}/certificate.pem`,
       Body: data.certificate,
       ContentType: "application/x-pem-file",
-    })
+    }),
   );
 
   // Store chain if provided
@@ -75,7 +76,7 @@ export const storeCertificate = async (
         Key: `${keyPrefix}/chain.pem`,
         Body: data.chain,
         ContentType: "application/x-pem-file",
-      })
+      }),
     );
   }
 };
@@ -83,7 +84,7 @@ export const storeCertificate = async (
 export const getCertificate = async (
   s3Client: S3Client,
   bucketName: string,
-  domain: string
+  domain: string,
 ): Promise<CertificateData | null> => {
   const keyPrefix = getKeyPrefix(domain);
 
@@ -93,7 +94,7 @@ export const getCertificate = async (
       new GetObjectCommand({
         Bucket: bucketName,
         Key: `${keyPrefix}/private-key.pem`,
-      })
+      }),
     );
     const privateKey =
       (await privateKeyResponse.Body?.transformToString()) || "";
@@ -103,7 +104,7 @@ export const getCertificate = async (
       new GetObjectCommand({
         Bucket: bucketName,
         Key: `${keyPrefix}/certificate.pem`,
-      })
+      }),
     );
     const certificate =
       (await certificateResponse.Body?.transformToString()) || "";
@@ -115,7 +116,7 @@ export const getCertificate = async (
         new GetObjectCommand({
           Bucket: bucketName,
           Key: `${keyPrefix}/chain.pem`,
-        })
+        }),
       );
       chain = await chainResponse.Body?.transformToString();
     } catch (error) {
@@ -139,7 +140,7 @@ export const getCertificate = async (
 export const deleteCertificate = async (
   s3Client: S3Client,
   bucketName: string,
-  domain: string
+  domain: string,
 ): Promise<void> => {
   const keyPrefix = getKeyPrefix(domain);
 
@@ -149,20 +150,20 @@ export const deleteCertificate = async (
       new DeleteObjectCommand({
         Bucket: bucketName,
         Key: `${keyPrefix}/private-key.pem`,
-      })
+      }),
     ),
     s3Client.send(
       new DeleteObjectCommand({
         Bucket: bucketName,
         Key: `${keyPrefix}/certificate.pem`,
-      })
+      }),
     ),
     s3Client
       .send(
         new DeleteObjectCommand({
           Bucket: bucketName,
           Key: `${keyPrefix}/chain.pem`,
-        })
+        }),
       )
       .catch(() => {}), // Ignore error if chain doesn't exist
   ]);

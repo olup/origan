@@ -1,13 +1,9 @@
-import * as pulumi from "@pulumi/pulumi";
 import * as k8s from "@pulumi/kubernetes";
+import * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
 import { cn, dockerImageWithTag } from "../utils";
 import { BucketConfig } from "./bucket";
 import type { DatabaseOutputs } from "./database";
-
-export interface DeployControlOutputs {
-  apiUrl: pulumi.Output<string>;
-}
 
 export function deployControl({
   registry,
@@ -23,7 +19,7 @@ export function deployControl({
   db: DatabaseOutputs;
   bucketConfig: BucketConfig;
   nginxIngress: k8s.helm.v3.Release;
-}): DeployControlOutputs {
+}) {
   const image = dockerImageWithTag(cn("image"), {
     build: {
       context: "../",
@@ -114,21 +110,13 @@ export function deployControl({
                     value: bucketConfig.bucketSecretKey,
                   },
                 ],
-                // livenessProbe: {
-                //   httpGet: {
-                //     path: "/.healthz",
-                //     port: 9999,
-                //   },
-                //   initialDelaySeconds: 15,
-                //   periodSeconds: 20,
-                // },
               },
             ],
           },
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [image.image] }
+    { provider: k8sProvider, dependsOn: [image.image] },
   );
 
   // Create a LoadBalancer service for the control API
@@ -156,7 +144,7 @@ export function deployControl({
         },
       },
     },
-    { provider: k8sProvider }
+    { provider: k8sProvider },
   );
 
   // Configure ingress with proper service routing using control service name
@@ -200,7 +188,7 @@ export function deployControl({
         ],
       },
     },
-    { provider: k8sProvider, dependsOn: [nginxIngress, controlService] }
+    { provider: k8sProvider, dependsOn: [nginxIngress, controlService] },
   );
 
   return {

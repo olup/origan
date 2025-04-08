@@ -1,3 +1,4 @@
+import { zValidator } from "@hono/zod-validator";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { console } from "inspector";
@@ -9,7 +10,6 @@ import {
   getConfigRequestSchema,
 } from "../schemas/deploy.js";
 import { deploy } from "../service/deploy.service.js";
-import { zValidator } from "@hono/zod-validator";
 
 // Deploy router
 export const deploymentsRouter = new Hono()
@@ -98,5 +98,5 @@ export const deploymentsRouter = new Hono()
         deploymentId: host.deployment.id,
       };
       return c.json(response);
-    }
+    },
   );

@@ -11,7 +11,7 @@ export const gan = (name: string) => `gateway-${name}-${stack}`;
 export const rn = (name: string) => `runner-${name}-${stack}`;
 
 export function objectWithoutUndefined<O extends Record<string, unknown>>(
-  obj: O
+  obj: O,
 ): { [K in keyof O as undefined extends O[K] ? never : K]: O[K] } {
   // biome-ignore lint/complexity/noForEach:
   Object.keys(obj).forEach((key) => obj[key] === undefined && delete obj[key]);
@@ -23,7 +23,7 @@ export function objectWithoutUndefined<O extends Record<string, unknown>>(
 export const dockerImageWithTag = (name: string, args: docker.ImageArgs) => {
   const latest = new docker.Image(`${name}-latest`, args);
   const digestTag = latest.repoDigest.apply((digest) =>
-    digest.split(":")[1].substring(0, 8)
+    digest.split(":")[1].substring(0, 8),
   );
   // Mandatory second image to push the existing one.
   const image = new docker.Image(
@@ -32,7 +32,7 @@ export const dockerImageWithTag = (name: string, args: docker.ImageArgs) => {
       ...args,
       imageName: pulumi.interpolate`${args.imageName}:${digestTag}`,
     },
-    { dependsOn: latest }
+    { dependsOn: latest },
   );
 
   return {

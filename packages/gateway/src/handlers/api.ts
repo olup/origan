@@ -1,13 +1,14 @@
 import { IncomingMessage, ServerResponse } from "node:http";
+import { env } from "node:process";
+import { envConfig } from "../config/index.js";
 import { Config } from "../types/config.js";
-import { RUNNER_URL } from "../config/env.js";
 
 export async function handleApiRoute(
   req: IncomingMessage,
   res: ServerResponse,
   path: string,
   config: Config,
-  deploymentId: string
+  deploymentId: string,
 ) {
   const route = config.api.find((r) => path === r.urlPath);
 
@@ -16,7 +17,7 @@ export async function handleApiRoute(
   }
 
   console.log("Route found:", route);
-  console.log("Runner API URL:", RUNNER_URL);
+  console.log("Runner API URL:", envConfig.runnerUrl);
 
   try {
     // Convert IncomingMessage headers to Record<string, string>
@@ -29,7 +30,7 @@ export async function handleApiRoute(
 
     headers.set(
       "x-origan-funtion-path",
-      `deployments/${deploymentId}/api/${route.functionPath}`
+      `deployments/${deploymentId}/api/${route.functionPath}`,
     );
 
     // Get request body if needed
@@ -43,7 +44,7 @@ export async function handleApiRoute(
       body = Buffer.concat(chunks);
     }
 
-    const response = await fetch(`${RUNNER_URL}${path}`, {
+    const response = await fetch(`${envConfig.runnerUrl}${path}`, {
       method: req.method,
       headers,
       body,

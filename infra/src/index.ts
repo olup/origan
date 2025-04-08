@@ -1,11 +1,11 @@
 import * as pulumi from "@pulumi/pulumi";
-import { deployBucket, BucketConfig } from "./components/bucket";
+import { BucketConfig, deployBucket } from "./components/bucket";
 import { deployControl } from "./components/control";
 import { deployDatabase } from "./components/database";
 import { deployGateway } from "./components/gateway";
+import { deployKubernetes } from "./components/kubernetes";
 import { deployRegistry } from "./components/registry";
 import { deployRunner } from "./components/runner";
-import { deployKubernetes } from "./components/kubernetes";
 
 export function deployAll() {
   // Deploy database
@@ -18,12 +18,7 @@ export function deployAll() {
   const registryDeployment = deployRegistry();
 
   // Deploy Kubernetes cluster first
-  const kubernetes = deployKubernetes({
-    registry: registryDeployment.namespace,
-    controlApiUrl: pulumi.output("https://api.origan.dev"), // Initial value, will be updated by control deployment
-    runnerUrl: pulumi.output("https://runner.origan.dev"), // Initial value, will be updated by runner deployment
-    bucketConfig: bucketDeployment.config,
-  });
+  const kubernetes = deployKubernetes();
 
   // Deploy control API with Kubernetes configuration (including nginx ingress)
   const controlResult = deployControl({

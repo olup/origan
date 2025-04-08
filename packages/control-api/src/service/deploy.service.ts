@@ -9,11 +9,11 @@ import {
   hostSchema,
   projectSchema,
 } from "../libs/db/schema.js";
+import { putObject } from "../libs/s3.js";
 import {
   type DeployParams,
   deploymentConfigSchema,
 } from "../schemas/deploy.js";
-import { putObject } from "../libs/s3.js";
 
 export interface DeploymentResult {
   projectRef: string;
@@ -85,7 +85,7 @@ async function processBundle(bundle: File): Promise<string> {
     throw new Error(
       `Failed to process bundle: ${
         error instanceof Error ? error.message : String(error)
-      }`
+      }`,
     );
   }
 }
@@ -96,7 +96,7 @@ async function processBundle(bundle: File): Promise<string> {
 async function uploadToS3(
   extractedPath: string,
   deploymentId: string,
-  bucketName: string
+  bucketName: string,
 ): Promise<void> {
   try {
     // List all entries in the extracted directory
@@ -121,7 +121,7 @@ async function uploadToS3(
         throw new Error(
           `Failed to upload ${entry}: ${
             error instanceof Error ? error.message : String(error)
-          }`
+          }`,
         );
       }
     }

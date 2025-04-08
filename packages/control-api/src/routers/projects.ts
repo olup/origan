@@ -1,5 +1,7 @@
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { customAlphabet } from "nanoid";
+import { z } from "zod";
 import {
   projectCreateSchema,
   projectUpdateSchema,
@@ -26,8 +28,9 @@ export const projectsRouter = new Hono()
       return c.json(errorResponse, 500);
     }
   })
-  .get("/:id", async (c) => {
-    const { id } = c.req.param();
+  .get("/:id", zValidator("param", z.object({ id: z.string() })), async (c) => {
+    const { id } = c.req.valid("param");
+
     try {
       const project = await getProject(id);
       if (!project) {
@@ -46,69 +49,61 @@ export const projectsRouter = new Hono()
       return c.json(errorResponse, 500);
     }
   })
-  .post("/", async (c) => {
-    const body = await c.req.json();
-    const result = projectCreateSchema.safeParse(body);
-
-    if (!result.success) {
-      const errorResponse: ProjectError = {
-        error: "Invalid request format",
-        details: result.error.message,
-      };
-      return c.json(errorResponse, 400);
-    }
+  .post("/", zValidator("json", projectCreateSchema), async (c) => {
+    const data = await c.req.valid("json");
 
     try {
       const randomRef = customAlphabet(
         "abcdefghijklmnopqrstuvwxyz0123456789_-",
       )(12);
       const project = await createProject({
-        ...result.data,
+        ...data,
         reference: randomRef,
       });
       return c.json(project, 201);
     } catch (error) {
-      const errorResponse: ProjectError = {
+      console.error("Error creating project:", error);
+      const errorResponse = {
         error: "Failed to create project",
         details: error instanceof Error ? error.message : String(error),
       };
       return c.json(errorResponse, 500);
     }
   })
-  .put("/:id", async (c) => {
-    const { id } = c.req.param();
-    const body = await c.req.json();
-    const result = projectUpdateSchema.safeParse(body);
+  .put(
+    "/:id",
+    zValidator("param", z.object({ id: z.string() })),
+    zValidator("json", projectUpdateSchema),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const data = await c.req.valid("json");
 
-    if (!result.success) {
-      const errorResponse: ProjectError = {
-        error: "Invalid request format",
-        details: result.error.message,
-      };
-      return c.json(errorResponse, 400);
-    }
-
-    try {
-      const project = await updateProject(id, result.data);
-      if (!project) {
+      try {
+        const project = await updateProject(id, data);
+        if (!project) {
+          const errorResponse: ProjectError = {
+            error: "Project not found",
+            details: `No project found with ID ${id}`,
+          };
+          return c.json(errorResponse, 404);
+        }
+        return c.json(project);
+      } catch (error) {
         const errorResponse: ProjectError = {
-          error: "Project not found",
-          details: `No project found with ID ${id}`,
+          error: "Failed to update project",
+          details: error instanceof Error ? error.message : String(error),
         };
-        return c.json(errorResponse, 404);
+        return c.json(errorResponse, 500);
       }
-      return c.json(project);
-    } catch (error) {
-      const errorResponse: ProjectError = {
-        error: "Failed to update project",
-        details: error instanceof Error ? error.message : String(error),
-      };
-      return c.json(errorResponse, 500);
-    }
-  })
-  .delete("/:id", async (c) => {
-    const { id } = c.req.param();
-    // TODO
-    // Delete each remaining deployment (which involves cleaning the directory in s3)
-    // WDelete any remaining host object (which involves cleaning any certificates we might have)
-  });
+    },
+  )
+  .delete(
+    "/:id",
+    zValidator("param", z.object({ id: z.string() })),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      // TODO
+      // Delete each remaining deployment (which involves cleaning the directory in s3)
+      // WDelete any remaining host object (which involves cleaning any certificates we might have)
+    },
+  );

@@ -16,7 +16,7 @@ const s3Client = new S3Client({
 
 export async function getObjectBuffer(
   Bucket: string,
-  Key: string
+  Key: string,
 ): Promise<Uint8Array> {
   console.log(`Fetching ${Key} from S3 bucket ${Bucket}`);
 
@@ -38,7 +38,7 @@ export const putObject = async (
   Bucket: string,
   Key: string,
   Body: Uint8Array,
-  ContentType: string
+  ContentType: string,
 ): Promise<void> => {
   console.log(`Uploading ${Key} to S3 bucket ${Bucket}`);
 

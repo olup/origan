@@ -27,3 +27,4 @@ dist-ssr
 .origan
 
 kubeconfig.yaml
+tsconfig.tsbuildinfo

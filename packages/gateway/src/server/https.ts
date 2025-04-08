@@ -1,13 +1,13 @@
-import { createServer } from "node:https";
 import type { RequestListener } from "node:http";
+import { createServer } from "node:https";
 import type { SecureContextOptions, SecureVersion } from "node:tls";
 import { createSecureContext } from "node:tls";
+import { envConfig } from "../config/index.js";
 import {
   getCertificate,
   loadMainCertificateFromFiles,
 } from "../services/certificates.js";
 import { s3Client } from "../utils/s3.js";
-import { BUCKET_NAME } from "../config/env.js";
 
 // Load the main wildcard certificate
 let mainSecureContext: ReturnType<typeof createSecureContext> | undefined;
@@ -17,7 +17,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const initializeMainCertificate = async (
   retryCount = 0,
   maxRetries = 10,
-  initialDelay = 1000
+  initialDelay = 1000,
 ): Promise<void> => {
   try {
     const mainCert = await loadMainCertificateFromFiles();
@@ -31,7 +31,7 @@ const initializeMainCertificate = async (
       key: mainCert.privateKey,
       ca: mainCert.chain,
     });
-    console.log("Main wildcard certificate loaded successfully");
+
     return;
   } catch (error) {
     console.error("Error loading main wildcard certificate:", error);
@@ -41,18 +41,18 @@ const initializeMainCertificate = async (
       console.log(
         `Retrying certificate load in ${nextDelay}ms (attempt ${
           retryCount + 1
-        }/${maxRetries})`
+        }/${maxRetries})`,
       );
       await delay(nextDelay);
       return initializeMainCertificate(
         retryCount + 1,
         maxRetries,
-        initialDelay
+        initialDelay,
       );
     }
 
     throw new Error(
-      `Failed to load main certificate after ${maxRetries} retries`
+      `Failed to load main certificate after ${maxRetries} retries`,
     );
   }
 };
@@ -82,12 +82,16 @@ const baseTlsConfig: TlsConfig = {
 // SNI callback to dynamically load certificates
 const sniCallback = async (
   servername: string,
-  cb: (err: Error | null, ctx?: ReturnType<typeof createSecureContext>) => void
+  cb: (err: Error | null, ctx?: ReturnType<typeof createSecureContext>) => void,
 ) => {
   try {
     console.log(`Loading certificate for domain: ${servername}`);
 
-    const certData = await getCertificate(s3Client, BUCKET_NAME, servername);
+    const certData = await getCertificate(
+      s3Client,
+      envConfig.bucketName,
+      servername,
+    );
     if (!certData) {
       console.error(`No certificate found for domain: ${servername}`);
       return cb(new Error(`No certificate found for domain: ${servername}`));
@@ -107,15 +111,18 @@ const sniCallback = async (
   }
 };
 export async function createHttpsServer(handler: RequestListener) {
+  console.log("Creating HTTPS server...");
   // Initialize main certificate before starting the server
   await initializeMainCertificate();
+
+  console.log("Main certificate initialized");
 
   const server = createServer(
     {
       ...baseTlsConfig,
       SNICallback: (servername, cb) => {
-        // Use main certificate for *.deploy.origan.dev
-        if (servername.endsWith(".deploy.origan.dev")) {
+        // Use main certificate for default domain
+        if (servername.endsWith(envConfig.origanDomain)) {
           if (!mainSecureContext) {
             cb(new Error("Main certificate context not available"));
             return;
@@ -134,7 +141,7 @@ export async function createHttpsServer(handler: RequestListener) {
         ca: mainSecureContext.context.ca,
       }),
     },
-    handler
+    handler,
   );
 
   server.listen(7778, () => {

@@ -1,17 +1,16 @@
-import { createServer, IncomingMessage, ServerResponse } from "node:http";
-import { ORIGAN_DOMAIN } from "./config/env.js";
-import { client } from "./libs/client.js";
-import { Config } from "./types/config.js";
-import { handleHealthCheck } from "./handlers/health.js";
+import { IncomingMessage, ServerResponse, createServer } from "node:http";
+import { envConfig } from "./config/index.js";
 import { handleAcmeChallenge } from "./handlers/acme.js";
 import { handleApiRoute } from "./handlers/api.js";
+import { handleHealthCheck } from "./handlers/health.js";
 import { handleStaticFile } from "./handlers/static.js";
+import { client } from "./libs/client.js";
 import { createHttpsServer } from "./server/https.js";
+import { Config } from "./types/config.js";
 import { s3Client } from "./utils/s3.js";
-import { BUCKET_NAME } from "./config/env.js";
 
 async function getConfig(
-  domain: string
+  domain: string,
 ): Promise<{ config: Config; deploymentId: string } | null> {
   try {
     const response = await client.deployments["get-config"].$post({
@@ -36,7 +35,7 @@ async function getConfig(
 }
 
 // Create ACME challenge handler
-const acmeHandler = handleAcmeChallenge(s3Client, BUCKET_NAME);
+const acmeHandler = handleAcmeChallenge(s3Client, envConfig.bucketName);
 
 // Main request handler
 async function handleRequest(req: IncomingMessage, res: ServerResponse) {
@@ -59,7 +58,9 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     }
 
     // Remove port if present and replace domain
-    const domain = host.split(":")[0].replace(ORIGAN_DOMAIN, "origan.main");
+    const domain = host
+      .split(":")[0]
+      .replace(envConfig.origanDomain, "origan.main");
 
     console.log("Domain:", domain);
 
@@ -67,7 +68,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     if (!result) {
       res.writeHead(500, { "Content-Type": "application/json" });
       return res.end(
-        JSON.stringify({ error: "Failed to get domain configuration" })
+        JSON.stringify({ error: "Failed to get domain configuration" }),
       );
     }
 
@@ -94,5 +95,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
 const httpServer = createServer(handleRequest);
 httpServer.listen(7777, () => console.log("HTTP Server is running on 7777"));
 
-// Start HTTPS server with dynamic certificate loading via SNI
-createHttpsServer(handleRequest);
+if (envConfig.hasTlsServer) {
+  // Start HTTPS server with dynamic certificate loading via SNI
+  createHttpsServer(handleRequest);
+}

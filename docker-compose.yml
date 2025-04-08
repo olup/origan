@@ -48,6 +48,9 @@ services:
       - BUCKET_SECRET_KEY=minioadmin
       - BUCKET_NAME=origan
       - BUCKET_REGION=us-east-1
+      - HAS_TLS_SERVER=false
+      - TLS_CERT_FILE=/app/certs/cert.pem
+      - TLS_KEY_FILE=/app/certs/key.pem
     ports:
       - "7777:7777"
     volumes:

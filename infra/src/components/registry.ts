@@ -37,7 +37,7 @@ export function deployRegistry(): RegistryOutputs {
           permissionSetNames: ["ContainerRegistryFullAccess"],
         },
       ],
-    }
+    },
   );
 
   // Create API key for registry access

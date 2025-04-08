@@ -2,11 +2,11 @@ import { execSync } from "node:child_process";
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as pulumi from "@pulumi/pulumi";
-import type * as scaleway from "@pulumiverse/scaleway";
 import { Provider } from "@pulumi/aws";
 import { BucketObjectv2 } from "@pulumi/aws/s3/bucketObjectv2";
+import * as pulumi from "@pulumi/pulumi";
 import * as std from "@pulumi/std";
+import type * as scaleway from "@pulumiverse/scaleway";
 
 // Get all files from the dist directory with their filepaths and hash keys
 export interface FileInfo {
