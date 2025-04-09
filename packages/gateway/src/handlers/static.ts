@@ -1,8 +1,16 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { createGzip } from "node:zlib";
+import { LRUCache } from "lru-cache";
 import { Config } from "../types/config.js";
 import { getContentType } from "../utils/content-type.js";
 import { fetchFromS3 } from "../utils/s3.js";
+
+// Cache static files with a max of 500MB
+const staticFileCache = new LRUCache<string, Buffer>({
+  maxSize: 500 * 1024 * 1024, // 500MB
+  sizeCalculation: (value) => value.length,
+});
+
 export async function handleStaticFile(
   req: IncomingMessage,
   res: ServerResponse,
@@ -73,12 +81,21 @@ async function tryServeFile(
     return false;
   }
 
-  const buffer = await fetchFromS3(
-    `deployments/${deploymentId}/app/${filePath}`
-  );
+  const cacheKey = `${deploymentId}:${filePath}`;
+  let buffer: Buffer | undefined = staticFileCache.get(cacheKey);
 
   if (!buffer) {
-    return false;
+    const fetchedBuffer = await fetchFromS3(
+      `deployments/${deploymentId}/app/${filePath}`
+    );
+
+    if (!fetchedBuffer) {
+      return false;
+    }
+
+    buffer = fetchedBuffer;
+    // Cache the file content since deployments are immutable
+    staticFileCache.set(cacheKey, fetchedBuffer);
   }
 
   const contentType = contentTypeOverride ?? getContentType(filePath);

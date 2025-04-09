@@ -65,8 +65,6 @@ serve(async (req: Request) => {
   }
   const startTime = performance.now();
 
-  console.log("Request received:", req, functionPath);
-
   // sha1 of path
   const queryHash = await sha1(functionPath);
   const workerPath = `functions/workers/${queryHash}`;
