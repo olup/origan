@@ -1,4 +1,8 @@
-import { IncomingMessage, ServerResponse, createServer } from "node:http";
+import {
+  type IncomingMessage,
+  type ServerResponse,
+  createServer,
+} from "node:http";
 import { envConfig } from "./config/index.js";
 import { handleAcmeChallenge } from "./handlers/acme.js";
 import { handleApiRoute } from "./handlers/api.js";
@@ -6,11 +10,11 @@ import { handleHealthCheck } from "./handlers/health.js";
 import { handleStaticFile } from "./handlers/static.js";
 import { client } from "./libs/client.js";
 import { createHttpsServer } from "./server/https.js";
-import { Config } from "./types/config.js";
+import type { Config } from "./types/config.js";
 import { s3Client } from "./utils/s3.js";
 
 async function getConfig(
-  domain: string
+  domain: string,
 ): Promise<{ config: Config; deploymentId: string } | null> {
   try {
     const response = await client.deployments["get-config"].$post({
@@ -68,7 +72,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     if (!result) {
       res.writeHead(500, { "Content-Type": "application/json" });
       return res.end(
-        JSON.stringify({ error: "Failed to get domain configuration" })
+        JSON.stringify({ error: "Failed to get domain configuration" }),
       );
     }
 

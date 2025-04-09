@@ -1,7 +1,7 @@
-import { IncomingMessage, ServerResponse } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { createGzip } from "node:zlib";
 import { LRUCache } from "lru-cache";
-import { Config } from "../types/config.js";
+import type { Config } from "../types/config.js";
 import { getContentType } from "../utils/content-type.js";
 import { fetchFromS3 } from "../utils/s3.js";
 
@@ -16,7 +16,7 @@ export async function handleStaticFile(
   res: ServerResponse,
   path: string,
   config: Config,
-  deploymentId: string
+  deploymentId: string,
 ) {
   const requestedFile = path.slice(1); // Remove leading slash
 
@@ -26,7 +26,7 @@ export async function handleStaticFile(
     requestedFile,
     undefined,
     config,
-    deploymentId
+    deploymentId,
   );
 
   if (served) return true;
@@ -41,7 +41,7 @@ export async function handleStaticFile(
     indexPath,
     "text/html",
     config,
-    deploymentId
+    deploymentId,
   );
 
   if (servedIndex) return true;
@@ -52,7 +52,7 @@ export async function handleStaticFile(
     "index.html",
     "text/html",
     config,
-    deploymentId
+    deploymentId,
   );
 
   if (servedRoot) return true;
@@ -64,7 +64,7 @@ export async function handleStaticFile(
       error: "Not found",
       path,
       app: config.app,
-    })
+    }),
   );
   return true;
 }
@@ -75,18 +75,18 @@ async function tryServeFile(
   filePath: string,
   contentTypeOverride: string | undefined,
   config: Config,
-  deploymentId: string
+  deploymentId: string,
 ): Promise<boolean> {
   if (!config.app.includes(filePath)) {
     return false;
   }
 
   const cacheKey = `${deploymentId}:${filePath}`;
-  let buffer: Buffer | undefined = staticFileCache.get(cacheKey);
+  let buffer = await fetchFromS3(`deployments/${deploymentId}/app/${filePath}`);
 
   if (!buffer) {
     const fetchedBuffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/${filePath}`
+      `deployments/${deploymentId}/app/${filePath}`,
     );
 
     if (!fetchedBuffer) {

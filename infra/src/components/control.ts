@@ -1,8 +1,8 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import * as scaleway from "@pulumiverse/scaleway";
+import type * as scaleway from "@pulumiverse/scaleway";
 import { cn, dockerImageWithTag } from "../utils";
-import { BucketConfig } from "./bucket";
+import type { BucketConfig } from "./bucket";
 import type { DatabaseOutputs } from "./database";
 
 export function deployControl({
@@ -116,7 +116,7 @@ export function deployControl({
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [image.image] }
+    { provider: k8sProvider, dependsOn: [image.image] },
   );
 
   // Create a LoadBalancer service for the control API
@@ -144,7 +144,7 @@ export function deployControl({
         },
       },
     },
-    { provider: k8sProvider }
+    { provider: k8sProvider },
   );
 
   // Configure ingress with proper service routing using control service name
@@ -189,7 +189,7 @@ export function deployControl({
         ],
       },
     },
-    { provider: k8sProvider, dependsOn: [nginxIngress, controlService] }
+    { provider: k8sProvider, dependsOn: [nginxIngress, controlService] },
   );
 
   return {

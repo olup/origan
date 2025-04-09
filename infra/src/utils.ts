@@ -1,6 +1,3 @@
-import { createHash } from "crypto";
-import { readFileSync, readdirSync, statSync } from "fs";
-import { join } from "path";
 import * as docker from "@pulumi/docker";
 import * as pulumi from "@pulumi/pulumi";
 

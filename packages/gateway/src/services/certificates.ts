@@ -1,10 +1,10 @@
+import fs from "node:fs/promises";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
-  S3Client,
+  type S3Client,
 } from "@aws-sdk/client-s3";
-import fs from "fs/promises";
 import { envConfig } from "../config/index.js";
 
 export interface CertificateData {

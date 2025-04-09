@@ -1,14 +1,14 @@
-import { IncomingMessage, ServerResponse } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { env } from "node:process";
 import { envConfig } from "../config/index.js";
-import { Config } from "../types/config.js";
+import type { Config } from "../types/config.js";
 
 export async function handleApiRoute(
   req: IncomingMessage,
   res: ServerResponse,
   path: string,
   config: Config,
-  deploymentId: string
+  deploymentId: string,
 ) {
   const route = config.api.find((r) => path === r.urlPath);
 
@@ -30,7 +30,7 @@ export async function handleApiRoute(
 
     headers.set(
       "x-origan-function-path",
-      `deployments/${deploymentId}/api/${route.functionPath}`
+      `deployments/${deploymentId}/api/${route.functionPath}`,
     );
 
     // Get request body if needed

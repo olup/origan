@@ -1,5 +1,4 @@
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { env } from "process";
 import { envConfig } from "../config/index.js";
 
 // Initialize S3 client

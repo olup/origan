@@ -1,5 +1,5 @@
-import { createWriteStream } from "fs";
-import { join, relative } from "path";
+import { createWriteStream } from "node:fs";
+import { join, relative } from "node:path";
 import archiver from "archiver";
 import * as esbuild from "esbuild";
 import type { Route } from "./path.js";

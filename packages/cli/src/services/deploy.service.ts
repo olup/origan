@@ -1,6 +1,6 @@
-import { join, relative } from "path";
+import { readFile, stat, writeFile } from "node:fs/promises";
+import { join, relative } from "node:path";
 import { parse } from "comment-json";
-import { readFile, stat, writeFile } from "fs/promises";
 import { client } from "../libs/client.js";
 import { origanConfigSchema } from "../types.js";
 import {
@@ -22,7 +22,7 @@ interface ConfigJson {
 function generateConfig(
   appFiles: string[],
   api: Route[],
-  appDir: string
+  appDir: string,
 ): ConfigJson {
   return {
     app: appFiles.map((f) => join(relative(appDir, f))),
@@ -41,7 +41,7 @@ async function uploadArchive(
   archivePath: string,
   projectRef: string,
   branch: string,
-  config: ConfigJson
+  config: ConfigJson,
 ): Promise<void> {
   const file = new File([await readFile(archivePath)], "bundle.zip", {
     type: "application/zip",
@@ -75,7 +75,7 @@ export async function deploy(branch = "main"): Promise<void> {
       await stat(origanConfigPath);
     } catch (error) {
       log.error(
-        "origan.jsonc not found. Please run 'origan init' to configure your project first."
+        "origan.jsonc not found. Please run 'origan init' to configure your project first.",
       );
       return;
     }
@@ -87,7 +87,7 @@ export async function deploy(branch = "main"): Promise<void> {
     const result = origanConfigSchema.safeParse(parsedConfig);
     if (!result.success) {
       throw new Error(
-        `Invalid origan.jsonc: ${result.error.message}\nPlease run 'origan init' to create a valid config.`
+        `Invalid origan.jsonc: ${result.error.message}\nPlease run 'origan init' to create a valid config.`,
       );
     }
 
@@ -108,7 +108,7 @@ export async function deploy(branch = "main"): Promise<void> {
 
     if (!validateDirectory(appDir)) {
       log.error(
-        `${config.appDir}/ directory not found. Please build your application first.`
+        `${config.appDir}/ directory not found. Please build your application first.`,
       );
       return;
     }
@@ -120,7 +120,7 @@ export async function deploy(branch = "main"): Promise<void> {
       log.info("Discovering API routes...");
 
       const apiFiles = collectFiles(apiDir).filter(
-        (file) => file.endsWith(".ts") && !file.includes("/_")
+        (file) => file.endsWith(".ts") && !file.includes("/_"),
       );
 
       routes = apiFiles
@@ -138,7 +138,7 @@ export async function deploy(branch = "main"): Promise<void> {
 
     if (appFiles.length === 0) {
       throw new Error(
-        `No app files found in ${config.appDir}/ directory. Please build your application first.`
+        `No app files found in ${config.appDir}/ directory. Please build your application first.`,
       );
     }
     console.log(`Found ${appFiles.length} app files in ${config.appDir}/`);
@@ -155,7 +155,7 @@ export async function deploy(branch = "main"): Promise<void> {
           await writeFile(
             join(buildDir, "api", route.bundlePath),
             content,
-            "utf-8"
+            "utf-8",
           );
           log.info(`  ${route.urlPath} -> ${route.bundlePath}  ✓`);
         } catch (error) {
@@ -163,7 +163,7 @@ export async function deploy(branch = "main"): Promise<void> {
             log.error(`  Error bundling ${route.urlPath}: ${error.message}`);
           }
           throw new Error(
-            `Failed to bundle route ${route.urlPath} (${route.filePath})`
+            `Failed to bundle route ${route.urlPath} (${route.filePath})`,
           );
         }
       }
@@ -178,7 +178,7 @@ export async function deploy(branch = "main"): Promise<void> {
       appFiles,
       routes,
       appDir,
-      buildDir
+      buildDir,
     );
 
     log.success("\nDeployment Summary:");

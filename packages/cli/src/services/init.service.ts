@@ -1,6 +1,5 @@
-import { createRequire } from "module";
-import { join } from "path";
-import { appendFile, readFile, stat, writeFile } from "fs/promises";
+import { appendFile, readFile, stat, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import prompts from "prompts";
 import type { OriganConfig } from "../types.js";
 import { log } from "../utils/logger.js";

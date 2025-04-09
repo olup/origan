@@ -1,7 +1,7 @@
+import { console } from "node:inspector";
 import { zValidator } from "@hono/zod-validator";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { console } from "inspector";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
 import {

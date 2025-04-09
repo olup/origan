@@ -1,5 +1,11 @@
-import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "fs";
-import { join } from "path";
+import {
+  mkdirSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
 
 export function createDirectories(dirs: string[]): void {
   for (const dir of dirs) mkdirSync(dir, { recursive: true });

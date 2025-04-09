@@ -1,5 +1,5 @@
-import { IncomingMessage, ServerResponse } from "node:http";
-import { S3Client } from "@aws-sdk/client-s3";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import type { S3Client } from "@aws-sdk/client-s3";
 import { getChallenge } from "../services/challenges.js";
 
 const ACME_CHALLENGE_PREFIX = "/.well-known/acme-challenge/";

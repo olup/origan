@@ -1,4 +1,4 @@
-import { basename, dirname, join, relative } from "path";
+import { basename, dirname, join, relative } from "node:path";
 
 export interface Route {
   filePath: string;

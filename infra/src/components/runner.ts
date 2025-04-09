@@ -1,8 +1,8 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import * as scaleway from "@pulumiverse/scaleway";
+import type * as scaleway from "@pulumiverse/scaleway";
 import { dockerImageWithTag, rn } from "../utils";
-import { BucketConfig } from "./bucket";
+import type { BucketConfig } from "./bucket";
 
 interface DeployRunnerOutputs {
   runnerUrl: pulumi.Output<string>;
