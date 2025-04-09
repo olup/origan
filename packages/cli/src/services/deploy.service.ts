@@ -196,7 +196,7 @@ export async function deploy(branch = "main"): Promise<void> {
     log.info("Cleaning up deployment directories...");
     cleanDirectory(artifactsDir);
     cleanDirectory(buildDir);
-    log.success("Cleanup completed");
+    log.info("Cleanup completed");
   } catch (error) {
     console.error("Deployment failed:", error);
     process.exit(1);

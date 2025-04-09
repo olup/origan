@@ -39,3 +39,17 @@ pnpm unlink
 ```
 This will remove the symlink from your global node_modules directory.
 
+## Using the cli
+
+From any front end project that has a static output directory (e.g. `dist`), you can run:
+```bash
+origan init
+```
+The command line will ask you a few questions and create a "origna.jsonc" file in the root of your project.
+
+Then, you can run:
+```bash
+origan deploy
+```
+This will deploy your project to the Origan platform.
+At some point we'll need to output the deployment url, but right now the deployment should be available at `https://main-<project-ref>.deploy.origan.dev` (or `http://main-<project-ref>.localhost:7777` if you are deploying locally to the docker-compose). 
