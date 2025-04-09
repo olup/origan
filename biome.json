@@ -7,11 +7,21 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["tsconfig.app.json", "tsconfig.node.json", "**/dist/**"]
+    "ignore": [
+      "tsconfig.app.json",
+      "tsconfig.node.json",
+      "dist/**",
+      "node_modules/*",
+      ".pnpm-store/**",
+      "*.config.*",
+      "*.json",
+      "tsconfig.json"
+    ]
   },
   "formatter": {
     "enabled": true,
-    "indentStyle": "space"
+    "indentStyle": "space",
+    "ignore": ["node_modules/*", ".pnpm-store/**", "dist/**"]
   },
   "organizeImports": {
     "enabled": true

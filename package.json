@@ -6,12 +6,12 @@
     "build": "pnpm -r build",
     "dev": "concurrently \"pnpm run -w --filter @origan/control-api dev\" \"pnpm run -w --filter @origan/control-frontend dev\"",
     "test": "pnpm -r test",
-    "lint": "biome check .",
-    "format": "biome format . --write",
-    "check": "biome check --apply ."
+    "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
+    "check": "pnpm -r check"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.5.3",
+    "@biomejs/biome": "1.9.3",
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
   },
