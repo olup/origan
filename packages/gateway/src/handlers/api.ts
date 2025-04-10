@@ -34,7 +34,7 @@ export async function handleApiRoute(
     );
 
     // Get request body if needed
-    let body: ArrayBuffer | undefined;
+    let body: Buffer<ArrayBuffer> | undefined;
 
     if (req.method !== "GET" && req.method !== "HEAD") {
       const chunks: Buffer[] = [];
