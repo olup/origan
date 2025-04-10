@@ -6,9 +6,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "prebuild": "pnpm -F @origan/control-api build",
-    "build:watch": "tsc --watch",
+    "build": "tsc -b",
+    "build:watch": "tsc -b --watch",
     "lint": "biome check .",
     "format": "biome format . --write",
     "check": "biome check --write ."
