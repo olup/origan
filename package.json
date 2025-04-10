@@ -1,7 +1,7 @@
 {
   "name": "origan-monorepo",
   "private": true,
-  "packageManager": "pnpm@10.7.0",
+  "packageManager": "pnpm@10.8.0",
   "scripts": {
     "build": "pnpm -r build",
     "dev": "concurrently \"pnpm run -w --filter @origan/control-api dev\" \"pnpm run -w --filter @origan/control-frontend dev\"",
