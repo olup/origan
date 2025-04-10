@@ -1,3 +1,6 @@
 packages:
-  - 'packages/**'
-  - 'infra'
+  - packages/**
+  - infra
+
+overrides:
+  '@origan/cli': link:packages/cli

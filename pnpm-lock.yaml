@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
   injectWorkspacePackages: true
 
+overrides:
+  '@origan/cli': link:packages/cli
+
 importers:
 
   .:
@@ -17,11 +20,11 @@ importers:
         specifier: 1.9.3
         version: 1.9.3
       '@types/node':
-        specifier: ^20.0.0
-        version: 20.17.28
+        specifier: ^20.17.30
+        version: 20.17.30
       typescript:
-        specifier: ^5.0.0
-        version: 5.7.3
+        specifier: ^5.8.3
+        version: 5.8.3
 
   infra:
     dependencies:
@@ -1766,6 +1769,9 @@ packages:
   '@types/node@20.17.28':
     resolution: {integrity: sha512-DHlH/fNL6Mho38jTy7/JT7sn2wnXI+wULR6PV4gy4VHLVvnrV/d3pHAMQHhc4gjdLmK2ZiPoMxzp6B3yRajLSQ==}
 
+  '@types/node@20.17.30':
+    resolution: {integrity: sha512-7zf4YyHA+jvBNfVrk2Gtvs6x7E8V+YDW05bNfG2XkWDJfYRXrTiP/DsB2zSYTaHX0bGIujTBQdMVAhb+j7mwpg==}
+
   '@types/node@22.13.13':
     resolution: {integrity: sha512-ClsL5nMwKaBRwPcCvH8E7+nU4GxHVx1axNvMZTFHMEfNI7oahimt26P5zjVCRrjiIWj6YFXfE1v3dEp94wLcGQ==}
 
@@ -3280,6 +3286,11 @@ packages:
 
   typescript@5.7.3:
     resolution: {integrity: sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+  typescript@5.8.3:
+    resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -5130,7 +5141,7 @@ snapshots:
     dependencies:
       '@types/http-cache-semantics': 4.0.4
       '@types/keyv': 3.1.4
-      '@types/node': 20.17.28
+      '@types/node': 18.19.84
       '@types/responselike': 1.0.3
 
   '@types/estree@1.0.6': {}
@@ -5150,7 +5161,7 @@ snapshots:
 
   '@types/keyv@3.1.4':
     dependencies:
-      '@types/node': 20.17.28
+      '@types/node': 18.19.84
 
   '@types/mime-types@2.1.4': {}
 
@@ -5161,6 +5172,10 @@ snapshots:
       undici-types: 5.26.5
 
   '@types/node@20.17.28':
+    dependencies:
+      undici-types: 6.19.8
+
+  '@types/node@20.17.30':
     dependencies:
       undici-types: 6.19.8
 
@@ -5194,7 +5209,7 @@ snapshots:
 
   '@types/responselike@1.0.3':
     dependencies:
-      '@types/node': 20.17.28
+      '@types/node': 18.19.84
 
   '@types/semver@7.5.8': {}
 
@@ -6392,7 +6407,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 20.17.28
+      '@types/node': 18.19.84
       long: 5.3.1
 
   pump@3.0.2:
@@ -6758,6 +6773,8 @@ snapshots:
       - supports-color
 
   typescript@5.7.3: {}
+
+  typescript@5.8.3: {}
 
   undici-types@5.26.5: {}
 

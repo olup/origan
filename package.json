@@ -12,8 +12,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.3",
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "@types/node": "^20.17.30",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@origan/cli": "link:packages/cli"

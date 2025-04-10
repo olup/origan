@@ -71,11 +71,15 @@ pnpm build:watch
 
 2. Make the CLI available globally:
 ```bash
-cd packages/cli
-pnpm link
+cd packages/cli && pnpm link -g
 ```
 
 This will allow you to use the `origan` command globally while developing. The CLI will automatically rebuild when you make changes to the source code.
+
+To uninstall the CLI, run:
+```bash
+pnpm unistall -g @origan/cli
+```
 
 ### Project Structure
 
