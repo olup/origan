@@ -1,55 +1,101 @@
+# Origan
 
+Origan is a platform for deploying full stack web apps.
 
-## Running locally
-All services are declared in the docker-compose file in the root of the monorepo.
+## Packages
 
-To start the services locally, you can run (from the root of the monorepo):
+### CLI (`packages/cli`)
+
+The command line interface for Origan. This is the main tool for developers to interact with the platform. See the CLI package documentation for detailed usage instructions.
+
+### Control API (`packages/control-api`)
+
+The backend service that manages:
+- Project configurations
+- Deployments
+- Authentication and authorization
+- Database interactions (using Drizzle ORM)
+
+### Gateway (`packages/gateway`)
+
+Edge proxy service responsible for:
+- Request routing
+- HTTPS/TLS certificate management (ACME)
+- Static file serving
+- Health checks
+- API proxying
+
+### Runner (`packages/runner`)
+
+Edge functions runtime environment:
+- Function supervision and lifecycle management
+- Edge runtime environment
+- Worker process management
+
+### Admin Panel (`packages/admin-panel`)
+
+Web interface for platform administration built with:
+- React
+- Vite
+- TypeScript
+
+## Development
+
+### Prerequisites
+
+- Node.js 22+
+- pnpm
+- Docker and Docker Compose
+
+### Getting Started
+
+1. Install dependencies:
 ```bash
-docker-compose up
+pnpm install
 ```
 
-## Origan CLI
-Cli is situated in the `packages/cli` directory.
-
-To use the cli locally, you need to build it and make it available to your broader system.
-
-*Note : building the cli will also build the control api*
-
-The cli needs to know where to call the control api at build time, this is declared in the `src/constants.ts` file.
-
-Then, from anywhere in the monorepo, you can run:
+2. Start the development environment:
 ```bash
-pnpm -F @origan/cli run build
+docker-compose up    # Start supporting services
 ```
 
-To let the cli build continuously while developing, you can run:
+### CLI Development
+
+To develop the CLI locally:
+
+1. Build the CLI in watch mode:
 ```bash
-pnpm -F @origan/cli run dev
+cd packages/cli
+pnpm build:watch
 ```
 
-In any cases, to then make the built cli available to your system, you can run (from the cli directory):
+2. Make the CLI available globally:
 ```bash
+cd packages/cli
 pnpm link
 ```
-This will create a symlink to the built cli in your global node_modules directory, allowing you to run it from anywhere on your system. This is only needed once.
 
-To uninstall the cli, you can run:
-```bash
-pnpm unlink
+This will allow you to use the `origan` command globally while developing. The CLI will automatically rebuild when you make changes to the source code.
+
+### Project Structure
+
 ```
-This will remove the symlink from your global node_modules directory.
-
-## Using the cli
-
-From any front end project that has a static output directory (e.g. `dist`), you can run:
-```bash
-origan init
+origan/
+├── packages/
+│   ├── cli/           # Command line interface
+│   ├── control-api/   # Backend service
+│   ├── gateway/       # Edge proxy
+│   ├── runner/        # Function runtime
+│   └── admin-panel/   # Admin interface
+├── infra/             # Infrastructure code
+└── docker-compose.yml # Local development services
 ```
-The command line will ask you a few questions and create a "origna.jsonc" file in the root of your project.
 
-Then, you can run:
-```bash
-origan deploy
-```
-This will deploy your project to the Origan platform.
-At some point we'll need to output the deployment url, but right now the deployment should be available at `https://main-<project-ref>.deploy.origan.dev` (or `http://main-<project-ref>.localhost:7777` if you are deploying locally to the docker-compose). 
+### Infrastructure
+
+The `infra/` directory contains Pulumi infrastructure as code for:
+- Kubernetes clusters
+- Databases
+- Object storage
+- Container registry
+- API Gateway configuration
