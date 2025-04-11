@@ -1,0 +1,11 @@
+{
+  // Origan config version
+  "version": 1,
+
+  // Directory containing the built app files
+  "appDir": "dist",
+  "apiDir": "api",
+
+  // Reference to the project in the Origan control panel (demo)
+  "projectRef": "1lf9_3o3-soz"
+}

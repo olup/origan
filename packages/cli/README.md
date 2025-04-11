@@ -2,6 +2,22 @@
 
 Origan CLI tool for managing your applications.
 
+Origan can let you deploy your fullstack application in seconds without any infrastructure - it just works. Think vercel, netlify or cloudflare pages, but european.
+
+To deploy a project, origan cli expects a directory where to find your front end assets (on a classic SPA project it's often the `dist` folder once built) and optionally a directory where to find your backend code (we recommend an `api`folder). Origan will then deploy your project and give you a URL to access it.
+
+Sample project structure:
+```
+my-project/
+├── package.json     
+├── origan.jsonc      # Origan configuration file (origan init to create it)
+├── api/              # Optional: Backend code
+│   └── hello.ts      # Example backend function callable at /api/hello
+└── src/              # Frontend code
+    ├── main.ts
+    └── ...
+```
+
 ## Installation
 
 ```bash
