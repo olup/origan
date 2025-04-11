@@ -222,3 +222,21 @@ export async function deploy(branch = "main"): Promise<void> {
     process.exit(1);
   }
 }
+
+export async function getDeployments(projectId: string) {
+  const response = await client.projects[":id"].$get({
+    param: {
+      id: projectId,
+    },
+  });
+
+  const data = await response.json();
+
+  if ("error" in data) {
+    throw new Error(
+      `Failed to fetch deployments: ${(data as { error: string }).error}`,
+    );
+  }
+
+  return data.deployments;
+}

@@ -35,9 +35,9 @@
   "dependencies": {
     "@types/form-data": "^2.5.2",
     "archiver": "^7.0.1",
-    "commander": "^11.0.0",
+    "commander": "^11.1.0",
     "comment-json": "^4.2.5",
-    "esbuild": "^0.25.1",
+    "esbuild": "^0.25.2",
     "form-data": "^4.0.2",
     "formdata-node": "^6.0.3",
     "glob": "^11.0.1",
@@ -45,10 +45,12 @@
     "hono": "^4.7.5",
     "picocolors": "^1.1.1",
     "prompts": "^2.4.2",
+    "remeda": "^2.21.2",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/archiver": "^6.0.3",
+    "@types/commander": "^2.12.5",
     "@types/glob": "^8.1.0",
     "@types/node": "^20.0.0",
     "@types/prompts": "^2.4.9",
