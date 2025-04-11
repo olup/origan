@@ -64,7 +64,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     // Remove port if present and replace domain
     const domain = host
       .split(":")[0]
-      .replace(envConfig.origanDomain, "origan.main");
+      .replace(envConfig.origanDeployDomain, "origan.main");
 
     console.log("Domain:", domain);
 

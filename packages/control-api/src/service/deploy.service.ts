@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { Readable } from "node:stream";
 import { eq } from "drizzle-orm";
 import * as unzipper from "unzipper";
+import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
 import {
   deploymentSchema,
@@ -19,6 +20,7 @@ export interface DeploymentResult {
   projectRef: string;
   deploymentId: string;
   path: string;
+  urls: string[];
 }
 
 /**
@@ -200,6 +202,7 @@ export async function deploy({
   // Create or update host record
   // origan.main is a placeholder for origan main domain
   const domain = `${branchRef}-${projectRef}.origan.main`;
+
   await db
     .insert(hostSchema)
     .values({
@@ -219,5 +222,8 @@ export async function deploy({
     projectRef,
     deploymentId: deployment.id,
     path: extractedPath,
+    urls: [
+      `https://${domain.replace("origan.main", env.ORIGAN_DEPLOY_DOMAIN)}`,
+    ],
   };
 }

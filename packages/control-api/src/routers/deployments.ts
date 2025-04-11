@@ -60,7 +60,8 @@ export const deploymentsRouter = new Hono()
         status: "success",
         message: "Deployment uploaded successfully",
         projectRef: result.projectRef,
-        version: result.deploymentId,
+        deploymentId: result.deploymentId,
+        urls: result.urls,
       };
       return c.json(response);
     } catch (error) {

@@ -90,6 +90,10 @@ export function deployControl({
                     }/${db.database}`,
                   },
                   {
+                    name: "ORIGAN_DEPLOY_DOMAIN",
+                    value: "deploy.origan.dev",
+                  },
+                  {
                     name: "BUCKET_URL",
                     value: bucketConfig.bucketUrl,
                   },

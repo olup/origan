@@ -10,8 +10,7 @@ export const config = z.object({
   BUCKET_SECRET_KEY: z.string(),
   BUCKET_NAME: z.string(),
   BUCKET_REGION: z.string(),
+  ORIGAN_DEPLOY_DOMAIN: z.string(),
 });
-
-type Env = z.infer<typeof config>;
 
 export const env = config.parse(process.env);

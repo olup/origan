@@ -37,12 +37,20 @@ function generateUUID(): string {
   return crypto.randomUUID();
 }
 
+interface DeploymentResponse {
+  status: string;
+  message: string;
+  projectRef: string;
+  deploymentId: string;
+  urls: string[];
+}
+
 async function uploadArchive(
   archivePath: string,
   projectRef: string,
   branch: string,
   config: ConfigJson,
-): Promise<void> {
+): Promise<DeploymentResponse> {
   const file = new File([await readFile(archivePath)], "bundle.zip", {
     type: "application/zip",
   });
@@ -62,6 +70,8 @@ async function uploadArchive(
   if (!response.ok) {
     throw new Error(`Upload failed: ${await response.text()}`);
   }
+
+  return response.json();
 }
 
 export async function deploy(branch = "main"): Promise<void> {
@@ -189,14 +199,24 @@ export async function deploy(branch = "main"): Promise<void> {
     log.success(`Size: ${(bundle.size / 1024).toFixed(2)} KB`);
 
     log.info("\nUploading deployment package...");
-    await uploadArchive(bundle.path, config.projectRef, branch, deployConfig);
+    const deploymentResult = await uploadArchive(
+      bundle.path,
+      config.projectRef,
+      branch,
+      deployConfig,
+    );
     log.success("Deployment uploaded successfully! ✨");
 
+    log.info("\nDeployment URLs:");
+    for (const url of deploymentResult.urls) {
+      log.success(`  ${url}`);
+    }
+
     // Clean up deployment directories
-    log.info("Cleaning up deployment directories...");
+    log.debug("Cleaning up deployment directories...");
     cleanDirectory(artifactsDir);
     cleanDirectory(buildDir);
-    log.info("Cleanup completed");
+    log.debug("Cleanup completed");
   } catch (error) {
     console.error("Deployment failed:", error);
     process.exit(1);

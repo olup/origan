@@ -122,7 +122,7 @@ export async function createHttpsServer(handler: RequestListener) {
       ...baseTlsConfig,
       SNICallback: (servername, cb) => {
         // Use main certificate for default domain
-        if (servername.endsWith(envConfig.origanDomain)) {
+        if (servername.endsWith(envConfig.origanDeployDomain)) {
           if (!mainSecureContext) {
             cb(new Error("Main certificate context not available"));
             return;

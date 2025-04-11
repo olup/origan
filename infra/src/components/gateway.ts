@@ -89,7 +89,7 @@ export function deployGateway({
                 ],
                 env: [
                   {
-                    name: "ORIGAN_DOMAIN",
+                    name: "ORIGAN_DEPLOY_DOMAIN",
                     value: "deploy.origan.dev",
                   },
                   {

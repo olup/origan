@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  origanDomain: z.string().min(1, "ORIGAN_DOMAIN is required"),
+  origanDeployDomain: z.string().min(1, "ORIGAN_DEPLOY_DOMAIN is required"),
   runnerUrl: z.string().min(1, "RUNNER_URL is required"),
   bucketName: z.string().default("deployment-bucket"),
   bucketUrl: z.string().min(1, "BUCKET_URL is required"),
@@ -18,7 +18,7 @@ const envSchema = z.object({
 });
 
 const parsed = envSchema.safeParse({
-  origanDomain: process.env.ORIGAN_DOMAIN,
+  origanDeployDomain: process.env.ORIGAN_DEPLOY_DOMAIN,
   runnerUrl: process.env.RUNNER_URL,
   bucketName: process.env.BUCKET_NAME,
   bucketUrl: process.env.BUCKET_URL,

@@ -9,6 +9,7 @@ services:
       - /app/node_modules
     command: sh -c "corepack enable && pnpm install && pnpm run db:migrate && pnpm run dev"
     environment:
+      ORIGAN_DEPLOY_DOMAIN: 'localtest.me:7777'
       CORS_ORIGIN: '*'
       DATABASE_URL: postgresql://origan-root:origan@db:5432/origan
       DATABASE_RUN_MIGRATIONS: true
@@ -40,7 +41,7 @@ services:
     image: node:22-slim
     working_dir: /app
     environment:
-      - ORIGAN_DOMAIN=localtest.me
+      - ORIGAN_DEPLOY_DOMAIN=localtest.me
       - CONTROL_API_URL=http://control-api:9999
       - RUNNER_URL=http://runner:9000
       - BUCKET_URL=http://minio:9000

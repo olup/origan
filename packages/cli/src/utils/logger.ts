@@ -10,4 +10,7 @@ export const log = {
   info(message: string) {
     console.log(message);
   },
+  debug(message: string) {
+    console.log(pc.dim(message));
+  },
 };
