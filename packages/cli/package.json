@@ -1,20 +1,37 @@
 {
   "name": "@origan/cli",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "description": "Origan CLI tool for managing your applications",
   "scripts": {
     "build": "tsc -b",
     "build:watch": "tsc -b --watch",
     "lint": "biome check .",
     "format": "biome format . --write",
-    "check": "biome check --write ."
+    "check": "biome check --write .",
+    "prepublishOnly": "pnpm run build",
+    "publish": "pnpm publish --access public"
   },
+  "files": [
+    "dist"
+  ],
   "bin": {
     "origan": "./dist/index.js"
   },
+  "keywords": [
+    "origan",
+    "cli",
+    "deployment",
+    "developer-tools",
+    "development"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/origan/origan.git"
+  },
+  "license": "MIT",
   "dependencies": {
     "@types/form-data": "^2.5.2",
     "archiver": "^7.0.1",
@@ -36,5 +53,11 @@
     "@types/node": "^20.0.0",
     "@types/prompts": "^2.4.9",
     "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "packageManager": "pnpm@10.7.0+sha512.6b865ad4b62a1d9842b61d674a393903b871d9244954f652b8842c2b553c72176b278f64c463e52d40fff8aba385c235c8c9ecf5cc7de4fd78b8bb6d49633ab6"
   }
+
 }
