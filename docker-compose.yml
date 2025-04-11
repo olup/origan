@@ -21,13 +21,13 @@ services:
     networks:
       - origan-network
 
-  admin-frontend:
+  admin-panel:
     image: node:22-slim
     working_dir: /app
     ports:
       - "5173:5173"
     volumes:
-      - ./packages/admin-frontend:/app
+      - ./packages/admin-panel:/app
       - /app/node_modules
     command: sh -c "corepack enable && pnpm install && pnpm run dev --host 0.0.0.0"
     environment:
