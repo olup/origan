@@ -1,8 +1,10 @@
 import { readFile, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { parse } from "comment-json";
+import { API_URL } from "../constants.js";
 import { client } from "../libs/client.js";
 import { type OriganConfig, origanConfigSchema } from "../types.js";
+import { ProgressBar } from "../utils/cli.js";
 import {
   cleanDirectory,
   collectFiles,
@@ -17,6 +19,7 @@ import {
 } from "../utils/origan.js";
 import type { Route, RouteConfig } from "../utils/path.js";
 import { createRouteFromFile } from "../utils/path.js";
+import { uploadFormWithProgress } from "../utils/upload.js";
 import { bundleApiRoute, createDeploymentArchive } from "../utils/zip.js";
 
 interface ConfigJson {
@@ -56,27 +59,34 @@ async function uploadArchive(
   branch: string,
   config: ConfigJson,
 ): Promise<DeploymentResponse> {
-  const file = new File([await readFile(archivePath)], "bundle.zip", {
-    type: "application/zip",
-  });
-
   log.info("Uploading deployment package...");
-  log.info(`Total size: ${(file.size / 1024).toFixed(2)} KB`);
+  const stats = await stat(archivePath);
+  log.info(`Total size: ${(stats.size / 1024).toFixed(2)} KB`);
 
-  const response = await client.deployments.create.$post({
-    form: {
-      projectRef,
-      branchRef: branch,
-      config: JSON.stringify(config),
-      bundle: file,
+  const deployUrl = new URL("/deployments/create", API_URL);
+  const progressBar = new ProgressBar();
+
+  const response = await uploadFormWithProgress(
+    deployUrl,
+    [
+      { fieldName: "projectRef", value: projectRef },
+      { fieldName: "branchRef", value: branch },
+      { fieldName: "config", value: JSON.stringify(config) },
+    ],
+    [
+      {
+        fieldName: "bundle",
+        path: archivePath,
+        fileName: "bundle.zip",
+        contentType: "application/zip",
+      },
+    ],
+    (percentage) => {
+      progressBar.update(percentage);
     },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Upload failed: ${await response.text()}`);
-  }
-
-  return response.json();
+  );
+  progressBar.finish();
+  return JSON.parse(response) as DeploymentResponse;
 }
 
 export async function deploy(branch = "main"): Promise<void> {
@@ -204,6 +214,7 @@ export async function deploy(branch = "main"): Promise<void> {
     log.success("Deployment uploaded successfully! ✨");
 
     log.info("\nDeployment URLs:");
+
     for (const url of deploymentResult.urls) {
       log.success(`  ${url}`);
     }
