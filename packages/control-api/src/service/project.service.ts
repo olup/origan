@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { type SQLWrapper, and, eq } from "drizzle-orm";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
 
@@ -16,9 +16,19 @@ export async function createProject(
   return project;
 }
 
-export async function getProject(id: string) {
+export async function getProject(filter: { id?: string; reference?: string }) {
+  if (filter.id == null && filter.reference == null) {
+    throw new Error("Either id or reference must be provided");
+  }
+  const clauses: SQLWrapper[] = [];
+  if (filter.id) {
+    clauses.push(eq(schema.projectSchema.id, filter.id));
+  } else if (filter.reference) {
+    clauses.push(eq(schema.projectSchema.reference, filter.reference));
+  }
+
   const project = await db.query.projectSchema.findFirst({
-    where: eq(schema.projectSchema.id, id),
+    where: and(...clauses),
     with: {
       deployments: true,
     },

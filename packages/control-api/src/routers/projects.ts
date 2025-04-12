@@ -28,27 +28,56 @@ export const projectsRouter = new Hono()
       return c.json(errorResponse, 500);
     }
   })
-  .get("/:id", zValidator("param", z.object({ id: z.string() })), async (c) => {
-    const { id } = c.req.valid("param");
+  .get(
+    "/by-id/:id",
+    zValidator("param", z.object({ id: z.string() })),
+    async (c) => {
+      const { id } = c.req.valid("param");
 
-    try {
-      const project = await getProject(id);
-      if (!project) {
+      try {
+        const project = await getProject({ id: id });
+        if (!project) {
+          const errorResponse: ProjectError = {
+            error: "Project not found",
+            details: `No project found with ID ${id}`,
+          };
+          return c.json(errorResponse, 404);
+        }
+        return c.json(project);
+      } catch (error) {
         const errorResponse: ProjectError = {
-          error: "Project not found",
-          details: `No project found with ID ${id}`,
+          error: "Failed to fetch project",
+          details: error instanceof Error ? error.message : String(error),
         };
-        return c.json(errorResponse, 404);
+        return c.json(errorResponse, 500);
       }
-      return c.json(project);
-    } catch (error) {
-      const errorResponse: ProjectError = {
-        error: "Failed to fetch project",
-        details: error instanceof Error ? error.message : String(error),
-      };
-      return c.json(errorResponse, 500);
-    }
-  })
+    },
+  )
+  .get(
+    "/by-ref/:ref",
+    zValidator("param", z.object({ ref: z.string() })),
+    async (c) => {
+      const { ref } = c.req.valid("param");
+
+      try {
+        const project = await getProject({ reference: ref });
+        if (!project) {
+          const errorResponse: ProjectError = {
+            error: "Project not found",
+            details: `No project found with reference ${ref}`,
+          };
+          return c.json(errorResponse, 404);
+        }
+        return c.json(project);
+      } catch (error) {
+        const errorResponse: ProjectError = {
+          error: "Failed to fetch project",
+          details: error instanceof Error ? error.message : String(error),
+        };
+        return c.json(errorResponse, 500);
+      }
+    },
+  )
   .post("/", zValidator("json", projectCreateSchema), async (c) => {
     const data = await c.req.valid("json");
 

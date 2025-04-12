@@ -7,6 +7,12 @@ import { startDev } from "./services/dev.service.js";
 import { init } from "./services/init.service.js";
 import { getProjects } from "./services/project.service.js";
 import { table } from "./utils/console-ui.js";
+import { log } from "./utils/logger.js";
+import {
+  OriganConfigInvalidError,
+  OriganConfigNotFoundError,
+  parseOriganConfig,
+} from "./utils/origan.js";
 
 const program = new Command();
 
@@ -64,9 +70,28 @@ program
 program
   .command("deployments")
   .description("List all deployments")
-  .argument("<projectId>", "Project ID")
-  .action(async (projectId, options) => {
-    const deployments = await getDeployments(projectId);
+  .option("-p, --project <id>", "Project ID")
+  .action(async (options) => {
+    let projectRef = options.project;
+    if (!projectRef) {
+      try {
+        const config = await parseOriganConfig();
+        projectRef = config.projectRef;
+      } catch (error) {
+        let err: string;
+        if (error instanceof OriganConfigNotFoundError) {
+          err = "No origan.jsonc file found. Retry in a project directory";
+        } else if (error instanceof OriganConfigInvalidError) {
+          // TODO: Improve error message in case of validation error
+          err = `Invalid origan.jsonc file: ${error.message}. Fix the error`;
+        } else {
+          throw error;
+        }
+        log.error(`${err} or pass \`--project <project-ref>\` as an argument.`);
+        return;
+      }
+    }
+    const deployments = await getDeployments(projectRef);
     table(deployments.map(R.omit(["config"])));
   });
 

@@ -2,7 +2,7 @@ import { readFile, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { parse } from "comment-json";
 import { client } from "../libs/client.js";
-import { origanConfigSchema } from "../types.js";
+import { type OriganConfig, origanConfigSchema } from "../types.js";
 import {
   cleanDirectory,
   collectFiles,
@@ -10,6 +10,11 @@ import {
   validateDirectory,
 } from "../utils/file.js";
 import { log } from "../utils/logger.js";
+import {
+  OriganConfigInvalidError,
+  OriganConfigNotFoundError,
+  parseOriganConfig,
+} from "../utils/origan.js";
 import type { Route, RouteConfig } from "../utils/path.js";
 import { createRouteFromFile } from "../utils/path.js";
 import { bundleApiRoute, createDeploymentArchive } from "../utils/zip.js";
@@ -78,30 +83,21 @@ export async function deploy(branch = "main"): Promise<void> {
   try {
     log.info("Starting deployment process...");
 
-    // Check for origan.jsonc file
-    const origanConfigPath = join(process.cwd(), "origan.jsonc");
-
+    // ugh, should be const but shitty try/catch make it impossible
+    let config: OriganConfig;
     try {
-      await stat(origanConfigPath);
+      config = await parseOriganConfig();
     } catch (error) {
-      log.error(
-        "origan.jsonc not found. Please run 'origan init' to configure your project first.",
-      );
-      return;
+      if (error instanceof OriganConfigNotFoundError) {
+        log.error(error.message);
+        return;
+      }
+      if (error instanceof OriganConfigInvalidError) {
+        log.error(error.message);
+        return;
+      }
+      throw error;
     }
-
-    // Read and parse config
-    const origanContent = await readFile(origanConfigPath, "utf-8");
-    const parsedConfig = parse(origanContent) as unknown;
-
-    const result = origanConfigSchema.safeParse(parsedConfig);
-    if (!result.success) {
-      throw new Error(
-        `Invalid origan.jsonc: ${result.error.message}\nPlease run 'origan init' to create a valid config.`,
-      );
-    }
-
-    const config = result.data;
 
     // Create required directories
     const artifactsDir = join(process.cwd(), ".origan", "artifacts");
@@ -223,10 +219,10 @@ export async function deploy(branch = "main"): Promise<void> {
   }
 }
 
-export async function getDeployments(projectId: string) {
-  const response = await client.projects[":id"].$get({
+export async function getDeployments(projectRef: string) {
+  const response = await client.projects["by-ref"][":ref"].$get({
     param: {
-      id: projectId,
+      ref: projectRef,
     },
   });
 
