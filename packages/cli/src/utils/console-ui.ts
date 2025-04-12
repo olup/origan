@@ -1,4 +1,6 @@
-export function table<T extends Record<string, string>>(data: T[]): void {
+export function table<T extends Record<string, string | null>>(
+  data: T[],
+): void {
   if (data.length === 0) {
     console.log("Empty data set");
     return;

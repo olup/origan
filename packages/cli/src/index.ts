@@ -58,7 +58,7 @@ program
       projects.map((p) =>
         R.pipe(
           p,
-          R.omit(["deployments"]),
+          R.omit(["deployments", "deletedAt"]),
           R.merge({
             deployments: p.deployments.map((d) => d.shortId).join(", "),
           }),
@@ -92,7 +92,7 @@ program
       }
     }
     const deployments = await getDeployments(projectRef);
-    table(deployments.map(R.omit(["config"])));
+    table(deployments.map(R.omit(["config", "deletedAt"])));
   });
 
 program

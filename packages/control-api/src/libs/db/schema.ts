@@ -1,10 +1,12 @@
 import { relations } from "drizzle-orm";
 import { jsonb, pgTable, serial, text, uuid } from "drizzle-orm/pg-core";
+import { timestamps } from "./columns.helpers.js";
 
 export const projectSchema = pgTable("project", {
   id: uuid("id").primaryKey().defaultRandom(),
   reference: text("reference").notNull().unique(),
   name: text("name").notNull(),
+  ...timestamps,
 });
 
 export const projectRelations = relations(projectSchema, ({ many }) => ({
@@ -18,6 +20,7 @@ export const deploymentSchema = pgTable("deployment", {
   projectId: uuid("project_id")
     .references(() => projectSchema.id, { onDelete: "cascade" })
     .notNull(),
+  ...timestamps,
 });
 
 // Relations
@@ -38,6 +41,7 @@ export const hostSchema = pgTable("host", {
   deploymentId: uuid("deployment_id")
     .references(() => deploymentSchema.id, { onDelete: "cascade" })
     .notNull(),
+  ...timestamps,
 });
 
 export const hostRelations = relations(hostSchema, ({ one }) => ({
