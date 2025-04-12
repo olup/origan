@@ -1,5 +1,4 @@
-import * as pulumi from "@pulumi/pulumi";
-import { BucketConfig, deployBucket } from "./components/bucket";
+import { deployBucket } from "./components/bucket";
 import { deployControl } from "./components/control";
 import { deployDatabase } from "./components/database";
 import { deployGateway } from "./components/gateway";

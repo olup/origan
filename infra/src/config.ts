@@ -4,7 +4,7 @@ import { z } from "zod";
 const GithubConfig = z.object({
   clientId: z.string(),
   clientSecret: z.string(),
-})
+});
 const Config = z.object({
   github: GithubConfig,
 });

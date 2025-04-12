@@ -1,5 +1,4 @@
 import { deployAll } from "./src/index";
-import { config } from "./src/config";
 
 const outputs = deployAll();
 
