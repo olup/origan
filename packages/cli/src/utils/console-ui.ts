@@ -1,13 +1,14 @@
-export function table<T extends Record<string, string | null>>(
-  data: T[],
-): void {
+export function table<
+  T extends Record<string, string | null>,
+  K extends keyof T & string,
+>(data: T[], columns: K[] | null = null): void {
   if (data.length === 0) {
     console.log("Empty data set");
     return;
   }
 
   // Extract all unique keys from all objects
-  const headers = [...new Set(data.flatMap(Object.keys))];
+  const headers = columns ?? [...new Set(data.flatMap(Object.keys))];
 
   // Calculate column widths (maximum of header length and the longest value)
   const columnWidths = headers.reduce(

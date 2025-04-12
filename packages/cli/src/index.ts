@@ -58,12 +58,13 @@ program
       projects.map((p) =>
         R.pipe(
           p,
-          R.omit(["deployments", "deletedAt"]),
+          R.omit(["deployments"]),
           R.merge({
             deployments: p.deployments.map((d) => d.shortId).join(", "),
           }),
         ),
       ),
+      ["reference", "name", "deployments", "createdAt", "updatedAt"],
     );
   });
 
@@ -96,12 +97,13 @@ program
       deployments.map((d) =>
         R.pipe(
           d,
-          R.omit(["config", "deletedAt", "hosts"]),
+          R.omit(["hosts"]),
           R.merge({
-            host: d.hosts.map((h) => h.name).join(", "),
+            hosts: d.hosts.map((h) => h.name).join(", "),
           }),
         ),
       ),
+      ["shortId", "hosts", "createdAt", "updatedAt"],
     );
   });
 
