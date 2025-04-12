@@ -35,14 +35,16 @@
   "dependencies": {
     "@types/form-data": "^2.5.2",
     "archiver": "^7.0.1",
+    "clipanion": "4.0.0-rc.4",
     "commander": "^11.1.0",
     "comment-json": "^4.2.5",
+    "dotenv": "^16.4.7",
     "esbuild": "^0.25.2",
     "form-data": "^4.0.2",
     "formdata-node": "^6.0.3",
     "glob": "^11.0.1",
     "globby": "^14.1.0",
-    "hono": "^4.7.5",
+    "hono": "^4.7.6",
     "picocolors": "^1.1.1",
     "prompts": "^2.4.2",
     "remeda": "^2.21.2",
@@ -52,13 +54,12 @@
     "@types/archiver": "^6.0.3",
     "@types/commander": "^2.12.5",
     "@types/glob": "^8.1.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.14.0",
     "@types/prompts": "^2.4.9",
-    "typescript": "^5.0.0"
+    "typescript": "^5.8.3"
   },
   "publishConfig": {
     "access": "public"
   },
   "packageManager": "pnpm@10.7.0+sha512.6b865ad4b62a1d9842b61d674a393903b871d9244954f652b8842c2b553c72176b278f64c463e52d40fff8aba385c235c8c9ecf5cc7de4fd78b8bb6d49633ab6"
 }
-

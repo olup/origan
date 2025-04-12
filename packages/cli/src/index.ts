@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { Command } from "commander";
+import { Cli, Command, Option } from "clipanion";
 import * as R from "remeda";
 import { login, logout } from "./services/auth.service.js";
 import { deploy, getDeployments } from "./services/deploy.service.js";
@@ -14,46 +14,43 @@ import {
   parseOriganConfig,
 } from "./utils/origan.js";
 
-const program = new Command();
+class LoginCommand extends Command {
+  static paths = [["login"]];
 
-program.name("origan").description("Origan CLI tool").version("0.1.0");
-
-program
-  .command("start")
-  .description("Start Origan services")
-  .action(async () => {
-    console.log("Starting Origan services...");
-    // TODO: Implement service startup logic
-  });
-
-program
-  .command("login")
-  .description("Login to Origan")
-  .action(async () => {
+  async execute() {
     await login();
-  });
+  }
+}
 
-program
-  .command("logout")
-  .description("Logout from Origan")
-  .action(async () => {
+class LogoutCommand extends Command {
+  static paths = [["logout"]];
+
+  async execute() {
     await logout();
+  }
+}
+
+class DeployCommand extends Command {
+  static paths = [["deploy"]];
+
+  branch = Option.String("-b,--branch", "main", {
+    description: "Branch name",
   });
 
-program
-  .command("deploy")
-  .description("Deploy your application")
-  .option("-b, --branch <name>", "Branch name", "main")
-  .action(async (options) => {
-    await deploy(options.branch);
-  });
+  async execute() {
+    await deploy(this.branch);
+  }
+}
 
-program
-  .command("projects")
-  .description("List all projects")
-  .action(async () => {
+class ProjectsCommand extends Command {
+  static paths = [["projects"]];
+  static usage = Command.Usage({
+    description: "List all projects",
+    details: "This command lists all projects in the Origan system.",
+    examples: [["List all projects", "$0 projects"]],
+  });
+  async execute() {
     const projects = await getProjects();
-
     table(
       projects.map((p) =>
         R.pipe(
@@ -66,14 +63,23 @@ program
       ),
       ["reference", "name", "deployments", "createdAt", "updatedAt"],
     );
+  }
+}
+
+class DeploymentsCommand extends Command {
+  static paths = [["deployments"]];
+  static usage = Command.Usage({
+    description: "List all deployments",
+    details: "This command lists all deployments in the Origan system.",
+    examples: [["List all deployments", "$0 deployments"]],
   });
 
-program
-  .command("deployments")
-  .description("List all deployments")
-  .option("-p, --project <id>", "Project ID")
-  .action(async (options) => {
-    let projectRef = options.project;
+  project = Option.String("-p,--project", "", {
+    description: "Project ID",
+  });
+
+  async execute() {
+    let projectRef = this.project;
     if (!projectRef) {
       try {
         const config = await parseOriganConfig();
@@ -83,7 +89,6 @@ program
         if (error instanceof OriganConfigNotFoundError) {
           err = "No origan.jsonc file found. Retry in a project directory";
         } else if (error instanceof OriganConfigInvalidError) {
-          // TODO: Improve error message in case of validation error
           err = `Invalid origan.jsonc file: ${error.message}. Fix the error`;
         } else {
           throw error;
@@ -105,20 +110,40 @@ program
       ),
       ["shortId", "hosts", "createdAt", "updatedAt"],
     );
+  }
+}
+
+class DevCommand extends Command {
+  static paths = [["dev"]];
+
+  static usage = Command.Usage({
+    description: "Start development environment",
   });
 
-program
-  .command("dev")
-  .description("Start development environment")
-  .action(async () => {
+  async execute() {
     await startDev();
-  });
+  }
+}
 
-program
-  .command("init")
-  .description("Initialize Origan configuration")
-  .action(async () => {
+class InitCommand extends Command {
+  static paths = [["init"]];
+
+  async execute() {
     await init();
-  });
+  }
+}
 
-program.parse();
+const cli = new Cli({
+  binaryName: "origan",
+  binaryVersion: "0.1.0",
+});
+
+cli.register(LoginCommand);
+cli.register(LogoutCommand);
+cli.register(DeployCommand);
+cli.register(DevCommand);
+cli.register(InitCommand);
+cli.register(ProjectsCommand);
+cli.register(DeploymentsCommand);
+
+cli.runExit(process.argv.slice(2));

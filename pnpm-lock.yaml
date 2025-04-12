@@ -92,13 +92,13 @@ importers:
         version: 19.0.4(@types/react@19.0.12)
       '@vitejs/plugin-react-swc':
         specifier: ^3.8.0
-        version: 3.8.1(vite@6.2.3(@types/node@22.13.13)(tsx@4.19.3))
+        version: 3.8.1(vite@6.2.3(@types/node@22.14.1)(tsx@4.19.3))
       typescript:
         specifier: ~5.7.2
         version: 5.7.3
       vite:
         specifier: ^6.2.0
-        version: 6.2.3(@types/node@22.13.13)(tsx@4.19.3)
+        version: 6.2.3(@types/node@22.14.1)(tsx@4.19.3)
 
   packages/cli:
     dependencies:
@@ -108,12 +108,18 @@ importers:
       archiver:
         specifier: ^7.0.1
         version: 7.0.1
+      clipanion:
+        specifier: 4.0.0-rc.4
+        version: 4.0.0-rc.4(typanion@3.14.0)
       commander:
         specifier: ^11.1.0
         version: 11.1.0
       comment-json:
         specifier: ^4.2.5
         version: 4.2.5
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.4.7
       esbuild:
         specifier: ^0.25.2
         version: 0.25.2
@@ -130,7 +136,7 @@ importers:
         specifier: ^14.1.0
         version: 14.1.0
       hono:
-        specifier: ^4.7.5
+        specifier: ^4.7.6
         version: 4.7.6
       picocolors:
         specifier: ^1.1.1
@@ -155,14 +161,14 @@ importers:
         specifier: ^8.1.0
         version: 8.1.0
       '@types/node':
-        specifier: ^20.0.0
-        version: 20.17.28
+        specifier: ^22.14.0
+        version: 22.14.1
       '@types/prompts':
         specifier: ^2.4.9
         version: 2.4.9
       typescript:
-        specifier: ^5.0.0
-        version: 5.7.3
+        specifier: ^5.8.3
+        version: 5.8.3
 
   packages/control-api:
     dependencies:
@@ -1935,8 +1941,8 @@ packages:
   '@types/node@20.17.30':
     resolution: {integrity: sha512-7zf4YyHA+jvBNfVrk2Gtvs6x7E8V+YDW05bNfG2XkWDJfYRXrTiP/DsB2zSYTaHX0bGIujTBQdMVAhb+j7mwpg==}
 
-  '@types/node@22.13.13':
-    resolution: {integrity: sha512-ClsL5nMwKaBRwPcCvH8E7+nU4GxHVx1axNvMZTFHMEfNI7oahimt26P5zjVCRrjiIWj6YFXfE1v3dEp94wLcGQ==}
+  '@types/node@22.14.1':
+    resolution: {integrity: sha512-u0HuPQwe/dHrItgHHpmw3N2fYCR6x4ivMNbPHRkBVP4CvN+kiRrKHWk3i8tXiO/joPwXLMYvF9TTF0eqgHIuOw==}
 
   '@types/pg@8.11.11':
     resolution: {integrity: sha512-kGT1qKM8wJQ5qlawUrEkXgvMSXoV213KfMGXcwfDwUIfUHXqXYXOfS1nE1LINRJVVVx5wCm70XnFlMHaIcQAfw==}
@@ -2130,6 +2136,11 @@ packages:
   clean-stack@2.2.0:
     resolution: {integrity: sha512-4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==}
     engines: {node: '>=6'}
+
+  clipanion@4.0.0-rc.4:
+    resolution: {integrity: sha512-CXkMQxU6s9GklO/1f714dkKBMu1lopS1WFF0B8o4AxPykR1hpozxSiUZ5ZUeBjfPgCWqbcNOtZVFhB8Lkfp1+Q==}
+    peerDependencies:
+      typanion: '*'
 
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
@@ -3459,6 +3470,9 @@ packages:
     resolution: {integrity: sha512-GwIJau9XaA8nLVbUXsN3IlFi7WmQ48gBUrl3FTkkL/XLu/POhBzfmX9hd33FNMX1qAsfl6ozO1iMmW9NC8YniA==}
     engines: {node: ^16.14.0 || >=18.0.0}
 
+  typanion@3.14.0:
+    resolution: {integrity: sha512-ZW/lVMRabETuYCd9O9ZvMhAh8GslSqaUjxmK/JLPCh6l73CvLBiuXswj/+7LdnWOgYsQ130FqLzFz5aGT4I3Ug==}
+
   type-fest@4.39.1:
     resolution: {integrity: sha512-uW9qzd66uyHYxwyVBYiwS4Oi0qZyUqwjU+Oevr6ZogYiXt99EOYtwvzMSLw1c3lYo2HzJsep/NB23iEVEgjG/w==}
     engines: {node: '>=16'}
@@ -3479,8 +3493,8 @@ packages:
   undici-types@6.19.8:
     resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
 
-  undici-types@6.20.0:
-    resolution: {integrity: sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==}
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
   unicorn-magic@0.3.0:
     resolution: {integrity: sha512-+QBBXBCvifc56fsbuxZQ6Sic3wqqc3WWaqxs58gvJrcOuN83HGTCwz3oS5phzU9LthRNE9VrJCFCLUgHeeFnfA==}
@@ -5395,7 +5409,7 @@ snapshots:
     dependencies:
       '@types/http-cache-semantics': 4.0.4
       '@types/keyv': 3.1.4
-      '@types/node': 18.19.84
+      '@types/node': 20.17.30
       '@types/responselike': 1.0.3
 
   '@types/commander@2.12.5':
@@ -5411,7 +5425,7 @@ snapshots:
   '@types/glob@8.1.0':
     dependencies:
       '@types/minimatch': 5.1.2
-      '@types/node': 20.17.28
+      '@types/node': 20.17.30
 
   '@types/google-protobuf@3.15.12': {}
 
@@ -5419,7 +5433,7 @@ snapshots:
 
   '@types/keyv@3.1.4':
     dependencies:
-      '@types/node': 18.19.84
+      '@types/node': 20.17.30
 
   '@types/mime-types@2.1.4': {}
 
@@ -5437,20 +5451,19 @@ snapshots:
     dependencies:
       undici-types: 6.19.8
 
-  '@types/node@22.13.13':
+  '@types/node@22.14.1':
     dependencies:
-      undici-types: 6.20.0
-    optional: true
+      undici-types: 6.21.0
 
   '@types/pg@8.11.11':
     dependencies:
-      '@types/node': 20.17.28
+      '@types/node': 20.17.30
       pg-protocol: 1.8.0
       pg-types: 4.0.2
 
   '@types/prompts@2.4.9':
     dependencies:
-      '@types/node': 20.17.28
+      '@types/node': 20.17.30
       kleur: 3.0.3
 
   '@types/react-dom@19.0.4(@types/react@19.0.12)':
@@ -5463,11 +5476,11 @@ snapshots:
 
   '@types/readdir-glob@1.1.5':
     dependencies:
-      '@types/node': 20.17.28
+      '@types/node': 20.17.30
 
   '@types/responselike@1.0.3':
     dependencies:
-      '@types/node': 18.19.84
+      '@types/node': 20.17.30
 
   '@types/semver@7.5.8': {}
 
@@ -5481,12 +5494,12 @@ snapshots:
 
   '@types/unzipper@0.10.11':
     dependencies:
-      '@types/node': 20.17.28
+      '@types/node': 20.17.30
 
-  '@vitejs/plugin-react-swc@3.8.1(vite@6.2.3(@types/node@22.13.13)(tsx@4.19.3))':
+  '@vitejs/plugin-react-swc@3.8.1(vite@6.2.3(@types/node@22.14.1)(tsx@4.19.3))':
     dependencies:
       '@swc/core': 1.11.13
-      vite: 6.2.3(@types/node@22.13.13)(tsx@4.19.3)
+      vite: 6.2.3(@types/node@22.14.1)(tsx@4.19.3)
     transitivePeerDependencies:
       - '@swc/helpers'
 
@@ -5653,6 +5666,10 @@ snapshots:
   cjs-module-lexer@1.4.3: {}
 
   clean-stack@2.2.0: {}
+
+  clipanion@4.0.0-rc.4(typanion@3.14.0):
+    dependencies:
+      typanion: 3.14.0
 
   cliui@8.0.1:
     dependencies:
@@ -6695,7 +6712,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 18.19.84
+      '@types/node': 20.17.30
       long: 5.3.1
 
   pump@3.0.2:
@@ -7064,6 +7081,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  typanion@3.14.0: {}
+
   type-fest@4.39.1: {}
 
   typescript@5.7.3: {}
@@ -7074,8 +7093,7 @@ snapshots:
 
   undici-types@6.19.8: {}
 
-  undici-types@6.20.0:
-    optional: true
+  undici-types@6.21.0: {}
 
   unicorn-magic@0.3.0: {}
 
@@ -7112,13 +7130,13 @@ snapshots:
 
   validate-npm-package-name@5.0.1: {}
 
-  vite@6.2.3(@types/node@22.13.13)(tsx@4.19.3):
+  vite@6.2.3(@types/node@22.14.1)(tsx@4.19.3):
     dependencies:
       esbuild: 0.25.1
       postcss: 8.5.3
       rollup: 4.37.0
     optionalDependencies:
-      '@types/node': 22.13.13
+      '@types/node': 22.14.1
       fsevents: 2.3.3
       tsx: 4.19.3
 

@@ -1,7 +1,6 @@
-import { readFile, stat, writeFile } from "node:fs/promises";
+import { stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { parse } from "comment-json";
-import { API_URL } from "../constants.js";
+import { config } from "../config.js";
 import { client } from "../libs/client.js";
 import { type OriganConfig, origanConfigSchema } from "../types.js";
 import { ProgressBar } from "../utils/cli.js";
@@ -57,13 +56,13 @@ async function uploadArchive(
   archivePath: string,
   projectRef: string,
   branch: string,
-  config: ConfigJson,
+  origanConfig: ConfigJson,
 ): Promise<DeploymentResponse> {
   log.info("Uploading deployment package...");
   const stats = await stat(archivePath);
   log.info(`Total size: ${(stats.size / 1024).toFixed(2)} KB`);
 
-  const deployUrl = new URL("/deployments/create", API_URL);
+  const deployUrl = new URL("/deployments/create", config.apiUrl);
   const progressBar = new ProgressBar();
 
   const response = await uploadFormWithProgress(
@@ -71,7 +70,7 @@ async function uploadArchive(
     [
       { fieldName: "projectRef", value: projectRef },
       { fieldName: "branchRef", value: branch },
-      { fieldName: "config", value: JSON.stringify(config) },
+      { fieldName: "config", value: JSON.stringify(origanConfig) },
     ],
     [
       {
