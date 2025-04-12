@@ -92,7 +92,17 @@ program
       }
     }
     const deployments = await getDeployments(projectRef);
-    table(deployments.map(R.omit(["config", "deletedAt"])));
+    table(
+      deployments.map((d) =>
+        R.pipe(
+          d,
+          R.omit(["config", "deletedAt", "hosts"]),
+          R.merge({
+            host: d.hosts.map((h) => h.name).join(", "),
+          }),
+        ),
+      ),
+    );
   });
 
 program

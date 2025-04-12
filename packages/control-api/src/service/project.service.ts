@@ -30,7 +30,11 @@ export async function getProject(filter: { id?: string; reference?: string }) {
   const project = await db.query.projectSchema.findFirst({
     where: and(...clauses),
     with: {
-      deployments: true,
+      deployments: {
+        with: {
+          hosts: true,
+        },
+      },
     },
   });
 
@@ -40,7 +44,11 @@ export async function getProject(filter: { id?: string; reference?: string }) {
 export async function getProjects() {
   const projects = await db.query.projectSchema.findMany({
     with: {
-      deployments: true,
+      deployments: {
+        with: {
+          hosts: true,
+        },
+      },
     },
   });
 
