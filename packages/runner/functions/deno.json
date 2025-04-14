@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
     "lib": ["deno.ns", "dom"]
+  },
+  "imports": {
+    "@supabase/edge-runtime": "https://raw.githubusercontent.com/supabase/edge-runtime/f023901e4172d7266cb450f545e6a32e5fb0c181/types/global.d.ts",
+    "openai": "npm:openai"
   }
 }

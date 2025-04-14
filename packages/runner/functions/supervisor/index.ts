@@ -1,7 +1,7 @@
 import { GetObjectCommand, S3Client } from "npm:@aws-sdk/client-s3";
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 import { startCleanupInterval } from "./cleanup.ts";
-import type { EdgeRuntime } from "./edge-runtime.ts";
+import { EdgeRuntime } from "@supabase/edge-runtime";
 
 const envVarsObj = Deno.env.toObject();
 
@@ -103,7 +103,6 @@ serve(async (req: Request) => {
   console.log(`Worker path: ${workerPath}`);
 
   try {
-    // @ts-expect-error Deno is not aware of the EdgeRuntime type
     const worker = await EdgeRuntime.userWorkers.create({
       servicePath: workerPath,
       memoryLimitMb,
