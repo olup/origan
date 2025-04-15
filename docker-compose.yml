@@ -73,9 +73,11 @@ services:
       - BUCKET_SECRET_KEY=minioadmin
       - BUCKET_NAME=origan
       - BUCKET_REGION=us-east-1
+      - WORKERS_PATH=/workers
     volumes:
-      - ./packages/runner:/app
-    command: start --main-service /app/functions/supervisor
+      - ./packages/runner/:/app
+      - runner_workers:/workers
+    command: start --main-service ./functions/supervisor
     networks:
       - origan-network
 
@@ -121,3 +123,4 @@ networks:
 volumes:
   minio_data:
   postgres_data:
+  runner_workers:

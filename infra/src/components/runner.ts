@@ -96,6 +96,10 @@ export function deployRunner({
                     name: "BUCKET_SECRET_KEY",
                     value: bucketConfig.bucketSecretKey,
                   },
+                  {
+                    name: "WORKERS_PATH",
+                    value: "/workers",
+                  },
                 ],
               },
             ],

@@ -1,7 +1,6 @@
 import { GetObjectCommand, S3Client } from "npm:@aws-sdk/client-s3";
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 import { startCleanupInterval } from "./cleanup.ts";
-import { EdgeRuntime } from "@supabase/edge-runtime";
 
 const envVarsObj = Deno.env.toObject();
 
@@ -28,6 +27,13 @@ const s3Client = new S3Client({
   },
 });
 
+const WORKERS_PATH = envVarsObj.WORKERS_PATH || "./.workers";
+if (WORKERS_PATH == null) {
+  throw new Error("WORKERS_PATH environment variable not set");
+}
+
+await Deno.mkdir(WORKERS_PATH, { recursive: true });
+
 // Helper function to get object from S3
 async function getObject(Bucket: string, Key: string): Promise<string> {
   console.log(`Fetching ${Key} from S3 bucket ${Bucket}`);
@@ -53,7 +59,7 @@ async function getObject(Bucket: string, Key: string): Promise<string> {
 console.log("main function started");
 
 // Start the cleanup interval for worker directories
-startCleanupInterval("functions/workers");
+startCleanupInterval(WORKERS_PATH);
 
 serve(async (req: Request) => {
   // const get function path on s3 from header
@@ -67,12 +73,11 @@ serve(async (req: Request) => {
 
   // sha1 of path
   const queryHash = await sha1(functionPath);
-  const workerPath = `functions/workers/${queryHash}`;
+  const workerPath = `${WORKERS_PATH}/${queryHash}`;
 
   const memoryLimitMb = 150;
   const workerTimeoutMs = 1 * 60 * 1000;
   const noModuleCache = false;
-  const importMapPath = null;
   const envVars = Object.entries(envVarsObj) as [string, string][];
 
   console.error(`serving the request for ${functionPath}`);
@@ -108,7 +113,6 @@ serve(async (req: Request) => {
       memoryLimitMb,
       workerTimeoutMs,
       noModuleCache,
-      importMapPath,
       envVars,
     });
 
