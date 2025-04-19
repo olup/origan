@@ -69,7 +69,8 @@ services:
       - origan-network
     depends_on:
       - control-api
-      - runner
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
 
   runner:
     image: ghcr.io/supabase/edge-runtime:v1.67.4
@@ -84,7 +85,7 @@ services:
     volumes:
       - ./packages/runner/:/app
       - runner_workers:/workers
-    command: start --main-service ./functions/supervisor
+    command: start --main-service ./functions/supervisor --event-worker ./functions/event-worker
     networks:
       - origan-network
 

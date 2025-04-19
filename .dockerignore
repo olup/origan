@@ -16,6 +16,7 @@ dist
 infra
 example-deployment
 packages/control/frontend
+.workers-data
 
 # Misc
 Session.nvim

@@ -1,6 +1,7 @@
 import { GetObjectCommand, S3Client } from "npm:@aws-sdk/client-s3";
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 import { startCleanupInterval } from "./cleanup.ts";
+import { resolve } from "https://deno.land/std/path/mod.ts";
 
 const envVarsObj = Deno.env.toObject();
 
@@ -73,7 +74,7 @@ serve(async (req: Request) => {
 
   // sha1 of path
   const queryHash = await sha1(functionPath);
-  const workerPath = `${WORKERS_PATH}/${queryHash}`;
+  const workerPath = resolve(`${WORKERS_PATH}/${queryHash}`);
 
   const memoryLimitMb = 150;
   const workerTimeoutMs = 1 * 60 * 1000;
@@ -91,9 +92,13 @@ serve(async (req: Request) => {
       throw new Error("Failed to get file content from S3");
     }
 
-    await Deno.writeTextFile(`${workerPath}/index.ts`, fileContent, {
-      create: true,
-    });
+    await Deno.writeTextFile(
+      `${workerPath}/index.ts`,
+      `${fileContent}`,
+      {
+        create: true,
+      },
+    );
   } catch (error) {
     console.error("Error fetching from S3:", error);
     return new Response(
