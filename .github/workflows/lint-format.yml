@@ -1,4 +1,4 @@
-name: Lint and Format
+name: Lint & Format
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint-format:
-    name: Check linting and formatting
+    name: PNPM workspace
     runs-on: ubuntu-latest
 
     steps:
@@ -46,3 +46,27 @@ jobs:
 
       - name: Build projects
         run: pnpm build
+
+  lint-runner:
+    name: Runner
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./packages/runner/functions
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Format runner
+        run: deno fmt .
+
+      - name: Lint runner
+        run: deno lint .
+
+      - name: Check runner
+        run: deno check .
