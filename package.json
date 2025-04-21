@@ -17,5 +17,10 @@
   },
   "dependencies": {
     "@origan/cli": "link:packages/cli"
+  },
+  "pnpm": {
+    "overrides": {
+      "@origan/cli": "link:packages/cli"
+    }
   }
 }

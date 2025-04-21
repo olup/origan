@@ -13,10 +13,10 @@ importers:
         version: 3.779.0
       '@hono/node-server':
         specifier: ^1.0.0
-        version: 1.14.0(hono@4.7.5)
+        version: 1.14.0(hono@4.7.7)
       hono:
-        specifier: ^4.7.5
-        version: 4.7.5
+        specifier: 4.7.7
+        version: 4.7.7
       lru-cache:
         specifier: ^11.1.0
         version: 11.1.0
@@ -578,8 +578,8 @@ packages:
   get-tsconfig@4.10.0:
     resolution: {integrity: sha512-kGzZ3LWWQcGIAmg6iWvXn0ei6WDtV26wzHRMwDSzmAbcXrTEXxHy6IehI6/4eT6VRKyMP1eF1VqwrVUmE/LR7A==}
 
-  hono@4.7.5:
-    resolution: {integrity: sha512-fDOK5W2C1vZACsgLONigdZTRZxuBqFtcKh7bUQ5cVSbwI2RWjloJDcgFOVzbQrlI6pCmhlTsVYZ7zpLj4m4qMQ==}
+  hono@4.7.7:
+    resolution: {integrity: sha512-2PCpQRbN87Crty8/L/7akZN3UyZIAopSoRxCwRbJgUuV1+MHNFHzYFxZTg4v/03cXUm+jce/qa2VSBZpKBm3Qw==}
     engines: {node: '>=16.9.0'}
 
   lru-cache@11.1.0:
@@ -1150,9 +1150,9 @@ snapshots:
   '@esbuild/win32-x64@0.25.1':
     optional: true
 
-  '@hono/node-server@1.14.0(hono@4.7.5)':
+  '@hono/node-server@1.14.0(hono@4.7.7)':
     dependencies:
-      hono: 4.7.5
+      hono: 4.7.7
 
   '@smithy/abort-controller@4.0.2':
     dependencies:
@@ -1530,7 +1530,7 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
-  hono@4.7.5: {}
+  hono@4.7.7: {}
 
   lru-cache@11.1.0: {}
 

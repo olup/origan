@@ -10,17 +10,24 @@ export async function createProject(
     .values({
       reference: data.reference,
       name: data.name,
+      userId: data.userId,
     })
     .returning();
 
   return project;
 }
 
-export async function getProject(filter: { id?: string; reference?: string }) {
+export async function getProject(filter: {
+  id?: string;
+  reference?: string;
+  userId: string;
+}) {
   if (filter.id == null && filter.reference == null) {
     throw new Error("Either id or reference must be provided");
   }
-  const clauses: SQLWrapper[] = [];
+  const clauses: SQLWrapper[] = [
+    eq(schema.projectSchema.userId, filter.userId),
+  ];
   if (filter.id) {
     clauses.push(eq(schema.projectSchema.id, filter.id));
   } else if (filter.reference) {
@@ -41,8 +48,9 @@ export async function getProject(filter: { id?: string; reference?: string }) {
   return project;
 }
 
-export async function getProjects() {
+export async function getProjects(userId: string) {
   const projects = await db.query.projectSchema.findMany({
+    where: eq(schema.projectSchema.userId, userId),
     with: {
       deployments: {
         with: {
@@ -57,6 +65,7 @@ export async function getProjects() {
 
 export async function updateProject(
   id: string,
+  userId: string,
   data: Partial<typeof schema.projectSchema.$inferInsert>,
 ) {
   const [project] = await db
@@ -64,17 +73,27 @@ export async function updateProject(
     .set({
       name: data.name,
     })
-    .where(eq(schema.projectSchema.id, id))
+    .where(
+      and(
+        eq(schema.projectSchema.id, id),
+        eq(schema.projectSchema.userId, userId),
+      ),
+    )
     .returning();
 
   return project;
 }
 
-export async function deleteProject(id: string) {
+export async function deleteProject(id: string, userId: string) {
   // The cascade delete will handle removing associated deployments and hosts
   const [project] = await db
     .delete(schema.projectSchema)
-    .where(eq(schema.projectSchema.id, id))
+    .where(
+      and(
+        eq(schema.projectSchema.id, id),
+        eq(schema.projectSchema.userId, userId),
+      ),
+    )
     .returning();
 
   return project;

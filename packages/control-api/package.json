@@ -10,7 +10,7 @@
     "format": "biome format . --write",
     "check": "biome check --write .",
     "db:migrate": "drizzle-kit migrate",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "pnpm tsx node_modules/drizzle-kit/bin.cjs generate"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.777.0",
@@ -19,13 +19,15 @@
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.6",
     "drizzle-orm": "^0.41.0",
-    "hono": "^4.7.5",
+    "hono": "4.7.7",
+    "jsonwebtoken": "^9.0.2",
     "nanoid": "^3.0.0",
     "pg": "^8.14.1",
     "unzipper": "^0.12.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20.0.0",
     "@types/pg": "^8.11.11",
     "@types/unzipper": "^0.10.11",

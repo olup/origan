@@ -1,36 +1,78 @@
-import { client } from "../libs/client.js";
+import { getAuthenticatedClient } from "../libs/client.js";
+import { log } from "../utils/logger.js";
+
+// TODO : Move this to a common place and use it in all services
+interface ErrorResponse {
+  error: string;
+  details?: string;
+}
+
+function handleApiError(error: ErrorResponse, status: number): never {
+  // Handle common status codes
+  if (status === 401) {
+    log.error("Authentication required. Please login first.");
+    process.exit(1);
+  }
+  if (status === 403) {
+    log.error("Access denied. You don't have permission for this action.");
+    process.exit(1);
+  }
+  if (status === 404) {
+    log.error("Resource not found.");
+    process.exit(1);
+  }
+
+  // For other errors, show the error message
+  throw new Error(error.details || error.error);
+}
 
 /**
  * Get all projects
  */
 export async function getProjects() {
-  const response = await client.projects.$get();
-  const data = await response.json();
-  if ("error" in data) {
-    throw new Error(
-      `Failed to fetch projects: ${(data as { error: string }).error}`,
+  try {
+    const client = await getAuthenticatedClient();
+    const response = await client.projects.$get();
+    const data = await response.json();
+
+    if ("error" in data) {
+      handleApiError(data, response.status as number);
+    }
+
+    return data;
+  } catch (error) {
+    log.error(
+      "Failed to fetch projects:",
+      error instanceof Error ? error.message : "Unknown error",
     );
+    throw error;
   }
-  return data;
 }
 
 /**
  * Create a new project
  */
 export async function createProject(name: string) {
-  const response = await client.projects.$post({
-    json: {
-      name,
-    },
-  });
+  try {
+    const client = await getAuthenticatedClient();
+    const response = await client.projects.$post({
+      json: {
+        name,
+      },
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  if ("error" in data) {
-    throw new Error(
-      `Failed to create project: ${(data as { error: string }).error}`,
+    if ("error" in data) {
+      handleApiError(data, response.status as number);
+    }
+
+    return data;
+  } catch (error) {
+    log.error(
+      "Failed to create project:",
+      error instanceof Error ? error.message : "Unknown error",
     );
+    process.exit(1);
   }
-
-  return data;
 }

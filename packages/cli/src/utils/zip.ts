@@ -12,6 +12,7 @@ export interface BundleResult {
 export async function bundleApiRoute(route: Route): Promise<string> {
   const bundled = await esbuild.build({
     entryPoints: [route.filePath],
+    external: [],
     bundle: true,
     platform: "node",
     target: "node18",
@@ -33,7 +34,6 @@ export async function createDeploymentArchive(
   appFiles: string[],
   routes: Route[],
   distPath: string,
-  buildPath: string,
 ): Promise<BundleResult> {
   return new Promise((resolve, reject) => {
     const zipPath = join(artifactsDir, `${uuid}.zip`);

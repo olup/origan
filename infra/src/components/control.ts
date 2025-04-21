@@ -1,6 +1,8 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import * as random from "@pulumi/random";
 import type * as scaleway from "@pulumiverse/scaleway";
+import { config } from "../config";
 import { cn, dockerImageWithTag } from "../utils";
 import type { BucketConfig } from "./bucket";
 import type { DatabaseOutputs } from "./database";
@@ -20,6 +22,12 @@ export function deployControl({
   bucketConfig: BucketConfig;
   nginxIngress: k8s.helm.v3.Release;
 }) {
+  // Generate a secure JWT secret
+  const jwtSecret = new random.RandomPassword(cn("jwt-secret"), {
+    length: 48,
+    special: true,
+  });
+
   const image = dockerImageWithTag(cn("image"), {
     build: {
       context: "../",
@@ -94,6 +102,10 @@ export function deployControl({
                     value: "deploy.origan.dev",
                   },
                   {
+                    name: "ORIGAN_API_URL",
+                    value: "https://api.origan.dev",
+                  },
+                  {
                     name: "BUCKET_URL",
                     value: bucketConfig.bucketUrl,
                   },
@@ -112,6 +124,20 @@ export function deployControl({
                   {
                     name: "BUCKET_SECRET_KEY",
                     value: bucketConfig.bucketSecretKey,
+                  },
+                  // GitHub OAuth Configuration
+                  {
+                    name: "GITHUB_CLIENT_ID",
+                    value: config.github.clientId,
+                  },
+                  {
+                    name: "GITHUB_CLIENT_SECRET",
+                    value: config.github.clientSecret,
+                  },
+                  // JWT Configuration
+                  {
+                    name: "JWT_SECRET",
+                    value: jwtSecret.result,
                   },
                 ],
               },

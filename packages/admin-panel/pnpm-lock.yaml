@@ -12,8 +12,8 @@ importers:
         specifier: ^5.69.0
         version: 5.70.0(react@19.1.0)
       hono:
-        specifier: ^4.7.5
-        version: 4.7.5
+        specifier: 4.7.7
+        version: 4.7.7
       react:
         specifier: ^19.0.0
         version: 19.1.0
@@ -401,8 +401,8 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  hono@4.7.5:
-    resolution: {integrity: sha512-fDOK5W2C1vZACsgLONigdZTRZxuBqFtcKh7bUQ5cVSbwI2RWjloJDcgFOVzbQrlI6pCmhlTsVYZ7zpLj4m4qMQ==}
+  hono@4.7.7:
+    resolution: {integrity: sha512-2PCpQRbN87Crty8/L/7akZN3UyZIAopSoRxCwRbJgUuV1+MHNFHzYFxZTg4v/03cXUm+jce/qa2VSBZpKBm3Qw==}
     engines: {node: '>=16.9.0'}
 
   nanoid@3.3.11:
@@ -729,7 +729,7 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  hono@4.7.5: {}
+  hono@4.7.7: {}
 
   nanoid@3.3.11: {}
 

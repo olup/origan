@@ -20,6 +20,7 @@ interface FormField {
 
 export async function uploadFormWithProgress(
   url: string | URL,
+  headers: Record<string, string>,
   fields: FormField[],
   files: FileField[],
   onProgress?: (percentage: number) => void,
@@ -77,6 +78,7 @@ export async function uploadFormWithProgress(
         headers: {
           "Content-Type": `multipart/form-data; boundary=${boundary}`,
           "Content-Length": totalSize.toString(),
+          ...headers,
         },
       },
       (res) => {

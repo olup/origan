@@ -2,6 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";
+import { auth } from "../middleware/auth.js";
 import {
   projectCreateSchema,
   projectUpdateSchema,
@@ -9,16 +10,17 @@ import {
 import type { ProjectError } from "../schemas/project.js";
 import {
   createProject,
+  deleteProject,
   getProject,
   getProjects,
   updateProject,
 } from "../service/project.service.js";
 
-// Projects router
 export const projectsRouter = new Hono()
-  .get("/", async (c) => {
+  .get("/", auth(), async (c) => {
     try {
-      const projects = await getProjects();
+      const userId = c.get("userId");
+      const projects = await getProjects(userId);
       return c.json(projects);
     } catch (error) {
       const errorResponse: ProjectError = {
@@ -30,12 +32,14 @@ export const projectsRouter = new Hono()
   })
   .get(
     "/by-id/:id",
+    auth(),
     zValidator("param", z.object({ id: z.string() })),
     async (c) => {
       const { id } = c.req.valid("param");
+      const userId = c.get("userId");
 
       try {
-        const project = await getProject({ id: id });
+        const project = await getProject({ id, userId });
         if (!project) {
           const errorResponse: ProjectError = {
             error: "Project not found",
@@ -55,12 +59,14 @@ export const projectsRouter = new Hono()
   )
   .get(
     "/by-ref/:ref",
+    auth(),
     zValidator("param", z.object({ ref: z.string() })),
     async (c) => {
       const { ref } = c.req.valid("param");
+      const userId = c.get("userId");
 
       try {
-        const project = await getProject({ reference: ref });
+        const project = await getProject({ reference: ref, userId });
         if (!project) {
           const errorResponse: ProjectError = {
             error: "Project not found",
@@ -78,16 +84,18 @@ export const projectsRouter = new Hono()
       }
     },
   )
-  .post("/", zValidator("json", projectCreateSchema), async (c) => {
+  .post("/", auth(), zValidator("json", projectCreateSchema), async (c) => {
     const data = await c.req.valid("json");
 
     try {
+      const userId = c.get("userId");
       const randomRef = customAlphabet(
         "abcdefghijklmnopqrstuvwxyz0123456789_-",
       )(12);
       const project = await createProject({
         ...data,
         reference: randomRef,
+        userId,
       });
       return c.json(project, 201);
     } catch (error) {
@@ -101,6 +109,7 @@ export const projectsRouter = new Hono()
   })
   .put(
     "/:id",
+    auth(),
     zValidator("param", z.object({ id: z.string() })),
     zValidator("json", projectUpdateSchema),
     async (c) => {
@@ -108,7 +117,8 @@ export const projectsRouter = new Hono()
       const data = await c.req.valid("json");
 
       try {
-        const project = await updateProject(id, data);
+        const userId = c.get("userId");
+        const project = await updateProject(id, userId, data);
         if (!project) {
           const errorResponse: ProjectError = {
             error: "Project not found",
@@ -128,6 +138,7 @@ export const projectsRouter = new Hono()
   )
   .delete(
     "/:id",
+    auth(),
     zValidator("param", z.object({ id: z.string() })),
     async (c) => {
       const { id } = c.req.valid("param");

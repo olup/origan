@@ -1,8 +1,8 @@
 import { stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { config } from "../config.js";
-import { client } from "../libs/client.js";
-import { type OriganConfig, origanConfigSchema } from "../types.js";
+import { getAuthenticatedClient } from "../libs/client.js";
+import type { OriganConfig } from "../types.js";
 import { ProgressBar } from "../utils/cli.js";
 import {
   cleanDirectory,
@@ -20,6 +20,7 @@ import type { Route, RouteConfig } from "../utils/path.js";
 import { createRouteFromFile } from "../utils/path.js";
 import { uploadFormWithProgress } from "../utils/upload.js";
 import { bundleApiRoute, createDeploymentArchive } from "../utils/zip.js";
+import { getAccessToken } from "./auth.service.js";
 
 interface ConfigJson {
   app: string[];
@@ -62,11 +63,21 @@ async function uploadArchive(
   const stats = await stat(archivePath);
   log.info(`Total size: ${(stats.size / 1024).toFixed(2)} KB`);
 
-  const deployUrl = new URL("/deployments/create", config.apiUrl);
+  const client = await getAuthenticatedClient();
+  const token = await getAccessToken();
+  if (!token) {
+    throw new Error("No access token found. Please log in.");
+  }
+
+  const deployUrl = client.deployments.create.$url().toString();
+
   const progressBar = new ProgressBar();
 
   const response = await uploadFormWithProgress(
     deployUrl,
+    {
+      Authorization: `Bearer ${token}`,
+    },
     [
       { fieldName: "projectRef", value: projectRef },
       { fieldName: "branchRef", value: branch },
@@ -112,7 +123,7 @@ export async function deploy(branch = "main"): Promise<void> {
     const artifactsDir = join(process.cwd(), ".origan", "artifacts");
     const buildDir = join(process.cwd(), ".origan", "build");
 
-    console.log("Creating build directories...");
+    log.info("Creating build directories...");
     createDirectories([artifactsDir, buildDir, join(buildDir, "api")]);
 
     // Discover and validate directories
@@ -142,13 +153,13 @@ export async function deploy(branch = "main"): Promise<void> {
         .map((file) => createRouteFromFile(apiDir, file))
         .sort((a, b) => a.urlPath.length - b.urlPath.length);
 
-      console.log(`Found ${routes.length} API routes`);
+      log.info(`Found ${routes.length} API routes`);
     } else if (config.apiDir) {
-      console.log(`No ${config.apiDir}/ directory found, skipping API routes`);
+      log.info(`No ${config.apiDir}/ directory found, skipping API routes`);
     }
 
     // Collect and validate app
-    console.log("\nProcessing application...");
+    log.info("\nProcessing application...");
     const appFiles = collectFiles(appDir);
 
     if (appFiles.length === 0) {
@@ -156,14 +167,14 @@ export async function deploy(branch = "main"): Promise<void> {
         `No app files found in ${config.appDir}/ directory. Please build your application first.`,
       );
     }
-    console.log(`Found ${appFiles.length} app files in ${config.appDir}/`);
+    log.info(`Found ${appFiles.length} app files in ${config.appDir}/`);
 
-    console.log("Generating deployment configuration...");
+    log.info("Generating deployment configuration...");
     const deployConfig = generateConfig(appFiles, routes, appDir);
 
     // Bundle routes
     if (routes.length > 0) {
-      console.log("\nProcessing API routes:");
+      log.info("\nProcessing API routes:");
       for (const route of routes) {
         try {
           const content = await bundleApiRoute(route);
@@ -193,7 +204,6 @@ export async function deploy(branch = "main"): Promise<void> {
       appFiles,
       routes,
       appDir,
-      buildDir,
     );
 
     log.success("\nDeployment Summary:");
@@ -230,6 +240,7 @@ export async function deploy(branch = "main"): Promise<void> {
 }
 
 export async function getDeployments(projectRef: string) {
+  const client = await getAuthenticatedClient();
   const response = await client.projects["by-ref"][":ref"].$get({
     param: {
       ref: projectRef,

@@ -2,6 +2,7 @@ import { mkdir, readFile, readdir, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { eq } from "drizzle-orm";
+import { and } from "drizzle-orm";
 import * as unzipper from "unzipper";
 import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
@@ -15,6 +16,35 @@ import {
   type DeployParams,
   deploymentConfigSchema,
 } from "../schemas/deploy.js";
+
+// Custom Error Types
+export class BundleProcessingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BundleProcessingError";
+  }
+}
+
+export class S3UploadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "S3UploadError";
+  }
+}
+
+export class InvalidConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidConfigError";
+  }
+}
+
+export class ProjectNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ProjectNotFoundError";
+  }
+}
 
 export interface DeploymentResult {
   projectRef: string;
@@ -84,7 +114,7 @@ async function processBundle(bundle: File): Promise<string> {
     return extractedPath;
   } catch (error) {
     console.error("Error processing bundle:", error);
-    throw new Error(
+    throw new BundleProcessingError(
       `Failed to process bundle: ${
         error instanceof Error ? error.message : String(error)
       }`,
@@ -120,7 +150,7 @@ async function uploadToS3(
         await putObject(bucketName, key, fileContent, getContentType(entry));
         console.log(`Uploaded: ${entry}`);
       } catch (error) {
-        throw new Error(
+        throw new S3UploadError(
           `Failed to upload ${entry}: ${
             error instanceof Error ? error.message : String(error)
           }`,
@@ -142,23 +172,31 @@ export async function deploy({
   branchRef,
   bundle,
   config,
+  userId,
   bucketName = process.env.BUCKET_NAME || "deployment-bucket",
-}: DeployParams): Promise<DeploymentResult> {
+}: DeployParams & { userId: string }): Promise<DeploymentResult> {
   console.log("Starting deployment...");
 
   // Validate config
   const result = deploymentConfigSchema.safeParse(config);
   if (!result.success) {
-    throw new Error(`Invalid config format: ${result.error.message}`);
+    throw new InvalidConfigError(
+      `Invalid config format: ${result.error.message}`,
+    );
   }
 
   // Get or create project
   const project = await db.query.projectSchema.findFirst({
-    where: eq(projectSchema.reference, projectRef),
+    where: and(
+      eq(projectSchema.reference, projectRef),
+      eq(projectSchema.userId, userId),
+    ),
   });
 
   if (!project) {
-    throw new Error(`Project ${projectRef} not found`);
+    throw new ProjectNotFoundError(
+      `Project ${projectRef} not found or you don't have access to it`,
+    );
   }
 
   console.log("Creating deployment record...");

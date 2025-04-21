@@ -4,74 +4,115 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
+import { auth } from "../middleware/auth.js";
 import {
   deployRequestSchema,
   deploymentConfigSchema,
   getConfigRequestSchema,
 } from "../schemas/deploy.js";
-import { deploy } from "../service/deploy.service.js";
+import {
+  BundleProcessingError,
+  InvalidConfigError,
+  ProjectNotFoundError,
+  S3UploadError,
+  deploy,
+} from "../service/deploy.service.js";
 
-// Deploy router
 export const deploymentsRouter = new Hono()
-  .post("/create", zValidator("form", deployRequestSchema), async (c) => {
-    const {
-      projectRef,
-      branchRef,
-      bundle,
-      config: configString,
-    } = c.req.valid("form");
-
-    console.log("Received deployment request");
-    console.log("Project Ref:", projectRef);
-    console.log("Branch Ref:", branchRef);
-
-    // Parse and validate config
-    let parsedConfig: unknown;
-    try {
-      parsedConfig = JSON.parse(configString);
-    } catch (error) {
-      const errorResponse = {
-        error: "Invalid JSON in config",
-        details: error instanceof Error ? error.message : String(error),
-      };
-      return c.json(errorResponse, 400);
-    }
-
-    const configResult = deploymentConfigSchema.safeParse(parsedConfig);
-    if (!configResult.success) {
-      console.log(parsedConfig);
-      console.warn("Invalid config format");
-      const errorResponse = {
-        error: "Invalid config format",
-        details: configResult.error.message,
-      };
-      return c.json(errorResponse, 400);
-    }
-
-    try {
-      const result = await deploy({
+  .post(
+    "/create",
+    auth(),
+    zValidator("form", deployRequestSchema),
+    async (c) => {
+      const {
         projectRef,
         branchRef,
         bundle,
-        config: configResult.data,
-      });
+        config: configString,
+      } = c.req.valid("form");
 
-      const response = {
-        status: "success",
-        message: "Deployment uploaded successfully",
-        projectRef: result.projectRef,
-        deploymentId: result.deploymentId,
-        urls: result.urls,
-      };
-      return c.json(response);
-    } catch (error) {
-      const errorResponse = {
-        error: "Failed to process deployment",
-        details: error instanceof Error ? error.message : String(error),
-      };
-      return c.json(errorResponse, 500);
-    }
-  })
+      // Parse and validate config
+      let parsedConfig: unknown;
+      try {
+        parsedConfig = JSON.parse(configString);
+      } catch (error) {
+        const errorResponse = {
+          error: "Invalid JSON in config",
+          details: error instanceof Error ? error.message : String(error),
+        };
+        return c.json(errorResponse, 400);
+      }
+
+      const configResult = deploymentConfigSchema.safeParse(parsedConfig);
+      if (!configResult.success) {
+        const errorResponse = {
+          error: "Invalid config format",
+          details: configResult.error.message,
+        };
+        return c.json(errorResponse, 400);
+      }
+
+      try {
+        const userId = c.get("userId");
+        const result = await deploy({
+          projectRef,
+          branchRef,
+          bundle,
+          config: configResult.data,
+          userId,
+        });
+
+        const response = {
+          status: "success",
+          message: "Deployment uploaded successfully",
+          projectRef: result.projectRef,
+          deploymentId: result.deploymentId,
+          urls: result.urls,
+        };
+        return c.json(response);
+      } catch (error) {
+        console.error("Deployment error:", error);
+
+        if (error instanceof ProjectNotFoundError) {
+          return c.json(
+            { error: "Project Not Found", details: error.message },
+            404,
+          );
+        }
+
+        if (error instanceof InvalidConfigError) {
+          return c.json(
+            { error: "Invalid Configuration", details: error.message },
+            400,
+          );
+        }
+
+        if (
+          error instanceof BundleProcessingError ||
+          error instanceof S3UploadError
+        ) {
+          return c.json(
+            { error: "Deployment Processing Failed", details: error.message },
+            500,
+          );
+        }
+
+        // Fallback for unexpected errors
+        return c.json(
+          {
+            error: "Internal Server Error",
+            details:
+              error instanceof Error
+                ? error.message
+                : "An unknown error occurred",
+          },
+          500,
+        );
+      }
+    },
+  )
+  // Get deployment config by domain
+  // this route is not protected yet (we will need to add an internal token to the request, or remove it entirely for a more decoupled architecture)
   .post(
     "/get-config",
     zValidator("json", getConfigRequestSchema),

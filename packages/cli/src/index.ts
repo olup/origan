@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Cli, Command, Option } from "clipanion";
 import * as R from "remeda";
-import { login, logout } from "./services/auth.service.js";
+import { login, logout, whoami } from "./services/auth.service.js";
 import { deploy, getDeployments } from "./services/deploy.service.js";
 import { startDev } from "./services/dev.service.js";
 import { init } from "./services/init.service.js";
@@ -19,6 +19,14 @@ class LoginCommand extends Command {
 
   async execute() {
     await login();
+  }
+}
+
+class WhoamiCommand extends Command {
+  static paths = [["whoami"]];
+
+  async execute() {
+    await whoami();
   }
 }
 
@@ -139,6 +147,7 @@ const cli = new Cli({
 });
 
 cli.register(LoginCommand);
+cli.register(WhoamiCommand);
 cli.register(LogoutCommand);
 cli.register(DeployCommand);
 cli.register(DevCommand);

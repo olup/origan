@@ -15,7 +15,8 @@
       ".pnpm-store/**",
       "*.config.*",
       "*.json",
-      "tsconfig.json"
+      "tsconfig.json",
+      "example"
     ]
   },
   "formatter": {

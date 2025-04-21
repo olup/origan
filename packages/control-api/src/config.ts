@@ -11,6 +11,15 @@ export const config = z.object({
   BUCKET_NAME: z.string(),
   BUCKET_REGION: z.string(),
   ORIGAN_DEPLOY_DOMAIN: z.string(),
+
+  ORIGAN_API_URL: z.string(),
+
+  // GitHub OAuth Configuration
+  GITHUB_CLIENT_ID: z.string(),
+  GITHUB_CLIENT_SECRET: z.string(),
+
+  // JWT Configuration
+  JWT_SECRET: z.string(),
 });
 
 export const env = config.parse(process.env);

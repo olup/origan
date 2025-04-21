@@ -44,7 +44,7 @@
     "formdata-node": "^6.0.3",
     "glob": "^11.0.1",
     "globby": "^14.1.0",
-    "hono": "^4.7.6",
+    "hono": "4.7.7",
     "picocolors": "^1.1.1",
     "prompts": "^2.4.2",
     "remeda": "^2.21.2",

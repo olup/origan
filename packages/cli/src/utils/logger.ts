@@ -1,16 +1,25 @@
 import pc from "picocolors";
 
+type PicoColor = {
+  [K in keyof typeof pc]: (typeof pc)[K] extends (str: string) => string
+    ? K
+    : never;
+}[keyof typeof pc];
+
 export const log = {
-  error(message: string) {
-    console.error(pc.yellow(message)); // picocolors doesn't support hex, using yellow for orange
+  error(...messages: string[]) {
+    console.error(pc.yellow(messages.join(" "))); // picocolors doesn't support hex, using yellow for orange
   },
-  success(message: string) {
-    console.log(pc.green(message));
+  success(...messages: string[]) {
+    console.log(pc.green(messages.join(" ")));
   },
-  info(message: string) {
-    console.log(message);
+  info(...messages: string[]) {
+    console.log(pc.green(messages.join(" ")));
   },
-  debug(message: string) {
-    console.log(pc.dim(message));
+  debug(...messages: string[]) {
+    console.log(pc.dim(messages.join(" ")));
+  },
+  color(color: PicoColor, ...messages: string[]) {
+    console.log(pc[color](messages.join(" ")));
   },
 };
