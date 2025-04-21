@@ -48,7 +48,7 @@ services:
     image: node:22-slim
     working_dir: /app
     environment:
-      - ORIGAN_DEPLOY_DOMAIN=localtest.me
+      - ORIGAN_DEPLOY_DOMAIN=localtest.me:7777
       - CONTROL_API_URL=http://control-api:9999
       - RUNNER_URL=http://runner:9000
       - BUCKET_URL=http://minio:9000

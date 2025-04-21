@@ -238,8 +238,7 @@ export async function deploy({
   }
 
   // Create or update host record
-  // origan.main is a placeholder for origan main domain
-  const domain = `${branchRef}-${projectRef}.origan.main`;
+  const domain = `${branchRef}-${projectRef}.`;
 
   await db
     .insert(hostSchema)
@@ -260,8 +259,6 @@ export async function deploy({
     projectRef,
     deploymentId: deployment.id,
     path: extractedPath,
-    urls: [
-      `https://${domain.replace("origan.main", env.ORIGAN_DEPLOY_DOMAIN)}`,
-    ],
+    urls: [`https://${domain}${env.ORIGAN_DEPLOY_DOMAIN}`],
   };
 }

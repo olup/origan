@@ -202,13 +202,13 @@ export function deployKubernetes() {
       apiVersion: "cert-manager.io/v1",
       kind: "Certificate",
       metadata: {
-        name: "wildcard-deploy-origan-dev",
+        name: "wildcard-origan-app",
         namespace: "default",
       },
       spec: {
-        secretName: "wildcard-deploy-origan-dev-tls",
-        commonName: "*.deploy.origan.dev",
-        dnsNames: ["*.deploy.origan.dev"],
+        secretName: "wildcard-origan-app-tls",
+        commonName: "*.origan.app",
+        dnsNames: ["*.origan.app"],
         issuerRef: {
           name: "letsencrypt-prod",
           kind: "ClusterIssuer",

@@ -99,7 +99,7 @@ export function deployControl({
                   },
                   {
                     name: "ORIGAN_DEPLOY_DOMAIN",
-                    value: "deploy.origan.dev",
+                    value: "origan.app",
                   },
                   {
                     name: "ORIGAN_API_URL",

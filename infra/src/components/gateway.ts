@@ -90,7 +90,7 @@ export function deployGateway({
                 env: [
                   {
                     name: "ORIGAN_DEPLOY_DOMAIN",
-                    value: "deploy.origan.dev",
+                    value: "origan.app",
                   },
                   {
                     name: "CONTROL_API_URL",
@@ -186,17 +186,6 @@ export function deployGateway({
     },
     { provider: k8sProvider },
   );
-
-  // Create a DNS record for *.deploy.origan.dev
-  // const deployDnsRecord = new scaleway.domain.Record(gan("deploy-dns"), {
-  //   dnsZone: "origan.dev",
-  //   type: "A",
-  //   name: "*.deploy",
-  //   data: gatewayService.status.loadBalancer.ingress.apply(
-  //     (ingress) => ingress[0].ip
-  //   ),
-  //   ttl: 300,
-  // });
 
   return {
     image,
