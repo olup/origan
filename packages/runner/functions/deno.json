@@ -10,6 +10,9 @@
     ]
   },
   "imports": {
+    "@nats-io/jetstream": "jsr:@nats-io/jetstream@^3.0.2",
+    "@nats-io/nkeys": "jsr:@nats-io/nkeys@^2.0.3",
+    "@nats-io/transport-deno": "jsr:@nats-io/transport-deno@^3.0.2",
     "openai": "npm:openai"
   }
 }

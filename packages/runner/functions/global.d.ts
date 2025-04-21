@@ -7,28 +7,34 @@ declare interface EventBoot {
   event_type: "Boot";
   event: {
     boot_time: number;
-  }
+  };
 }
 
 declare interface EventBootFailure {
   event_type: "BootFailure";
   event: {
     msg: string;
-  }
+  };
 }
 
 declare interface EventShutdown {
   event_type: "Shutdown";
   event: {
-    reason: "EventLoopCompleted"| "WallClockTime"| "CPUTime"| "Memory"| "EarlyDrop"| "TerminationRequested";
+    reason:
+      | "EventLoopCompleted"
+      | "WallClockTime"
+      | "CPUTime"
+      | "Memory"
+      | "EarlyDrop"
+      | "TerminationRequested";
     cpu_time: number;
     memory_used: {
       total: number;
       heap: number;
       external: number;
       mem_check_captured: number;
-    }
-  }
+    };
+  };
 }
 
 declare interface EventUncaughtException {
@@ -36,15 +42,15 @@ declare interface EventUncaughtException {
   event: {
     exception: string;
     cpu_time_used: number;
-  }
+  };
 }
 
 declare interface EventLog {
   event_type: "Log";
   event: {
     msg: string;
-    level: "Error"|"Warning"|"Info"|"Debug";
-  }
+    level: "Error" | "Warning" | "Info" | "Debug";
+  };
 }
 
 interface BaseEventValue {
@@ -52,7 +58,15 @@ interface BaseEventValue {
   metadata: EventMetadata;
 }
 
-declare type EventValue = BaseEventValue & (EventBoot | EventBootFailure | EventShutdown | EventUncaughtException | EventLog);
+declare type EventValue =
+  & BaseEventValue
+  & (
+    | EventBoot
+    | EventBootFailure
+    | EventShutdown
+    | EventUncaughtException
+    | EventLog
+  );
 
 declare interface Event {
   value: EventValue;

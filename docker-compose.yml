@@ -82,6 +82,8 @@ services:
       - BUCKET_NAME=origan
       - BUCKET_REGION=us-east-1
       - WORKERS_PATH=/workers
+      - EVENTS_NATS_SERVER=nats://nats:4222
+      - EVENTS_STREAM_NAME=origan-user-events
     volumes:
       - ./packages/runner/:/app
       - runner_workers:/workers
@@ -121,6 +123,15 @@ services:
       wait"
     volumes:
       - minio_data:/data
+    networks:
+      - origan-network
+
+  nats:
+    image: nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: "-js"
     networks:
       - origan-network
 

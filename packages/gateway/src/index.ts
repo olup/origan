@@ -15,7 +15,7 @@ import { s3Client } from "./utils/s3.js";
 
 async function getConfig(
   domain: string,
-): Promise<{ config: Config; deploymentId: string } | null> {
+): Promise<{ config: Config; deploymentId: string; projectId: string } | null> {
   try {
     const response = await client.deployments["get-config"].$post({
       json: {
@@ -30,8 +30,8 @@ async function getConfig(
       return null;
     }
 
-    const { config, deploymentId } = data;
-    return { config, deploymentId };
+    const { config, deploymentId, projectId } = data;
+    return { config, deploymentId, projectId };
   } catch (error) {
     console.error("Error fetching config:", error);
     return null;
@@ -74,11 +74,11 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       );
     }
 
-    const { config, deploymentId } = result;
+    const { config, deploymentId, projectId } = result;
     const path = req.url || "/";
 
     // Handle API routes
-    if (await handleApiRoute(req, res, path, config, deploymentId)) {
+    if (await handleApiRoute(req, res, path, config, deploymentId, projectId)) {
       return;
     }
 

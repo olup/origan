@@ -138,6 +138,7 @@ export const deploymentsRouter = new Hono()
       const response = {
         config: host.deployment.config,
         deploymentId: host.deployment.id,
+        projectId: host.deployment.projectId,
       };
       return c.json(response);
     },

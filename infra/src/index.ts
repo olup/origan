@@ -2,11 +2,14 @@ import { deployBucket } from "./components/bucket";
 import { deployControl } from "./components/control";
 import { deployDatabase } from "./components/database";
 import { deployGateway } from "./components/gateway";
+import { deployGlobal } from "./components/global";
 import { deployKubernetes } from "./components/kubernetes";
 import { deployRegistry } from "./components/registry";
 import { deployRunner } from "./components/runner";
 
 export function deployAll() {
+  const globals = deployGlobal();
+
   // Deploy database
   const db = deployDatabase();
 
@@ -18,6 +21,8 @@ export function deployAll() {
 
   // Deploy Kubernetes cluster first
   const kubernetes = deployKubernetes();
+
+  const natsEventsStream = "origan-user-events";
 
   // Deploy control API with Kubernetes configuration (including nginx ingress)
   const controlResult = deployControl({
@@ -35,6 +40,7 @@ export function deployAll() {
     registryApiKey: registryDeployment.registryApiKey,
     k8sProvider: kubernetes.k8sProvider,
     bucketConfig: bucketDeployment.config,
+    nats: { ...globals.nats, eventStream: natsEventsStream },
   });
 
   // Deploy gateway last since it needs both URLs and k8s configuration

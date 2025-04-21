@@ -13,11 +13,17 @@ export function deployRunner({
   registryApiKey,
   k8sProvider,
   bucketConfig,
+  nats,
 }: {
   registry: scaleway.registry.Namespace;
   registryApiKey: scaleway.iam.ApiKey;
   k8sProvider: k8s.Provider;
   bucketConfig: BucketConfig;
+  nats: {
+    account: scaleway.mnq.NatsAccount;
+    creds: scaleway.mnq.NatsCredentials;
+    eventStream: string;
+  };
 }): DeployRunnerOutputs {
   const image = dockerImageWithTag(rn("runner-image"), {
     build: {
@@ -99,6 +105,18 @@ export function deployRunner({
                   {
                     name: "WORKERS_PATH",
                     value: "/workers",
+                  },
+                  {
+                    name: "EVENTS_NATS_SERVER",
+                    value: nats.account.endpoint,
+                  },
+                  {
+                    name: "EVENTS_STREAM_NAME",
+                    value: nats.eventStream,
+                  },
+                  {
+                    name: "EVENTS_NATS_NKEY_CREDS",
+                    value: nats.creds.file,
                   },
                 ],
               },

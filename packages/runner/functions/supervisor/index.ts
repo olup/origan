@@ -70,11 +70,13 @@ serve(async (req: Request) => {
     console.error("Function path not provided in headers");
     return new Response("Function path not provided", { status: 400 });
   }
+  const deploymentId = headers.get("x-origan-deployment-id");
+  const projectId = headers.get("x-origan-project-id");
   const startTime = performance.now();
 
   // sha1 of path
   const queryHash = await sha1(functionPath);
-  const workerPath = resolve(`${WORKERS_PATH}/${queryHash}`);
+  const workerPath = resolve(`${WORKERS_PATH}/${projectId}/${deploymentId}/${queryHash}`);
 
   const memoryLimitMb = 150;
   const workerTimeoutMs = 1 * 60 * 1000;
@@ -92,13 +94,9 @@ serve(async (req: Request) => {
       throw new Error("Failed to get file content from S3");
     }
 
-    await Deno.writeTextFile(
-      `${workerPath}/index.ts`,
-      `${fileContent}`,
-      {
-        create: true,
-      },
-    );
+    await Deno.writeTextFile(`${workerPath}/index.ts`, `${fileContent}`, {
+      create: true,
+    });
   } catch (error) {
     console.error("Error fetching from S3:", error);
     return new Response(

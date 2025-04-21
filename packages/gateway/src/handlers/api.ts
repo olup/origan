@@ -9,6 +9,7 @@ export async function handleApiRoute(
   path: string,
   config: Config,
   deploymentId: string,
+  projectId: string,
 ) {
   const route = config.api.find((r) => path === r.urlPath);
 
@@ -32,6 +33,8 @@ export async function handleApiRoute(
       "x-origan-function-path",
       `deployments/${deploymentId}/api/${route.functionPath}`,
     );
+    headers.set("x-origan-deployment-id", deploymentId);
+    headers.set("x-origan-project-id", projectId);
 
     // Get request body if needed
     let body: Buffer<ArrayBuffer> | undefined;
