@@ -12,15 +12,22 @@
     "check": "biome check --write ."
   },
   "dependencies": {
+    "@mantine/core": "^7.17.4",
+    "@mantine/hooks": "^7.17.4",
     "@tanstack/react-query": "^5.69.0",
     "hono": "4.7.7",
+    "lucide-react": "^0.503.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "wouter": "^3.7.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react-swc": "^3.8.0",
+    "postcss": "^8.5.3",
+    "postcss-preset-mantine": "^1.17.0",
+    "postcss-simple-vars": "^7.0.1",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
   },

@@ -1,67 +1,24 @@
-import {
-  QueryClient,
-  QueryClientProvider,
-  useMutation,
-  useQuery,
-} from "@tanstack/react-query";
-import type { InferRequestType, InferResponseType } from "hono/client";
-import viteLogo from "/vite.svg";
-import "./App.css";
-import client from "./api";
-
-const queryClient = new QueryClient();
-
-function Counter() {
-  const { isPending, data } = useQuery({
-    queryKey: ["counter"],
-    queryFn: async () => {
-      const res = await client.api.counter.$get();
-      return await res.json();
-    },
-  });
-
-  const post = client.api.counter.$post;
-
-  const mutation = useMutation<
-    InferResponseType<typeof post>,
-    Error,
-    InferRequestType<typeof post>
-  >({
-    mutationFn: async () => {
-      const res = await post();
-      return await res.json();
-    },
-    onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["counter"] });
-    },
-    onError: (err) => {
-      console.error(err);
-    },
-  });
-
-  return (
-    <>
-      <h1>Vite + React</h1>
-      <a href="https://vite.dev" target="_blank" rel="noreferrer">
-        <img src={viteLogo} className="logo" alt="Vite logo" />
-      </a>
-      <div className="card">
-        <button type="button" onClick={() => mutation.mutate({})}>
-          count is {isPending ? "pending" : data?.counter}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-    </>
-  );
-}
+import { Container } from "@mantine/core";
+import { Route, Router } from "wouter";
+import { useAuth } from "./hooks/useAuth";
+import { LoginPage } from "./pages/LoginPage";
+import { ProjectsPage } from "./pages/ProjectsPage";
 
 function App() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return null;
+
+  if (!user) return <LoginPage />;
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <Counter />
-    </QueryClientProvider>
+    <Container h="100vh" pt={20}>
+      <Router>
+        <Route path="/">
+          <ProjectsPage />
+        </Route>
+      </Router>
+    </Container>
   );
 }
 

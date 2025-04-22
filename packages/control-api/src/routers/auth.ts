@@ -25,7 +25,10 @@ const generateRandomToken = () => crypto.randomBytes(32).toString("hex");
 const hashToken = (token: string) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
-const generateTokens = async (payload: z.infer<typeof jwtPayloadSchema>) => {
+const generateTokens = async (
+  userId: string,
+  payload: z.infer<typeof jwtPayloadSchema>,
+) => {
   const accessToken = jwt.sign(payload, env.JWT_SECRET, {
     expiresIn: ACCESS_TOKEN_EXPIRY,
   });
@@ -35,9 +38,8 @@ const generateTokens = async (payload: z.infer<typeof jwtPayloadSchema>) => {
   const hashedToken = hashToken(refreshToken);
 
   // Store hashed refresh token in database
-
   await db.insert(refreshTokenSchema).values({
-    userId: payload.userId,
+    userId,
     tokenHash: hashedToken,
     expiresAt: sql.raw(
       `CURRENT_TIMESTAMP + INTERVAL '${REFRESH_TOKEN_EXPIRY_DAYS} days'`,
@@ -182,7 +184,7 @@ export const authRouter = new Hono()
         user = results[0];
       }
 
-      const { accessToken, refreshToken } = await generateTokens({
+      const { accessToken, refreshToken } = await generateTokens(user.id, {
         userId: user.id,
       });
 
@@ -213,6 +215,16 @@ export const authRouter = new Hono()
 
         // For CLI login, show success page
         return c.text("Login successful! You can now return to the CLI.", 200);
+      }
+
+      if (state.type === "web") {
+        setCookie(c, "refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: env.APP_ENV !== "development",
+          sameSite: "Lax",
+          maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
+        });
+        return c.redirect(`${env.ORIGAN_ADMIN_PANEL_URL}`);
       }
 
       // TODO - handle callback for web login
@@ -304,14 +316,18 @@ export const authRouter = new Hono()
 
     const hashedToken = hashToken(refreshToken);
 
+    console.log("Hashed token:", hashedToken);
+
     // Find and validate refresh token
     const tokenRecord = await db.query.refreshTokenSchema.findFirst({
       where: and(
         eq(refreshTokenSchema.tokenHash, hashedToken),
-        lt(refreshTokenSchema.expiresAt, sql`CURRENT_TIMESTAMP`),
+        lt(sql`CURRENT_TIMESTAMP`, refreshTokenSchema.expiresAt),
         isNull(refreshTokenSchema.rotatedAt),
       ),
     });
+
+    console.log("Token record:", tokenRecord);
 
     if (!tokenRecord) {
       return c.json({ error: "Invalid refresh token" }, 401);
@@ -320,7 +336,7 @@ export const authRouter = new Hono()
     try {
       // Generate new tokens
       const { accessToken, refreshToken: newRefreshToken } =
-        await generateTokens({
+        await generateTokens(tokenRecord.userId, {
           userId: tokenRecord.userId,
         });
 
@@ -340,9 +356,8 @@ export const authRouter = new Hono()
       // Set new refresh token cookie
       setCookie(c, "refreshToken", newRefreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: env.APP_ENV !== "development",
         sameSite: "Lax",
-        path: "/auth/refresh-token",
         maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
       });
 

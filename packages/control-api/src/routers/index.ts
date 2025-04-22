@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { env } from "../config.js";
 import { authRouter } from "./auth.js";
 import { deploymentsRouter } from "./deployments.js";
 import { projectsRouter } from "./projects.js";
@@ -10,7 +11,7 @@ const api = new Hono()
   .use(logger())
   .use(
     cors({
-      origin: [process.env.CORS_ORIGIN || ""].filter(Boolean),
+      origin: [env.ORIGAN_ADMIN_PANEL_URL],
       credentials: true,
     }),
   )

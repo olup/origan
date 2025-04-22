@@ -9,10 +9,11 @@ services:
       - /app/node_modules
     command: sh -c "corepack enable && pnpm install && pnpm run db:migrate && pnpm run dev"
     environment:
-      ORIGAN_DEPLOY_DOMAIN: 'localtest.me:7777'
-      ORIGAN_API_URL: 'http://localhost:9999'
-      
-      CORS_ORIGIN: '*'
+      APP_ENV: development
+      ORIGAN_DEPLOY_DOMAIN: "localtest.me:7777"
+      ORIGAN_API_URL: "http://localhost:9999"
+      ORIGAN_ADMIN_PANEL_URL: http://localhost:5199
+
       DATABASE_URL: postgresql://origan-root:origan@db:5432/origan
       DATABASE_RUN_MIGRATIONS: true
       BUCKET_URL: http://minio:9000
@@ -32,12 +33,13 @@ services:
     image: node:22-slim
     working_dir: /app
     ports:
-      - "5173:5173"
+      - "5199:5199"
     volumes:
       - ./packages/admin-panel:/app
       - /app/node_modules
     command: sh -c "corepack enable && pnpm install && pnpm run dev --host 0.0.0.0"
     environment:
+      - VITE_APP_ENV=development
       - VITE_API_URL=http://localhost:9999
     depends_on:
       - control-api

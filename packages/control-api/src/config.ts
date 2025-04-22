@@ -4,6 +4,8 @@ import { z } from "zod";
 dotenv.config();
 
 export const config = z.object({
+  APP_ENV: z.enum(["development", "production"]),
+
   DATABASE_URL: z.string(),
   BUCKET_URL: z.string(),
   BUCKET_ACCESS_KEY: z.string(),
@@ -11,6 +13,7 @@ export const config = z.object({
   BUCKET_NAME: z.string(),
   BUCKET_REGION: z.string(),
   ORIGAN_DEPLOY_DOMAIN: z.string(),
+  ORIGAN_ADMIN_PANEL_URL: z.string(),
 
   ORIGAN_API_URL: z.string(),
 

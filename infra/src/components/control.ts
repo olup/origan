@@ -86,6 +86,10 @@ export function deployControl({
                 },
                 env: [
                   {
+                    name: "APP_ENV",
+                    value: "production",
+                  },
+                  {
                     name: "DATABASE_RUN_MIGRATIONS",
                     value: "true",
                   },
@@ -100,6 +104,10 @@ export function deployControl({
                   {
                     name: "ORIGAN_DEPLOY_DOMAIN",
                     value: "origan.app",
+                  },
+                  {
+                    name: "ORIGAN_ADMIN_PANEL_URL",
+                    value: "app.origan.dev",
                   },
                   {
                     name: "ORIGAN_API_URL",
