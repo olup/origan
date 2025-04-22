@@ -73,7 +73,9 @@ services:
     #   - "host.docker.internal:host-gateway"
 
   runner:
-    image: ghcr.io/supabase/edge-runtime:v1.67.4
+    build:
+      context: .
+      dockerfile: edge-runtime.Dockerfile
     working_dir: /app
     environment:
       - BUCKET_URL=http://minio:9000
@@ -87,7 +89,7 @@ services:
     volumes:
       - ./packages/runner/:/app
       - runner_workers:/workers
-    command: start --main-service ./functions/supervisor --event-worker ./functions/event-worker
+    command: -r -e ts,js --stop-timeout 2 -w . -- "edge-runtime start --port 8000 --ip 0.0.0.0 --main-service functions/supervisor --event-worker functions/event-worker"
     networks:
       - origan-network
 
