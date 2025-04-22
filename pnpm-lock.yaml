@@ -202,6 +202,12 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.4.3
         version: 0.4.3(hono@4.7.7)(zod@3.24.3)
+      '@nats-io/nkeys':
+        specifier: ^2.0.3
+        version: 2.0.3
+      '@nats-io/transport-node':
+        specifier: ^3.0.2
+        version: 3.0.2
       '@octokit/app':
         specifier: ^15.1.6
         version: 15.1.6
@@ -1337,6 +1343,21 @@ packages:
     resolution: {integrity: sha512-PBcJxDAfGm8k1/JJmaDcxzRVQ3JSE1iXGktbgGz+qEOJmCxwbbAYe+CtGFFgi1xX2bPZ+7dtRr/+XFhnKtt/aw==}
     peerDependencies:
       react: ^18.x || ^19.x
+
+  '@nats-io/nats-core@3.0.2':
+    resolution: {integrity: sha512-gACbRIhY3yQTO+5C4E1LY/qO2e5EhGUBeDsnPDT8Hd3qY9mfhNtluY6R7d7WX7/JMGsXRPbYdSLSADr/ECSy3w==}
+
+  '@nats-io/nkeys@2.0.3':
+    resolution: {integrity: sha512-JVt56GuE6Z89KUkI4TXUbSI9fmIfAmk6PMPknijmuL72GcD+UgIomTcRWiNvvJKxA01sBbmIPStqJs5cMRBC3A==}
+    engines: {node: '>=18.0.0'}
+
+  '@nats-io/nuid@2.0.3':
+    resolution: {integrity: sha512-TpA3HEBna/qMVudy+3HZr5M3mo/L1JPofpVT4t0HkFGkz2Cn9wrlrQC8tvR8Md5Oa9//GtGG26eN0qEWF5Vqew==}
+    engines: {node: '>= 18.x'}
+
+  '@nats-io/transport-node@3.0.2':
+    resolution: {integrity: sha512-hPuep/ObVepjAM1dFy+XhqMlIzga3bQpbgQiOWM5AxwNZ9CF7GHAtfaxG7WY6+t057tBW8axC0nBL71Q8chQBQ==}
+    engines: {node: '>= 18.0.0'}
 
   '@next/env@15.3.1':
     resolution: {integrity: sha512-cwK27QdzrMblHSn9DZRV+DQscHXRuJv6MydlJRpFSqJWZrTYMLzKDeyueJNN9MGd8NNiUKzDQADAf+dMLXX7YQ==}
@@ -4362,6 +4383,9 @@ packages:
     resolution: {integrity: sha512-GwIJau9XaA8nLVbUXsN3IlFi7WmQ48gBUrl3FTkkL/XLu/POhBzfmX9hd33FNMX1qAsfl6ozO1iMmW9NC8YniA==}
     engines: {node: ^16.14.0 || >=18.0.0}
 
+  tweetnacl@1.0.3:
+    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
+
   typanion@3.14.0:
     resolution: {integrity: sha512-ZW/lVMRabETuYCd9O9ZvMhAh8GslSqaUjxmK/JLPCh6l73CvLBiuXswj/+7LdnWOgYsQ130FqLzFz5aGT4I3Ug==}
 
@@ -5609,6 +5633,23 @@ snapshots:
   '@mantine/hooks@7.17.4(react@19.1.0)':
     dependencies:
       react: 19.1.0
+
+  '@nats-io/nats-core@3.0.2':
+    dependencies:
+      '@nats-io/nkeys': 2.0.3
+      '@nats-io/nuid': 2.0.3
+
+  '@nats-io/nkeys@2.0.3':
+    dependencies:
+      tweetnacl: 1.0.3
+
+  '@nats-io/nuid@2.0.3': {}
+
+  '@nats-io/transport-node@3.0.2':
+    dependencies:
+      '@nats-io/nats-core': 3.0.2
+      '@nats-io/nkeys': 2.0.3
+      '@nats-io/nuid': 2.0.3
 
   '@next/env@15.3.1': {}
 
@@ -9026,6 +9067,8 @@ snapshots:
       make-fetch-happen: 13.0.1
     transitivePeerDependencies:
       - supports-color
+
+  tweetnacl@1.0.3: {}
 
   typanion@3.14.0: {}
 

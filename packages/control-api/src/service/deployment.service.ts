@@ -4,7 +4,6 @@ import { Readable } from "node:stream";
 import { eq } from "drizzle-orm";
 import { and } from "drizzle-orm";
 import * as unzipper from "unzipper";
-import { TypeOf } from "zod";
 import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
 import {
@@ -276,3 +275,22 @@ export const createDeployment = async (
     .returning();
   return deployment;
 };
+
+export async function getDeployment(userId: string, deploymentId: string) {
+  const deployment = await db.query.deploymentSchema.findFirst({
+    where: and(
+      eq(deploymentSchema.id, deploymentId),
+      eq(projectSchema.userId, userId),
+    ),
+    with: {
+      project: {
+        columns: {
+          id: true,
+          userId: true,
+        },
+      },
+    },
+  });
+
+  return deployment;
+}

@@ -5,6 +5,7 @@ import { env } from "../config.js";
 import { authRouter } from "./auth.js";
 import { deploymentsRouter } from "./deployments.js";
 import { githubRouter } from "./github.js"; // Import the new GitHub router
+import { logsRouter } from "./logs.js";
 import { projectsRouter } from "./projects.js";
 
 // Create main router with middleware
@@ -20,7 +21,8 @@ const api = new Hono()
   .route("/auth", authRouter)
   .route("/projects", projectsRouter)
   .route("/deployments", deploymentsRouter)
-  .route("/github", githubRouter);
+  .route("/github", githubRouter)
+  .route("/logs", logsRouter);
 
 export default api;
 

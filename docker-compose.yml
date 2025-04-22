@@ -26,6 +26,9 @@ services:
       GITHUB_CLIENT_ID: Iv23liNZm4MOMTaen21l
       GITHUB_APP_ID: 1231709
 
+      EVENTS_NATS_SERVER: nats://nats:4222
+      EVENTS_SUBJECT_PREFIX: logs
+
       # From .env file
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
@@ -57,7 +60,7 @@ services:
     environment:
       - ORIGAN_DEPLOY_DOMAIN=localtest.me:7777
       - CONTROL_API_URL=http://control-api:9999
-      - RUNNER_URL=http://runner:9000
+      - RUNNER_URL=http://runner:8000
       - BUCKET_URL=http://minio:9000
       - BUCKET_ACCESS_KEY=minioadmin
       - BUCKET_SECRET_KEY=minioadmin

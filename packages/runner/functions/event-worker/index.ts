@@ -90,6 +90,7 @@ for await (const data of eventManager) {
       await js.publish(
         topic,
         JSON.stringify({
+          timestamp: data.timestamp,
           msg: data.event.msg,
           level: data.event.level,
         }),

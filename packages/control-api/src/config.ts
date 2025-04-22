@@ -24,6 +24,10 @@ export const config = z.object({
 
   // JWT Configuration
   JWT_SECRET: z.string(),
+
+  EVENTS_NATS_SERVER: z.string(),
+  EVENTS_NATS_NKEY_CREDS: z.string().optional(),
+  EVENTS_SUBJECT_PREFIX: z.string(),
 });
 
 export const env = config.parse(process.env);
