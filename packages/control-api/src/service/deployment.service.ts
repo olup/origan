@@ -1,7 +1,7 @@
 import { mkdir, readFile, readdir, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { Readable } from "node:stream";
-import { eq } from "drizzle-orm";
+import { type SQLWrapper, eq } from "drizzle-orm";
 import { and } from "drizzle-orm";
 import * as unzipper from "unzipper";
 import { env } from "../config.js";
@@ -276,17 +276,28 @@ export const createDeployment = async (
   return deployment;
 };
 
-export async function getDeployment(userId: string, deploymentId: string) {
+export async function getDeployment(filter: {
+  userId: string;
+  id?: string;
+  reference?: string;
+}) {
+  if (filter.id == null && filter.reference == null) {
+    throw new Error("Either id or reference must be provided");
+  }
+
+  const clauses: SQLWrapper[] = [];
+  if (filter.id) {
+    clauses.push(eq(deploymentSchema.id, filter.id));
+  } else if (filter.reference) {
+    clauses.push(eq(deploymentSchema.reference, filter.reference));
+  }
+
   const deployment = await db.query.deploymentSchema.findFirst({
-    where: and(
-      eq(deploymentSchema.id, deploymentId),
-      eq(projectSchema.userId, userId),
-    ),
+    where: and(...clauses),
     with: {
       project: {
         columns: {
           id: true,
-          userId: true,
         },
       },
     },

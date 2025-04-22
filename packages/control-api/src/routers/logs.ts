@@ -20,8 +20,11 @@ export const logsRouter = new Hono().get(
   async (c) => {
     const { deploymentId } = c.req.valid("param");
 
-    const deployment = await getDeployment(c.get("userId"), deploymentId);
-    if (!deployment || deployment.project.id !== projectId) {
+    const deployment = await getDeployment({
+      userId: c.get("userId"),
+      id: deploymentId,
+    });
+    if (!deployment) {
       return c.json({ error: "Deployment not found" }, 404);
     }
 

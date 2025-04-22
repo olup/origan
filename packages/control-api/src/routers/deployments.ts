@@ -2,6 +2,7 @@ import { console } from "node:inspector";
 import { zValidator } from "@hono/zod-validator";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { z } from "zod";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
 import { auth } from "../middleware/auth.js";
@@ -16,6 +17,7 @@ import {
   ProjectNotFoundError,
   S3UploadError,
   deploy,
+  getDeployment,
 } from "../service/deployment.service.js";
 
 export const deploymentsRouter = new Hono()
@@ -141,5 +143,37 @@ export const deploymentsRouter = new Hono()
         projectId: host.deployment.projectId,
       };
       return c.json(response);
+    },
+  )
+  .get(
+    "/by-ref/:ref",
+    auth(),
+    zValidator("param", z.object({ ref: z.string() })),
+    async (c) => {
+      const { ref } = c.req.valid("param");
+      const userId = c.get("userId");
+
+      try {
+        const deployment = await getDeployment({ userId, reference: ref });
+        if (!deployment) {
+          const errorResponse = {
+            error: "Deployment not found",
+            details: `No deployment found with reference ${ref}`,
+          };
+          return c.json(errorResponse, 404);
+        }
+        return c.json({
+          id: deployment.id,
+          reference: deployment.reference,
+          createdAt: deployment.createdAt,
+          projectId: deployment.projectId,
+        });
+      } catch (error) {
+        const errorResponse = {
+          error: "Failed to fetch deployment",
+          details: error instanceof Error ? error.message : String(error),
+        };
+        return c.json(errorResponse, 500);
+      }
     },
   );
