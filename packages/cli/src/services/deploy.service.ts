@@ -257,3 +257,22 @@ export async function getDeployments(projectRef: string) {
 
   return data.deployments;
 }
+
+export async function getDeploymentByRef(deploymentRef: string) {
+  const client = await getAuthenticatedClient();
+  const response = await client.deployments["by-ref"][":ref"].$get({
+    param: {
+      ref: deploymentRef,
+    },
+  });
+
+  const data = await response.json();
+
+  if ("error" in data) {
+    throw new Error(
+      `Failed to fetch deployments: ${(data as { error: string }).error}`,
+    );
+  }
+
+  return data;
+}

@@ -74,24 +74,3 @@ export class LogConsumer {
     this.subscription.unsubscribe();
   }
 }
-
-// export async function* readDeploymentLogs(
-//   nc: nats.NatsConnection,
-//   streamName: string,
-//   projectId: string,
-//   deploymentId: string,
-// ): AsyncGenerator<DeploymentLog> {
-//   const js = jetstream(nc);
-//   const consumer = await js.consumers.get(streamName, {
-//     filter_subjects: [`logs.${projectId}.${deploymentId}`],
-//   });
-//
-//   const messages = await consumer.consume();
-//
-//   try {
-//     }
-//   } finally {
-//     console.log("Closing consumer");
-//     await consumer.delete();
-//   }
-// }

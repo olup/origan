@@ -144,6 +144,9 @@ importers:
       esbuild:
         specifier: ^0.25.2
         version: 0.25.3
+      fetch-sse:
+        specifier: ^1.1.2
+        version: 1.1.2
       form-data:
         specifier: ^4.0.2
         version: 4.0.2
@@ -2938,6 +2941,10 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  fetch-sse@1.1.2:
+    resolution: {integrity: sha512-f0kF5bNJJrudD6A+XrnJm4RS34+uH51yv5oyoHZBCub0IhI9HCRrrRJ+90jNzC0cFUAt3mJjBH/hf1Xealdt/Q==}
+    engines: {node: '>=18.0.0'}
 
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -7577,6 +7584,8 @@ snapshots:
   fdir@6.4.4(picomatch@4.0.2):
     optionalDependencies:
       picomatch: 4.0.2
+
+  fetch-sse@1.1.2: {}
 
   fill-range@7.1.1:
     dependencies:

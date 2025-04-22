@@ -49,6 +49,31 @@ export async function getProjects() {
   }
 }
 
+export async function getProjectByRef(projectRef: string) {
+  try {
+    const client = await getAuthenticatedClient();
+    const response = await client.projects["by-ref"][":ref"].$get({
+      param: {
+        ref: projectRef,
+      },
+    });
+
+    const data = await response.json();
+
+    if ("error" in data) {
+      handleApiError(data, response.status as number);
+    }
+
+    return data;
+  } catch (error) {
+    log.error(
+      "Failed to fetch projects:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
+    throw error;
+  }
+}
+
 /**
  * Create a new project
  */
