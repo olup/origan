@@ -8,35 +8,9 @@ import { handleAcmeChallenge } from "./handlers/acme.js";
 import { handleApiRoute } from "./handlers/api.js";
 import { handleHealthCheck } from "./handlers/health.js";
 import { handleStaticFile } from "./handlers/static.js";
-import { client } from "./libs/client.js";
 import { createHttpsServer } from "./server/https.js";
-import type { Config } from "./types/config.js";
+import { getConfig } from "./services/configurations.js";
 import { s3Client } from "./utils/s3.js";
-
-async function getConfig(
-  domain: string,
-): Promise<{ config: Config; deploymentId: string; projectId: string } | null> {
-  try {
-    const response = await client.deployments["get-config"].$post({
-      json: {
-        domain,
-      },
-    });
-
-    const data = await response.json();
-
-    if ("error" in data) {
-      console.error("Error fetching config:", data.error);
-      return null;
-    }
-
-    const { config, deploymentId, projectId } = data;
-    return { config, deploymentId, projectId };
-  } catch (error) {
-    console.error("Error fetching config:", error);
-    return null;
-  }
-}
 
 // Create ACME challenge handler
 const acmeHandler = handleAcmeChallenge(s3Client, envConfig.bucketName);
@@ -67,10 +41,11 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     console.log("Domain:", domain);
 
     const result = await getConfig(domain);
+
     if (!result) {
-      res.writeHead(500, { "Content-Type": "application/json" });
+      res.writeHead(404, { "Content-Type": "application/json" });
       return res.end(
-        JSON.stringify({ error: "Failed to get domain configuration" }),
+        JSON.stringify({ error: "Domain configuration not found" }),
       );
     }
 
