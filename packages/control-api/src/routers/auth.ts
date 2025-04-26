@@ -27,7 +27,7 @@ const hashToken = (token: string) =>
 
 const generateTokens = async (
   userId: string,
-  payload: z.infer<typeof jwtPayloadSchema>,
+  payload: z.infer<typeof jwtPayloadSchema>
 ) => {
   const accessToken = jwt.sign(payload, env.JWT_SECRET, {
     expiresIn: ACCESS_TOKEN_EXPIRY,
@@ -42,7 +42,7 @@ const generateTokens = async (
     userId,
     tokenHash: hashedToken,
     expiresAt: sql.raw(
-      `CURRENT_TIMESTAMP + INTERVAL '${REFRESH_TOKEN_EXPIRY_DAYS} days'`,
+      `CURRENT_TIMESTAMP + INTERVAL '${REFRESH_TOKEN_EXPIRY_DAYS} days'`
     ),
   });
 
@@ -65,7 +65,7 @@ export const authRouter = new Hono()
       z.object({
         sessionId: z.string().optional(),
         type: z.enum(["cli", "web"]),
-      }),
+      })
     ),
     async (c) => {
       const query = c.req.valid("query");
@@ -80,19 +80,19 @@ export const authRouter = new Hono()
 
       const params = new URLSearchParams({
         client_id: env.GITHUB_CLIENT_ID,
-        redirect_uri: `${env.ORIGAN_API_URL}/auth/callback`,
+        redirect_uri: `${env.ORIGAN_API_URL}/auth/github/callback`,
         scope: "read:user user:email",
         state,
       });
 
       return c.redirect(
-        `https://github.com/login/oauth/authorize?${params.toString()}`,
+        `https://github.com/login/oauth/authorize?${params.toString()}`
       );
-    },
+    }
   )
 
   // GitHub OAuth callback
-  .get("/callback", async (c) => {
+  .get("/github/callback", async (c) => {
     try {
       const code = c.req.query("code");
       const stateParam = c.req.query("state");
@@ -103,7 +103,7 @@ export const authRouter = new Hono()
 
       // TODO throw
       const stateObject = JSON.parse(
-        Buffer.from(stateParam, "base64").toString("utf-8"),
+        Buffer.from(stateParam, "base64").toString("utf-8")
       );
       const state = await oauthStateSchema.parse(stateObject);
 
@@ -121,7 +121,7 @@ export const authRouter = new Hono()
             client_secret: env.GITHUB_CLIENT_SECRET,
             code,
           }),
-        },
+        }
       );
 
       const tokenData = (await tokenResponse.json()) as GitHubTokenResponse;
@@ -153,7 +153,7 @@ export const authRouter = new Hono()
               Authorization: `Bearer ${tokenData.access_token}`,
               Accept: "application/json",
             },
-          },
+          }
         );
         const emailsRaw = await emailResponse.json();
         const emails = z
@@ -163,7 +163,7 @@ export const authRouter = new Hono()
               primary: z.boolean(),
               verified: z.boolean(),
               visibility: z.string().nullable(),
-            }),
+            })
           )
           .parse(emailsRaw);
 
@@ -204,8 +204,8 @@ export const authRouter = new Hono()
           .where(
             and(
               eq(authSessionSchema.sessionId, state.sessionId),
-              gt(authSessionSchema.expiresAt, sql`CURRENT_TIMESTAMP`),
-            ),
+              gt(authSessionSchema.expiresAt, sql`CURRENT_TIMESTAMP`)
+            )
           )
           .returning();
 
@@ -234,7 +234,7 @@ export const authRouter = new Hono()
       // TODO: Consider more specific error handling based on error type
       return c.json(
         { error: "Internal server error during authentication." },
-        500,
+        500
       );
     }
   })
@@ -246,7 +246,7 @@ export const authRouter = new Hono()
       sessionId,
       status: "pending",
       expiresAt: sql.raw(
-        `CURRENT_TIMESTAMP + INTERVAL '${AUTH_SESSION_EXPIRY_MINUTES} minutes'`,
+        `CURRENT_TIMESTAMP + INTERVAL '${AUTH_SESSION_EXPIRY_MINUTES} minutes'`
       ),
     });
 
@@ -303,7 +303,7 @@ export const authRouter = new Hono()
         status: "completed",
         tokens,
       } as AuthSessionStatusResponse);
-    },
+    }
   )
 
   // Refresh access token
@@ -323,7 +323,7 @@ export const authRouter = new Hono()
       where: and(
         eq(refreshTokenSchema.tokenHash, hashedToken),
         lt(sql`CURRENT_TIMESTAMP`, refreshTokenSchema.expiresAt),
-        isNull(refreshTokenSchema.rotatedAt),
+        isNull(refreshTokenSchema.rotatedAt)
       ),
     });
 
@@ -349,8 +349,8 @@ export const authRouter = new Hono()
         .where(
           and(
             eq(refreshTokenSchema.id, tokenRecord.id),
-            eq(refreshTokenSchema.tokenHash, hashedToken),
-          ),
+            eq(refreshTokenSchema.tokenHash, hashedToken)
+          )
         );
 
       // Set new refresh token cookie
