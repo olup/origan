@@ -31,3 +31,4 @@ tsconfig.tsbuildinfo
 .env
 
 .workers-data
+.vscode
