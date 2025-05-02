@@ -65,7 +65,7 @@ class ProjectsCommand extends Command {
           p,
           R.omit(["deployments"]),
           R.merge({
-            deployments: p.deployments.map((d) => d.shortId).join(", "),
+            deployments: p.deployments.map((d) => d.reference).join(", "),
           }),
         ),
       ),
@@ -116,7 +116,7 @@ class DeploymentsCommand extends Command {
           }),
         ),
       ),
-      ["shortId", "hosts", "createdAt", "updatedAt"],
+      ["reference", "hosts", "createdAt", "updatedAt"],
     );
   }
 }

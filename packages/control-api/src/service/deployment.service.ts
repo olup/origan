@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import { eq } from "drizzle-orm";
 import { and } from "drizzle-orm";
 import * as unzipper from "unzipper";
+import { TypeOf } from "zod";
 import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
 import {
@@ -16,6 +17,7 @@ import {
   type DeployParams,
   deploymentConfigSchema,
 } from "../schemas/deploy.js";
+import { generateReference } from "../utils/reference.js";
 
 // Custom Error Types
 export class BundleProcessingError extends Error {
@@ -201,16 +203,14 @@ export async function deploy({
 
   console.log("Creating deployment record...");
 
-  // Create deployment record with shortId
-  const shortId = Math.random().toString(36).substring(2, 10);
-  const [deployment] = await db
-    .insert(deploymentSchema)
-    .values({
-      shortId,
-      config: config,
-      projectId: project.id,
-    })
-    .returning();
+  const deployment = await createDeployment({
+    projectId: project.id,
+    config: result.data,
+  });
+
+  if (!deployment) {
+    throw new Error("Failed to create deployment record");
+  }
 
   let extractedPath: string | undefined;
   try {
@@ -221,6 +221,7 @@ export async function deploy({
 
     console.log("Bundle processed");
     console.log("Uploading files to bucket...");
+
     await uploadToS3(extractedPath, deployment.id, bucketName);
 
     console.log("Files uploaded");
@@ -238,7 +239,7 @@ export async function deploy({
   }
 
   // Create or update host record
-  const domain = `${branchRef}-${projectRef}.`;
+  const domain = `${deployment.reference}--${project.reference}.`;
 
   await db
     .insert(hostSchema)
@@ -262,3 +263,16 @@ export async function deploy({
     urls: [`https://${domain}${env.ORIGAN_DEPLOY_DOMAIN}`],
   };
 }
+
+export const createDeployment = async (
+  data: Omit<typeof deploymentSchema.$inferInsert, "reference">,
+) => {
+  const [deployment] = await db
+    .insert(deploymentSchema)
+    .values({
+      reference: generateReference(),
+      ...data,
+    })
+    .returning();
+  return deployment;
+};

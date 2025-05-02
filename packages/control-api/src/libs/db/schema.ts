@@ -6,6 +6,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex, // Import uniqueIndex
   uuid,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./columns.helpers.js";
@@ -28,15 +29,29 @@ export const projectRelations = relations(projectSchema, ({ many, one }) => ({
   }),
 }));
 
-export const deploymentSchema = pgTable("deployment", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  shortId: text("short_id").notNull().unique(),
-  config: jsonb("config").notNull(),
-  projectId: uuid("project_id")
-    .references(() => projectSchema.id, { onDelete: "cascade" })
-    .notNull(),
-  ...timestamps,
-});
+export const deploymentSchema = pgTable(
+  "deployment",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reference: text("reference").notNull(),
+    config: jsonb("config").notNull(),
+    projectId: uuid("project_id")
+      .references(() => projectSchema.id, { onDelete: "cascade" })
+      .notNull(),
+
+    ...timestamps,
+  },
+  // Deployment reference should be unique per project
+  // but not globally unique
+  (table) => {
+    return {
+      projectReferenceIdx: uniqueIndex("project_reference_idx").on(
+        table.projectId,
+        table.reference,
+      ),
+    };
+  },
+);
 
 // Relations
 export const deploymentRelations = relations(

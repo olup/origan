@@ -89,12 +89,8 @@ export const projectsRouter = new Hono()
 
     try {
       const userId = c.get("userId");
-      const randomRef = customAlphabet(
-        "abcdefghijklmnopqrstuvwxyz0123456789_-",
-      )(12);
       const project = await createProject({
         ...data,
-        reference: randomRef,
         userId,
       });
       return c.json(project, 201);

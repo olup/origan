@@ -16,7 +16,7 @@ import {
   ProjectNotFoundError,
   S3UploadError,
   deploy,
-} from "../service/deploy.service.js";
+} from "../service/deployment.service.js";
 
 export const deploymentsRouter = new Hono()
   .post(

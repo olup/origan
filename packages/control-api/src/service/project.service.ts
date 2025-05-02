@@ -1,14 +1,16 @@
 import { type SQLWrapper, and, eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
+import { generateReference } from "../utils/reference.js";
 
 export async function createProject(
-  data: typeof schema.projectSchema.$inferInsert,
+  data: Omit<typeof schema.projectSchema.$inferInsert, "id" | "reference">,
 ) {
   const [project] = await db
     .insert(schema.projectSchema)
     .values({
-      reference: data.reference,
+      reference: generateReference(),
       name: data.name,
       userId: data.userId,
     })

@@ -218,7 +218,7 @@ importers:
         specifier: ^9.0.2
         version: 9.0.2
       nanoid:
-        specifier: ^3.0.0
+        specifier: ^3.3.11
         version: 3.3.11
       pg:
         specifier: ^8.14.1
