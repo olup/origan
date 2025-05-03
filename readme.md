@@ -54,10 +54,23 @@ Web interface for platform administration built with:
 pnpm install
 ```
 
-2. Start the development environment:
+2. Make sure you have a .env file in the root directory following the `.env.example` template. This file contains secret mainly coming from the development Github app. Up-to-date env file can be obtained from the dev team.
+
+3. Start the development environment:
 ```bash
 docker-compose up    # Start supporting services
 ```
+
+### Local development and github webhooks
+To authenticate or act in a user repo, we use github apps, created in the Origan organization. The app is installed on the user repo, and we use the JWT token to authenticate and act on behalf of the user.
+- [Production app](https://github.com/organizations/origan-eu/settings/apps/origaneu)
+- [Development app](https://github.com/organizations/origan-eu/settings/apps/origaneu-local) (to use in local dev env)
+
+The Developmment app is already setup to send its webhooks to smee.io, a webhook relay service by and for github. We use [this enpoint](https://smee.io/origaneulocal-8MVxlEzBDRVUKj) to receive, proxy, examine and replay webhooks.
+
+When developping, the smee client is started in the docker-compose file, that connects to our endpoint and proxies incoming or replayed webhooks to our control api service.
+
+Except for setting the main .env file, there is nothing more required of the developer.
 
 ### CLI Development
 

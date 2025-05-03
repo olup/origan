@@ -21,11 +21,12 @@ services:
       BUCKET_SECRET_KEY: minioadmin
       BUCKET_NAME: origan
       BUCKET_REGION: us-east-1
+      JWT_SECRET: secret
 
       # From .env file
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
-      JWT_SECRET: secret
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
     networks:
       - origan-network
 
@@ -138,6 +139,15 @@ services:
     command: "-js"
     networks:
       - origan-network
+
+  # This is used to catch the webhook from GitHub
+  smee:
+    image: deltaprojects/smee-client
+    command: smee --url https://smee.io/origaneulocal-8MVxlEzBDRVUKj --target http://control-api:9999/github/webhook
+    networks:
+      - origan-network
+    depends_on:
+      - control-api
 
 networks:
   origan-network:

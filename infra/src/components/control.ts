@@ -142,6 +142,10 @@ export function deployControl({
                     name: "GITHUB_CLIENT_SECRET",
                     value: config.github.clientSecret,
                   },
+                  {
+                    name: "GITHUB_WEBHOOK_SECRET",
+                    value: config.github.webhookSecret,
+                  },
                   // JWT Configuration
                   {
                     name: "JWT_SECRET",

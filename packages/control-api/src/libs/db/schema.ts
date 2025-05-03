@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  integer, // Add integer type
   jsonb,
   pgEnum,
   pgTable,
@@ -87,6 +88,7 @@ export const userSchema = pgTable("users", {
   githubProviderReference: text("github_provider_reference").unique(),
   username: text("username").notNull(),
   contactEmail: text("contact_email").notNull(),
+  githubAppInstallationId: integer("github_app_installation_id"),
   ...timestamps,
 });
 

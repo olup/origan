@@ -316,8 +316,6 @@ export const authRouter = new Hono()
 
     const hashedToken = hashToken(refreshToken);
 
-    console.log("Hashed token:", hashedToken);
-
     // Find and validate refresh token
     const tokenRecord = await db.query.refreshTokenSchema.findFirst({
       where: and(
@@ -326,8 +324,6 @@ export const authRouter = new Hono()
         isNull(refreshTokenSchema.rotatedAt),
       ),
     });
-
-    console.log("Token record:", tokenRecord);
 
     if (!tokenRecord) {
       return c.json({ error: "Invalid refresh token" }, 401);

@@ -13,10 +13,12 @@
     "db:generate": "pnpm tsx node_modules/drizzle-kit/bin.cjs generate"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.777.0",
-    "@hono/node-server": "^1.0.0",
+    "@aws-sdk/client-s3": "^3.787.0",
+    "@hono/node-server": "^1.14.1",
     "@hono/zod-validator": "^0.4.3",
-    "dotenv": "^16.4.7",
+    "@octokit/webhooks-methods": "^5.1.1",
+    "@octokit/webhooks-types": "^7.6.1",
+    "dotenv": "^16.5.0",
     "drizzle-kit": "^0.30.6",
     "drizzle-orm": "^0.41.0",
     "hono": "4.7.7",
@@ -24,17 +26,17 @@
     "nanoid": "^3.3.11",
     "pg": "^8.14.1",
     "unzipper": "^0.12.3",
-    "zod": "^3.24.2"
+    "zod": "^3.24.3"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.9",
-    "@types/node": "^20.0.0",
-    "@types/pg": "^8.11.11",
+    "@types/node": "^20.17.30",
+    "@types/pg": "^8.11.13",
     "@types/unzipper": "^0.10.11",
-    "esbuild": "^0.20.0",
+    "esbuild": "^0.20.2",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.19.3",
-    "typescript": "^5.0.0"
+    "typescript": "^5.8.3"
   },
   "packageManager": "pnpm@10.7.0+sha512.6b865ad4b62a1d9842b61d674a393903b871d9244954f652b8842c2b553c72176b278f64c463e52d40fff8aba385c235c8c9ecf5cc7de4fd78b8bb6d49633ab6"
 }
