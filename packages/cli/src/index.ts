@@ -63,7 +63,7 @@ class ProjectsCommand extends Command {
       projects.map((p) =>
         R.pipe(
           p,
-          R.omit(["deployments"]),
+          R.omit(["deployments", "githubConfig"]),
           R.merge({
             deployments: p.deployments.map((d) => d.reference).join(", "),
           }),

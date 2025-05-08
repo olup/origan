@@ -44,6 +44,7 @@ export async function getProject(filter: {
           hosts: true,
         },
       },
+      githubConfig: true,
     },
   });
 
@@ -59,6 +60,7 @@ export async function getProjects(userId: string) {
           hosts: true,
         },
       },
+      githubConfig: true,
     },
   });
 
@@ -99,4 +101,73 @@ export async function deleteProject(id: string, userId: string) {
     .returning();
 
   return project;
+}
+
+// GitHub Config Management
+
+// Create or update GitHub config for a project
+export async function setProjectGithubConfig(
+  projectId: string,
+  userId: string,
+  githubData: Omit<typeof schema.githubConfigSchema.$inferInsert, "projectId">,
+) {
+  // Verify project exists and belongs to user
+  const project = await getProject({ id: projectId, userId });
+  if (!project) {
+    throw new Error(`Project not found with ID: ${projectId}`);
+  }
+
+  // Use upsert operation instead of separate query and update/insert
+  const [githubConfig] = await db
+    .insert(schema.githubConfigSchema)
+    .values({
+      projectId,
+      githubRepositoryId: githubData.githubRepositoryId,
+      githubRepositoryFullName: githubData.githubRepositoryFullName,
+    })
+    .onConflictDoUpdate({
+      target: schema.githubConfigSchema.projectId,
+      set: {
+        githubRepositoryId: githubData.githubRepositoryId,
+        githubRepositoryFullName: githubData.githubRepositoryFullName,
+      },
+    })
+    .returning();
+
+  return githubConfig;
+}
+
+// Remove GitHub config for a project
+export async function removeProjectGithubConfig(
+  projectId: string,
+  userId: string,
+): Promise<void> {
+  // Verify project exists and belongs to user
+  const project = await getProject({ id: projectId, userId });
+  if (!project) {
+    throw new Error(`Project not found with ID: ${projectId}`);
+  }
+
+  // Delete the GitHub config
+  await db
+    .delete(schema.githubConfigSchema)
+    .where(eq(schema.githubConfigSchema.projectId, projectId));
+}
+
+// Get GitHub config for a project
+export async function getProjectGithubConfig(
+  projectId: string,
+  userId: string,
+) {
+  // Verify project exists and belongs to user
+  const project = await getProject({ id: projectId, userId });
+  if (!project) {
+    throw new Error(`Project not found with ID: ${projectId}`);
+  }
+
+  const githubConfig = await db.query.githubConfigSchema.findFirst({
+    where: eq(schema.githubConfigSchema.projectId, projectId),
+  });
+
+  return githubConfig;
 }

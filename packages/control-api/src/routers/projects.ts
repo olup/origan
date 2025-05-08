@@ -1,6 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { customAlphabet } from "nanoid";
 import { z } from "zod";
 import { auth } from "../middleware/auth.js";
 import {
@@ -10,9 +9,10 @@ import {
 import type { ProjectError } from "../schemas/project.js";
 import {
   createProject,
-  deleteProject,
   getProject,
   getProjects,
+  removeProjectGithubConfig,
+  setProjectGithubConfig,
   updateProject,
 } from "../service/project.service.js";
 
@@ -141,5 +141,61 @@ export const projectsRouter = new Hono()
       // TODO
       // Delete each remaining deployment (which involves cleaning the directory in s3)
       // WDelete any remaining host object (which involves cleaning any certificates we might have)
+    },
+  )
+  // GitHub Configuration Endpoints
+  .post(
+    "/:id/github/config",
+    auth(),
+    zValidator("param", z.object({ id: z.string() })),
+    zValidator(
+      "json",
+      z.object({
+        githubRepositoryId: z.number(),
+        githubRepositoryFullName: z.string(),
+        // TODO: this parameter will stay unused until we implement
+        // relations between projects and branches
+        productionBranch: z.string(),
+      }),
+    ),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const githubData = await c.req.valid("json");
+      const userId = c.get("userId");
+
+      try {
+        const githubConfig = await setProjectGithubConfig(
+          id,
+          userId,
+          githubData,
+        );
+        return c.json(githubConfig, 201);
+      } catch (error) {
+        const errorResponse = {
+          error: "Failed to set GitHub configuration",
+          details: error instanceof Error ? error.message : String(error),
+        };
+        return c.json(errorResponse, 500);
+      }
+    },
+  )
+  .delete(
+    "/:id/github/config",
+    auth(),
+    zValidator("param", z.object({ id: z.string() })),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const userId = c.get("userId");
+
+      try {
+        await removeProjectGithubConfig(id, userId);
+        return c.json({ success: true });
+      } catch (error) {
+        const errorResponse = {
+          error: "Failed to remove GitHub configuration",
+          details: error instanceof Error ? error.message : String(error),
+        };
+        return c.json(errorResponse, 500);
+      }
     },
   );

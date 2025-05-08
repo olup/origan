@@ -28,6 +28,7 @@ export const projectRelations = relations(projectSchema, ({ many, one }) => ({
     fields: [projectSchema.userId],
     references: [userSchema.id],
   }),
+  githubConfig: one(githubConfigSchema),
 }));
 
 export const deploymentSchema = pgTable(
@@ -123,3 +124,26 @@ export const refreshTokenSchema = pgTable("refresh_tokens", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   rotatedAt: timestamp("rotated_at", { withTimezone: true }),
 });
+
+// GitHub configuration schema
+export const githubConfigSchema = pgTable("github_config", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id")
+    .references(() => projectSchema.id)
+    .notNull()
+    .unique(), // One GitHub config per project
+  githubRepositoryId: integer("github_repository_id").notNull(),
+  githubRepositoryFullName: text("github_repository_full_name").notNull(),
+  ...timestamps,
+});
+
+// GitHub config relations
+export const githubConfigRelations = relations(
+  githubConfigSchema,
+  ({ one }) => ({
+    project: one(projectSchema, {
+      fields: [githubConfigSchema.projectId],
+      references: [projectSchema.id],
+    }),
+  }),
+);
