@@ -19,6 +19,8 @@ export const config = z.object({
   GITHUB_CLIENT_ID: z.string(),
   GITHUB_CLIENT_SECRET: z.string(),
   GITHUB_WEBHOOK_SECRET: z.string(),
+  GITHUB_APP_ID: z.string(),
+  GITHUB_APP_PRIVATE_KEY_BASE64: z.string(),
 
   // JWT Configuration
   JWT_SECRET: z.string(),

@@ -5,6 +5,8 @@ const GithubConfig = z.object({
   clientId: z.string(),
   clientSecret: z.string(),
   webhookSecret: z.string(),
+  appId: z.string(),
+  appPrivateKeyBase64: z.string(),
 });
 const Config = z.object({
   github: GithubConfig,

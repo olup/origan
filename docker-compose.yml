@@ -23,10 +23,14 @@ services:
       BUCKET_REGION: us-east-1
       JWT_SECRET: secret
 
+      GITHUB_CLIENT_ID: Iv23liNZm4MOMTaen21l
+      GITHUB_APP_ID: 1231709
+
       # From .env file
-      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      GITHUB_APP_PRIVATE_KEY_BASE64: ${GITHUB_APP_PRIVATE_KEY_BASE64}
+
     networks:
       - origan-network
 
