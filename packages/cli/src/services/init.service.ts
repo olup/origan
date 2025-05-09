@@ -11,7 +11,7 @@ export async function init() {
   // Check if we're in a project root by looking for package.json
   try {
     await stat(join(process.cwd(), "package.json"));
-  } catch (error) {
+  } catch (_error) {
     log.error(
       "package.json not found. Please run 'origan init' from your project root directory.",
     );
@@ -32,7 +32,7 @@ export async function init() {
       log.info("Operation cancelled");
       return;
     }
-  } catch (error) {
+  } catch (_error) {
     // File doesn't exist, proceed with creation
   }
 
@@ -194,7 +194,7 @@ ${
       await appendFile(gitignorePath, "\n.origan\n");
       log.info("Added .origan to .gitignore");
     }
-  } catch (error) {
+  } catch (_error) {
     // .gitignore doesn't exist, create it
     await writeFile(gitignorePath, ".origan\n");
     log.info("Created .gitignore with .origan entry");

@@ -7,7 +7,6 @@ import { z } from "zod";
 import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
 import { userSchema } from "../libs/db/schema.js";
-import { githubAppInstance } from "../libs/github.js";
 import { auth } from "../middleware/auth.js";
 import {
   getRepoBranches,

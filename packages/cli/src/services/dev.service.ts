@@ -1,4 +1,3 @@
-import { join } from "node:path";
 import { validateDirectory } from "../utils/file.js";
 
 export async function startDev(): Promise<void> {
@@ -7,8 +6,6 @@ export async function startDev(): Promise<void> {
 
     // Validate project structure
     const projectRoot = process.cwd();
-    const distDir = join(projectRoot, "dist");
-    const apiDir = join(projectRoot, "api");
 
     // Check if we're in a valid project directory
     if (!validateDirectory(projectRoot)) {
@@ -53,7 +50,7 @@ export async function checkDevStatus(): Promise<boolean> {
     // 3. Return development environment status
 
     return false; // Not implemented yet
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

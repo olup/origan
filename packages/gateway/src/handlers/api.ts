@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { env } from "node:process";
 import { envConfig } from "../config/index.js";
 import type { Config } from "../types/config.js";
 

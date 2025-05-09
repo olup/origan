@@ -361,7 +361,7 @@ export const authRouter = new Hono()
         accessToken,
         refreshToken: newRefreshToken,
       });
-    } catch (error) {
+    } catch (_error) {
       return c.json({ error: "Failed to refresh token" }, 500);
     }
   })

@@ -170,7 +170,6 @@ async function uploadToS3(
 
 export async function deploy({
   projectRef,
-  branchRef,
   bundle,
   config,
   userId,

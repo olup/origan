@@ -67,7 +67,7 @@ export const getChallenge = async (
       keyAuthorization: data.keyAuthorization,
       expires,
     };
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 };

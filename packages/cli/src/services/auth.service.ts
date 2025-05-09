@@ -58,7 +58,7 @@ async function refreshTokens(currentRefreshToken: string) {
       accessToken: data.accessToken,
       refreshToken: data.refreshToken,
     };
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -141,7 +141,7 @@ export async function checkAuthStatus(): Promise<boolean> {
     // If access token exists, we consider them logged in
     // The token's validity will be checked on actual API calls
     return true;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

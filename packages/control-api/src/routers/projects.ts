@@ -136,11 +136,10 @@ export const projectsRouter = new Hono()
     "/:id",
     auth(),
     zValidator("param", z.object({ id: z.string() })),
-    async (c) => {
-      const { id } = c.req.valid("param");
-      // TODO
+    async (_c) => {
+      // TODO - Implementation pending
       // Delete each remaining deployment (which involves cleaning the directory in s3)
-      // WDelete any remaining host object (which involves cleaning any certificates we might have)
+      // Delete any remaining host object (which involves cleaning any certificates we might have)
     },
   )
   // GitHub Configuration Endpoints

@@ -119,7 +119,7 @@ export const getCertificate = async (
         }),
       );
       chain = await chainResponse.Body?.transformToString();
-    } catch (error) {
+    } catch (_error) {
       // Chain is optional, ignore error if not found
     }
 
@@ -132,7 +132,7 @@ export const getCertificate = async (
       certificate,
       chain,
     };
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 };

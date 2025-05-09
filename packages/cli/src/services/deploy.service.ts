@@ -1,6 +1,5 @@
 import { stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { config } from "../config.js";
 import { getAuthenticatedClient } from "../libs/client.js";
 import type { OriganConfig } from "../types.js";
 import { ProgressBar } from "../utils/cli.js";

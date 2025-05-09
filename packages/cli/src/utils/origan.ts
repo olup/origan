@@ -2,7 +2,6 @@ import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { parse } from "comment-json";
 import { type OriganConfig, origanConfigSchema } from "../types.js";
-import { log } from "./logger.js";
 
 export class OriganConfigError extends Error {
   constructor(message: string) {
@@ -25,7 +24,7 @@ export async function parseOriganConfig(): Promise<OriganConfig> {
 
   try {
     await stat(origanConfigPath);
-  } catch (error) {
+  } catch (_error) {
     throw new OriganConfigNotFoundError(origanConfigPath);
   }
 

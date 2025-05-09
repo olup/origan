@@ -11,7 +11,7 @@ import {
 import { startDev } from "./services/dev.service.js";
 import { init } from "./services/init.service.js";
 import { streamLogs } from "./services/logs.service.js";
-import { getProjectByRef, getProjects } from "./services/project.service.js";
+import { getProjects } from "./services/project.service.js";
 import { table } from "./utils/console-ui.js";
 import { log } from "./utils/logger.js";
 import {

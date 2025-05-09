@@ -42,7 +42,6 @@ type HandleInstallationDeletedProps = {
 
 export async function handleInstallationDeleted({
   githubAccountId,
-  installationId,
 }: HandleInstallationDeletedProps) {
   try {
     await db

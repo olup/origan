@@ -43,7 +43,7 @@ export async function readTokens(): Promise<AuthTokens | null> {
   try {
     const data = await fs.readFile(AUTH_FILE, "utf-8");
     return JSON.parse(data) as AuthTokens;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -54,7 +54,7 @@ export async function readTokens(): Promise<AuthTokens | null> {
 export async function clearTokens(): Promise<void> {
   try {
     await fs.unlink(AUTH_FILE);
-  } catch (error) {
+  } catch (_error) {
     // Ignore errors if file doesn't exist
   }
 }

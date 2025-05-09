@@ -3,10 +3,6 @@ import jwt from "jsonwebtoken";
 import { env } from "../config.js";
 import { jwtPayloadSchema } from "../schemas/auth.js";
 
-interface AuthUser {
-  userId: string;
-}
-
 type Variables = {
   userId: string;
 };
@@ -27,7 +23,7 @@ export const auth = () => {
       c.set("userId", payload.userId);
 
       return next();
-    } catch (error) {
+    } catch (_error) {
       return c.json({ error: "Unauthorized" }, 401);
     }
   };
