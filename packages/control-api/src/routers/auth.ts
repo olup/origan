@@ -156,6 +156,7 @@ export const authRouter = new Hono()
           },
         );
         const emailsRaw = await emailResponse.json();
+
         const emails = z
           .array(
             z.object({
@@ -377,12 +378,45 @@ export const authRouter = new Hono()
         username: true,
         createdAt: true,
         updatedAt: true,
+        githubAppInstallationId: true,
       },
     });
     if (!user) {
       return c.json({ error: "User not found" }, 404);
     }
     return c.json(user);
+  })
+
+  // Logout user by invalidating refresh token
+  .post("/logout", async (c) => {
+    const refreshToken = getCookie(c, "refreshToken");
+
+    if (refreshToken) {
+      const hashedToken = hashToken(refreshToken);
+
+      // Invalidate the refresh token by setting rotatedAt
+      await db
+        .update(refreshTokenSchema)
+        .set({
+          rotatedAt: sql`CURRENT_TIMESTAMP`,
+        })
+        .where(
+          and(
+            eq(refreshTokenSchema.tokenHash, hashedToken),
+            isNull(refreshTokenSchema.rotatedAt),
+          ),
+        );
+
+      // Clear the refresh token cookie
+      setCookie(c, "refreshToken", "", {
+        httpOnly: true,
+        secure: env.APP_ENV !== "development",
+        sameSite: "Lax",
+        maxAge: 0, // Expire immediately
+      });
+    }
+
+    return c.json({ success: true });
   });
 
 // TODO - jobs for refresh-token and session cleanup

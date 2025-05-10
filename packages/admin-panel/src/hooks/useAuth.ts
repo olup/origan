@@ -20,9 +20,23 @@ export function useAuth() {
       }),
   });
 
+  const doLogout = async () => {
+    try {
+      // Call the logout endpoint to invalidate the refresh token
+      await client.auth.logout.$post();
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
+      // Redirect to home page regardless of API call success
+      window.location.href = "/";
+    }
+  };
+
   return {
     doLogin,
+    doLogout,
     user: getUserQuery.data,
     isLoading: getUserQuery.isLoading,
+    refetchUser: getUserQuery.refetch,
   };
 }

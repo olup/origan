@@ -119,6 +119,7 @@ export const githubRouter = new Hono()
         id: repo.id,
         name: repo.name,
         owner: repo.owner.login,
+        fullName: repo.full_name,
       }));
 
       return c.json(repositories);

@@ -1,15 +1,18 @@
 type Config = {
   appEnv: string;
   apiUrl: string;
+  ghAppName: string;
 };
 
 const productionConfig: Config = {
   appEnv: "production",
   apiUrl: "https://api.origna.dev",
+  ghAppName: "OriganEu",
 };
 const developmentConfig: Config = {
   appEnv: "development",
   apiUrl: "http://localhost:3000",
+  ghAppName: "OriganEu-local",
 };
 
 export const getConfig = (): Config => {
