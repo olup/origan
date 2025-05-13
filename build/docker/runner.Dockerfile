@@ -6,4 +6,7 @@ RUN apt-get update && apt-get install -y curl ca-certificates --no-install-recom
         curl -fsSL https://apt.cli.rs/rust-tools.list > /etc/apt/sources.list.d/rust-tools.list &&   \
         apt-get update && apt-get install -y --no-install-recommends watchexec-cli && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /app
+COPY ./packages/runner .
+
 ENTRYPOINT [ "/usr/bin/watchexec" ]

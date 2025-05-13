@@ -56,9 +56,11 @@ pnpm install
 
 2. Make sure you have a .env file in the root directory following the `.env.example` template. This file contains secret mainly coming from the development Github app. Up-to-date env file can be obtained from the dev team.
 
-3. Start the development environment:
+3. Install [Tilt](https://github.com/tilt-dev/tilt?tab=readme-ov-file#install-tilt) to run the local development environment. Compared to a bare `docker-compose`, Tilt reloads your environment when you modify your `docker-compose.yaml` file, rebuild your images when you've changed a file, while also allowing for live-update by syncing changed files directly to the container and triggering a command when some file changes (e.g. `pnpm install` when `package.json` changes).
+
+4. Run the development environment:
 ```bash
-docker-compose up    # Start supporting services
+tilt up
 ```
 
 ### Local development and github webhooks
@@ -82,6 +84,8 @@ cd packages/cli
 pnpm build:watch
 ```
 
+  If you already have `tilt up` running, the `cli` is automatically rebuilt in it as well.
+
 2. Make the CLI available globally:
 ```bash
 cd packages/cli && pnpm link -g
@@ -91,7 +95,7 @@ This will allow you to use the `origan` command globally while developing. The C
 
 To uninstall the CLI, run:
 ```bash
-pnpm unistall -g @origan/cli
+pnpm uninstall -g @origan/cli
 ```
 
 ### Project Structure

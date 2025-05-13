@@ -1,13 +1,10 @@
 services:
   control-api:
-    image: node:22-slim
+    image: origan-control-api
+    command: sh -c "pnpm run db:migrate && pnpm run dev"
     working_dir: /app
     ports:
       - "9999:9999"
-    volumes:
-      - ./packages/control-api:/app
-      - /app/node_modules
-    command: sh -c "corepack enable && pnpm install && pnpm run db:migrate && pnpm run dev"
     environment:
       APP_ENV: development
       ORIGAN_DEPLOY_DOMAIN: "localtest.me:7777"
@@ -33,29 +30,30 @@ services:
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
       GITHUB_APP_PRIVATE_KEY_BASE64: ${GITHUB_APP_PRIVATE_KEY_BASE64}
-
+    volumes:
+      - /app/node_modules
     networks:
       - origan-network
 
   admin-panel:
-    image: node:22-slim
+    image: origan-admin-panel
+    command: sh -c "pnpm run dev --host 0.0.0.0"
     working_dir: /app
     ports:
       - "5199:5199"
-    volumes:
-      - ./packages/admin-panel:/app
-      - /app/node_modules
-    command: sh -c "corepack enable && pnpm install && pnpm run dev --host 0.0.0.0"
     environment:
       - VITE_APP_ENV=development
       - VITE_API_URL=http://localhost:9999
+    volumes:
+      - /app/node_modules
     depends_on:
       - control-api
     networks:
       - origan-network
 
   gateway:
-    image: node:22-slim
+    image: origan-gateway
+    command: sh -c "pnpm run dev"
     working_dir: /app
     environment:
       - ORIGAN_DEPLOY_DOMAIN=localtest.me:7777
@@ -72,9 +70,7 @@ services:
     ports:
       - "7777:7777"
     volumes:
-      - ./packages/gateway:/app
       - /app/node_modules
-    command: sh -c "corepack enable && pnpm install && pnpm run dev"
     networks:
       - origan-network
     depends_on:
@@ -83,9 +79,7 @@ services:
     #   - "host.docker.internal:host-gateway"
 
   runner:
-    build:
-      context: .
-      dockerfile: edge-runtime.Dockerfile
+    image: origan-runner
     working_dir: /app
     environment:
       - BUCKET_URL=http://minio:9000
@@ -97,7 +91,6 @@ services:
       - EVENTS_NATS_SERVER=nats://nats:4222
       - EVENTS_STREAM_NAME=origan-user-events
     volumes:
-      - ./packages/runner/:/app
       - runner_workers:/workers
     command: -r -e ts,js --stop-timeout 2 -w . -- "edge-runtime start --port 8000 --ip 0.0.0.0 --main-service functions/supervisor --event-worker functions/event-worker"
     networks:

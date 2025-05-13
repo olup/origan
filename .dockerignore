@@ -1,23 +1,29 @@
 # VCS
 .git
+.github
 .gitignore
 .jj
 
 # Node/pnpm modules
-node_modules
-.pnpm-store
+**/node_modules
+**/.pnpm-store
 
 
 # Other filetype
 *.md
 
 # Own folders
-dist
+**/dist
 infra
+example
 example-deployment
-packages/control/frontend
-.workers-data
+packages/cli
+**/.workers-data
+scripts
+
+# TS incremental build
+**/tsconfig.tsbuildinfo
 
 # Misc
-Session.nvim
+Session.vim
 .aider*

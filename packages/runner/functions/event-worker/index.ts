@@ -61,6 +61,7 @@ try {
 const eventManager = new globalThis.EventManager();
 
 console.log("event manager running");
+console.log("oh oh oh")
 
 for await (const data of eventManager) {
   if (!data) {
