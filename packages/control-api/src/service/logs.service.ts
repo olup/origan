@@ -1,24 +1,5 @@
-import * as nkeys from "@nats-io/nkeys";
-import * as nats from "@nats-io/transport-node";
-
-export async function getNatsClient(
-  server: string,
-  nkeyCreds?: string,
-): Promise<nats.NatsConnection> {
-  let creds = {};
-  if (nkeyCreds) {
-    const args = nkeyCreds.split("\n");
-    creds = {
-      nkey: args[1],
-      sigCB: (nonce: Uint8Array) => {
-        const sk = nkeys.fromSeed(Buffer.from(args[0]));
-        return sk.sign(nonce);
-      },
-    };
-  }
-
-  return await nats.connect({ servers: [server], ...creds });
-}
+import type * as nats from "@nats-io/transport-node";
+import { subjects } from "../libs/nats-subjects.js";
 
 interface LogEntry {
   msg: string;
@@ -32,16 +13,11 @@ export interface DeploymentLog {
 
 export class LogConsumer {
   client: nats.NatsConnection;
-  subject_prefix: string;
+
   subscription: nats.Subscription | undefined;
 
-  constructor(nc: nats.NatsConnection, subject_prefix: string) {
+  constructor(nc: nats.NatsConnection) {
     this.client = nc;
-    this.subject_prefix = subject_prefix;
-  }
-
-  getSubject(projectId: string, deploymentId: string) {
-    return `${this.subject_prefix}.${projectId}.${deploymentId}`;
   }
 
   async consume(
@@ -53,7 +29,7 @@ export class LogConsumer {
     }
     console.log("Creating consumer");
     this.subscription = this.client.subscribe(
-      this.getSubject(projectId, deploymentId),
+      subjects.deployments.logs(projectId, deploymentId),
     );
     return (async function* (sub: nats.Subscription) {
       for await (const msg of sub) {
