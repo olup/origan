@@ -1,0 +1,32 @@
+{
+  "name": "@origan/build-runner",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "biome check .",
+    "format": "biome format . --write",
+    "check": "biome check --write ."
+  },
+  "dependencies": {
+    "@nats-io/jetstream": "^3.0.2",
+    "@nats-io/nats-core": "^3.0.2",
+    "@nats-io/nkeys": "^2.0.3",
+    "@nats-io/transport-node": "^3.0.2",
+    "execa": "^9.5.3",
+    "yargs": "^17.7.2",
+    "zod": "^3.23.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.7.0",
+    "@types/node": "^20.12.7",
+    "@types/yargs": "^17.0.32",
+    "tsx": "^4.7.2",
+    "typescript": "^5.4.5"
+  }
+}

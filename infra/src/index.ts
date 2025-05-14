@@ -1,4 +1,5 @@
 import { deployBucket } from "./components/bucket";
+import { deployBuildRunnerImage } from "./components/build-runner";
 import { deployControl } from "./components/control";
 import { deployDatabase } from "./components/database";
 import { deployGateway } from "./components/gateway";
@@ -19,6 +20,9 @@ export function deployAll() {
   // Deploy registry and get credentials
   const registryDeployment = deployRegistry();
 
+  // Deploy build runner image
+  const buildRunnerImage = deployBuildRunnerImage(registryDeployment);
+
   // Deploy Kubernetes cluster first
   const kubernetes = deployKubernetes();
 
@@ -32,6 +36,7 @@ export function deployAll() {
     db,
     bucketConfig: bucketDeployment.config,
     nginxIngress: kubernetes.nginxIngress,
+    buildRunnerImage: buildRunnerImage.imageUri,
   });
 
   // Deploy runner with Kubernetes configuration

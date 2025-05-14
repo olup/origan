@@ -1,14 +1,17 @@
 {
   "compilerOptions": {
-    "composite": true,
-    "outDir": "dist",
-    "rootDir": "src",
-    "module": "NodeNext",
     "target": "ES2022",
+    "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "esModuleInterop": true,
+    "declaration": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist",
     "strict": true,
-    "skipLibCheck": true
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "composite": true
   },
   "references": [{ "path": "../control-api" }],
   "include": ["src"]
