@@ -25,7 +25,9 @@ export async function triggerBuildTask(
   });
 
   if (!project) {
-    console.error(`Project not found for project ID ${projectId}.`);
+    console.error(
+      `BUILD SERVICE: Project not found for project ID ${projectId}.`
+    );
     return { error: "Project not found" };
   }
 

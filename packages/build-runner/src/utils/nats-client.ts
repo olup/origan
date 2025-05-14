@@ -1,8 +1,19 @@
-import { jetstream } from "@nats-io/jetstream";
+import {
+  DiscardPolicy,
+  jetstream,
+  jetstreamManager,
+  StorageType,
+} from "@nats-io/jetstream";
 import type { NatsConnection } from "@nats-io/nats-core";
 import * as nkeys from "@nats-io/nkeys";
 import * as nats from "@nats-io/transport-node";
-import { subjects } from "../../../control-api/src/libs/nats-subjects.js";
+
+export const subjects = {
+  builds: {
+    status: (buildId = "*") => `builds.${buildId}.status`,
+    logs: (buildId = "*") => `builds.${buildId}.logs`,
+  },
+};
 
 export async function getNatsClient(server: string, nkeyCreds?: string) {
   let creds = {};
@@ -17,7 +28,7 @@ export async function getNatsClient(server: string, nkeyCreds?: string) {
     };
   }
 
-  return await nats.connect({ servers: [server], ...creds });
+  return nats.connect({ servers: [server], ...creds });
 }
 
 export type BuildStatus = "queued" | "in_progress" | "completed" | "failed";
@@ -37,8 +48,17 @@ export interface BuildLogEntry {
   message: string;
 }
 
-export function createBuildEventsClient(nc: NatsConnection) {
+export async function createBuildEventsClient(nc: NatsConnection) {
   const js = jetstream(nc);
+  const jsm = await jetstreamManager(nc);
+
+  await jsm.streams.add({
+    name: "BUILD_EVENTS_STREAM",
+    subjects: [subjects.builds.status(), subjects.builds.logs()],
+    storage: StorageType.Memory,
+    max_age: 1000 * 1000 * 60 * 60 * 24, // 1 day, in nanoseconds
+    discard: DiscardPolicy.Old,
+  });
 
   const publishBuildStatus = async (event: BuildEvent): Promise<boolean> => {
     const subject = subjects.builds.status(event.buildId);
@@ -54,7 +74,7 @@ export function createBuildEventsClient(nc: NatsConnection) {
 
   const publishBuildLog = async (
     buildId: string,
-    log: BuildLogEntry,
+    log: BuildLogEntry
   ): Promise<boolean> => {
     const subject = subjects.builds.logs(buildId);
     try {
@@ -77,4 +97,4 @@ export function createBuildEventsClient(nc: NatsConnection) {
   };
 }
 
-export type NatsClient = ReturnType<typeof createBuildEventsClient>;
+export type NatsClient = Awaited<ReturnType<typeof createBuildEventsClient>>;

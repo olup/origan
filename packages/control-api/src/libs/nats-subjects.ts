@@ -1,6 +1,3 @@
-/**
- * Shared NATS subject definitions for use across different services
- */
 export const subjects = {
   builds: {
     /**

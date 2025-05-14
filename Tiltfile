@@ -40,8 +40,8 @@ services = ["control-api", "admin-panel", "gateway", "runner"]
 
 local_resource(
     "origan-build-runner",
-    "docker build -t origan-build-runner .",
-    deps=["."],
+    "docker build -f build/docker/build-runner.Dockerfile -t origan-build-runner .",
+    deps=["packages/build-runner"],
     labels=["3-static"],
 )
 

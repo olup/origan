@@ -1,5 +1,4 @@
 import { z } from "zod";
-import "dotenv/config";
 
 // Define the environment variables schema with Zod
 export const BuildRunnerEnvSchema = z.object({

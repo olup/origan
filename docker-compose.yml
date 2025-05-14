@@ -33,6 +33,7 @@ services:
       GITHUB_APP_PRIVATE_KEY_BASE64: ${GITHUB_APP_PRIVATE_KEY_BASE64}
     volumes:
       - /app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - origan-network
 
