@@ -64,6 +64,11 @@ export const deploymentRelations = relations(
       fields: [deploymentSchema.projectId],
       references: [projectSchema.id],
     }),
+    build: one(buildSchema, {
+      fields: [deploymentSchema.id],
+      references: [buildSchema.deploymentId],
+      relationName: "build_deployment",
+    }),
   }),
 );
 
@@ -147,3 +152,36 @@ export const githubConfigRelations = relations(
     }),
   }),
 );
+
+export const buildStatusEnum = pgEnum("build_status", [
+  "pending",
+  "in_progress",
+  "completed",
+  "failed",
+]);
+
+export const buildSchema = pgTable("build", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  reference: text("reference").notNull(),
+  projectId: uuid("project_id")
+    .references(() => projectSchema.id, { onDelete: "cascade" })
+    .notNull(),
+  deploymentId: uuid("deployment_id").references(() => deploymentSchema.id),
+  status: buildStatusEnum("status").notNull().default("pending"),
+  commitSha: text("commit_sha").notNull(),
+  branch: text("branch").notNull(),
+  logs: jsonb("logs").default([]).notNull(), // Array of log entries
+  ...timestamps,
+});
+
+export const buildRelations = relations(buildSchema, ({ one }) => ({
+  project: one(projectSchema, {
+    fields: [buildSchema.projectId],
+    references: [projectSchema.id],
+  }),
+  deployment: one(deploymentSchema, {
+    fields: [buildSchema.deploymentId],
+    references: [deploymentSchema.id],
+    relationName: "build_deployment",
+  }),
+}));

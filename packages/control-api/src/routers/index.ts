@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { env } from "../config.js";
 import { authRouter } from "./auth.js";
+import { buildsRouter } from "./builds.js";
 import { deploymentsRouter } from "./deployments.js";
 import { githubRouter } from "./github.js"; // Import the new GitHub router
 import { logsRouter } from "./logs.js";
@@ -22,7 +23,8 @@ const api = new Hono()
   .route("/projects", projectsRouter)
   .route("/deployments", deploymentsRouter)
   .route("/github", githubRouter)
-  .route("/logs", logsRouter);
+  .route("/logs", logsRouter)
+  .route("/builds", buildsRouter);
 
 export default api;
 

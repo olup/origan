@@ -64,6 +64,13 @@
       "when": 1746188776960,
       "tag": "0008_young_quasar",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1747254183086,
+      "tag": "0009_simple_shatterstar",
+      "breakpoints": true
     }
   ]
 }
