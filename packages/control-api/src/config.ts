@@ -15,6 +15,7 @@ export const config = z.object({
   ORIGAN_DEPLOY_DOMAIN: z.string(),
   ORIGAN_ADMIN_PANEL_URL: z.string(),
   ORIGAN_API_URL: z.string(),
+  BUILD_RUNNER_IMAGE: z.string(),
 
   GITHUB_CLIENT_ID: z.string(),
   GITHUB_CLIENT_SECRET: z.string(),
@@ -27,7 +28,6 @@ export const config = z.object({
 
   EVENTS_NATS_SERVER: z.string(),
   EVENTS_NATS_NKEY_CREDS: z.string().optional(),
-  EVENTS_SUBJECT_PREFIX: z.string(),
 });
 
 export const env = config.parse(process.env);

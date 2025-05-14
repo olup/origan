@@ -1,4 +1,4 @@
-import type { NatsClient, BuildLogEntry } from "./nats-client.js";
+import type { BuildLogEntry, NatsClient } from "./nats-client.js";
 
 export type LogLevel = "info" | "error" | "warn" | "debug";
 

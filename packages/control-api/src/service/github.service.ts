@@ -1,9 +1,14 @@
 import type { App } from "@octokit/app";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../libs/db/index.js";
-import { userSchema } from "../libs/db/schema.js";
+import {
+  githubConfigSchema,
+  projectSchema,
+  userSchema,
+} from "../libs/db/schema.js";
 import { githubAppInstance } from "../libs/github.js";
+import { triggerBuildTask } from "./build/index.js";
 
 // We will use an undocumented BUT solidly production ready endpoint of the gh api. See https://github.com/octokit/octokit.js/issues/163
 // As such we'll transfer the documented endpoint types
@@ -127,5 +132,92 @@ export async function listInstallationRepositories(installationId: number) {
       `Failed to list repositories for installation ID ${installationId}`,
       { cause: error },
     );
+  }
+}
+
+export async function handlePushEvent(payload: {
+  ref: string;
+  head_commit: {
+    id: string;
+  };
+  repository: {
+    id: number;
+    full_name: string;
+  };
+}) {
+  console.log(
+    `Handling push event for repository: ${payload.repository.full_name}, ref: ${payload.ref}`,
+  );
+
+  const branchName = payload.ref.replace("refs/heads/", "");
+  const commitSha = payload.head_commit.id;
+  const githubRepositoryId = payload.repository.id;
+
+  try {
+    const projectWithGithubConfig = await db.query.projectSchema.findFirst({
+      where: and(
+        eq(projectSchema.id, githubConfigSchema.projectId), // Join condition
+        eq(githubConfigSchema.githubRepositoryId, githubRepositoryId),
+      ),
+      with: {
+        githubConfig: true,
+      },
+    });
+
+    if (!projectWithGithubConfig || !projectWithGithubConfig.githubConfig) {
+      console.log(
+        `No project or GitHub configuration found for repository ID ${githubRepositoryId}.`,
+      );
+      return;
+    }
+
+    // TODO this will soon become a configurable option
+    if (branchName !== "main") {
+      console.log(
+        `Push to non-production branch "${branchName}" for project ${projectWithGithubConfig.name}. No build triggered.`,
+      );
+      return;
+    }
+
+    console.log(
+      `Push to production branch "${branchName}" for project ${projectWithGithubConfig.name}. Triggering build for commit ${commitSha}.`,
+    );
+
+    const buildReference = await triggerBuildTask(
+      projectWithGithubConfig.id,
+      branchName,
+      commitSha,
+    );
+
+    return buildReference;
+  } catch (error) {
+    console.error(
+      `Error handling push event for repository ${payload.repository.full_name}:`,
+      error,
+    );
+  }
+}
+
+export async function generateGitHubInstallationToken(
+  installationId: number,
+  repositoryId?: number,
+): Promise<string> {
+  try {
+    const octokit =
+      await githubAppInstance.getInstallationOctokit(installationId);
+    const tokenResponse = await octokit.request(
+      "POST /app/installations/{installation_id}/access_tokens",
+      {
+        installation_id: installationId,
+        repository_ids: repositoryId ? [repositoryId] : undefined,
+      },
+    );
+    return tokenResponse.data.token;
+  } catch (error) {
+    console.error(
+      `Failed to generate GitHub installation token for installation ID ${installationId} and repository ID ${repositoryId}:`,
+      error,
+    );
+    throw new Error("Could not generate GitHub installation token.");
   }
 }

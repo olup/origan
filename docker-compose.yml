@@ -20,11 +20,12 @@ services:
       BUCKET_REGION: us-east-1
       JWT_SECRET: secret
 
+      BUILD_RUNNER_IMAGE: origan-build-runner
+
       GITHUB_CLIENT_ID: Iv23liNZm4MOMTaen21l
       GITHUB_APP_ID: 1231709
 
       EVENTS_NATS_SERVER: nats://nats:4222
-      EVENTS_SUBJECT_PREFIX: logs
 
       # From .env file
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}

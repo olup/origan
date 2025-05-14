@@ -12,10 +12,11 @@ import {
   getRepoBranches,
   handleInstallationCreated,
   handleInstallationDeleted,
+  handlePushEvent,
   listInstallationRepositories,
 } from "../service/github.service.js";
 
-const installationEventPayloadSchema = z.object({
+const InstallationEventPayloadSchema = z.object({
   action: z.enum(["created", "deleted"]),
   installation: z.object({
     id: z.number(),
@@ -23,6 +24,19 @@ const installationEventPayloadSchema = z.object({
       id: z.number(),
     }),
   }),
+});
+
+const PushEventPayloadSchema = z.object({
+  ref: z.string(),
+  repository: z.object({
+    id: z.number(),
+    full_name: z.string(),
+  }),
+  head_commit: z
+    .object({
+      id: z.string(),
+    })
+    .nullable(),
 });
 
 export const githubRouter = new Hono()
@@ -57,7 +71,7 @@ export const githubRouter = new Hono()
         // Extract needed data from the payload
         // The event itself contains much more, cf https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation
         const installationEventPayload =
-          installationEventPayloadSchema.parse(payload);
+          InstallationEventPayloadSchema.parse(payload);
 
         try {
           if (installationEventPayload.action === "created") {
@@ -81,6 +95,28 @@ export const githubRouter = new Hono()
           console.error("Error handling installation event:", error);
           throw new HTTPException(500, { message: "Internal server error" });
         }
+      } else if (event === "push") {
+        const pushEventPayload = PushEventPayloadSchema.parse(payload);
+
+        if (!pushEventPayload.head_commit?.id) {
+          console.log("Push event without head_commit, skipping.");
+          return c.json({ received: true });
+        }
+
+        try {
+          await handlePushEvent(
+            // Typing is needed here because we know we have head_commit
+            pushEventPayload as Omit<
+              z.infer<typeof PushEventPayloadSchema>,
+              "head_commit"
+            > & {
+              head_commit: { id: string };
+            },
+          );
+        } catch (error) {
+          console.error("Error handling push event:", error);
+          throw new HTTPException(500, { message: "Internal server error" });
+        }
       } else {
         console.log(`Received unhandled event type: ${event}`);
       }
@@ -91,6 +127,7 @@ export const githubRouter = new Hono()
       return c.json({ error: "Internal server error" }, 500);
     }
   })
+
   // List repositories for the authenticated user
   .get("/repos", auth(), async (c) => {
     const userId = c.get("userId");

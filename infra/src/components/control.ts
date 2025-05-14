@@ -14,6 +14,7 @@ export function deployControl({
   db,
   bucketConfig,
   nginxIngress,
+  buildRunnerImage,
 }: {
   registry: scaleway.registry.Namespace;
   registryApiKey: scaleway.iam.ApiKey;
@@ -21,6 +22,7 @@ export function deployControl({
   db: DatabaseOutputs;
   bucketConfig: BucketConfig;
   nginxIngress: k8s.helm.v3.Release;
+  buildRunnerImage: pulumi.Output<string>;
 }) {
   // Generate a secure JWT secret
   const jwtSecret = new random.RandomPassword(cn("jwt-secret"), {
@@ -88,6 +90,10 @@ export function deployControl({
                   {
                     name: "APP_ENV",
                     value: "production",
+                  },
+                  {
+                    name: "BUILD_RUNNER_IMAGE",
+                    value: buildRunnerImage,
                   },
                   {
                     name: "DATABASE_RUN_MIGRATIONS",
