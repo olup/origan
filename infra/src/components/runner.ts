@@ -22,7 +22,6 @@ export function deployRunner({
   nats: {
     account: scaleway.mnq.NatsAccount;
     creds: scaleway.mnq.NatsCredentials;
-    eventStream: string;
   };
 }): DeployRunnerOutputs {
   const image = dockerImageWithTag(rn("runner-image"), {
@@ -41,7 +40,8 @@ export function deployRunner({
   });
 
   // Deploy the runner
-  const runnerDeployment = new k8s.apps.v1.Deployment(
+  // Create deployment first as the service depends on it
+  const deployment = new k8s.apps.v1.Deployment(
     rn("k8s-deployment"),
     {
       metadata: {
@@ -111,10 +111,6 @@ export function deployRunner({
                     value: nats.account.endpoint,
                   },
                   {
-                    name: "EVENTS_STREAM_NAME",
-                    value: nats.eventStream,
-                  },
-                  {
                     name: "EVENTS_NATS_NKEY_CREDS",
                     value: nats.creds.file,
                   },
@@ -125,7 +121,7 @@ export function deployRunner({
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [image.image] },
+    { provider: k8sProvider, dependsOn: [image.image] }
   );
 
   // Create a LoadBalancer service for the runner
@@ -153,7 +149,7 @@ export function deployRunner({
         },
       },
     },
-    { provider: k8sProvider },
+    { provider: k8sProvider, dependsOn: [deployment] }
   );
 
   return {

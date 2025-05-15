@@ -72,7 +72,8 @@ export class DockerTaskRunner implements TaskRunner {
 
       // Parse and convert resource constraints to Docker format
       const hostConfig: Dockerode.HostConfig = {
-        // AutoRemove: true,
+        AutoRemove: true,
+        NetworkMode: "origan_origan-network",
       };
 
       if (resources) {
@@ -112,10 +113,7 @@ export class DockerTaskRunner implements TaskRunner {
         Image: imageName,
         name: containerId,
         Env: envArray,
-        HostConfig: {
-          ...hostConfig,
-          NetworkMode: "origan_origan-network",
-        },
+        HostConfig: hostConfig,
         Labels: {
           "origan.com/task-id": taskId,
           "origan.com/created-at": new Date().toISOString(),

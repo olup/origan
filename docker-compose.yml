@@ -91,7 +91,6 @@ services:
       - BUCKET_REGION=us-east-1
       - WORKERS_PATH=/workers
       - EVENTS_NATS_SERVER=nats://nats:4222
-      - EVENTS_STREAM_NAME=origan-user-events
     volumes:
       - runner_workers:/workers
     command: -r -e ts,js --stop-timeout 2 -w . -- "edge-runtime start --port 8000 --ip 0.0.0.0 --main-service functions/supervisor --event-worker functions/event-worker"

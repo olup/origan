@@ -38,12 +38,6 @@ def build_with_reload(name):
 
 services = ["control-api", "admin-panel", "gateway", "runner"]
 
-local_resource(
-    "origan-build-runner",
-    "docker build -f build/docker/build-runner.Dockerfile -t origan-build-runner .",
-    deps=["packages/build-runner"],
-    labels=["3-static"],
-)
 
 for service in services:
     build_with_reload(service)
@@ -61,5 +55,12 @@ local_resource(
     cmd="cd packages/cli && pnpm build",
     deps="packages/cli",
     ignore=["packages/cli/dist"],
+    labels=["1-main"],
+)
+
+local_resource(
+    "origan-build-runner",
+    "docker build --target build-runner -t origan-build-runner .",
+    deps=["packages/build-runner"],
     labels=["1-main"],
 )

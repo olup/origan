@@ -26,8 +26,6 @@ export function deployAll() {
   // Deploy Kubernetes cluster first
   const kubernetes = deployKubernetes();
 
-  const natsEventsStream = "origan-user-events";
-
   // Deploy control API with Kubernetes configuration (including nginx ingress)
   const controlResult = deployControl({
     registry: registryDeployment.namespace,
@@ -45,11 +43,11 @@ export function deployAll() {
     registryApiKey: registryDeployment.registryApiKey,
     k8sProvider: kubernetes.k8sProvider,
     bucketConfig: bucketDeployment.config,
-    nats: { ...globals.nats, eventStream: natsEventsStream },
+    nats: globals.nats,
   });
 
   // Deploy gateway last since it needs both URLs and k8s configuration
-  const gatewayDeployment = deployGateway({
+  deployGateway({
     registry: registryDeployment.namespace,
     registryApiKey: registryDeployment.registryApiKey,
     k8sProvider: kubernetes.k8sProvider,

@@ -1,9 +1,4 @@
-import {
-  DiscardPolicy,
-  jetstream,
-  jetstreamManager,
-  StorageType,
-} from "@nats-io/jetstream";
+import { jetstream } from "@nats-io/jetstream";
 import type { NatsConnection } from "@nats-io/nats-core";
 import * as nkeys from "@nats-io/nkeys";
 import * as nats from "@nats-io/transport-node";
@@ -50,15 +45,6 @@ export interface BuildLogEntry {
 
 export async function createBuildEventsClient(nc: NatsConnection) {
   const js = jetstream(nc);
-  const jsm = await jetstreamManager(nc);
-
-  await jsm.streams.add({
-    name: "BUILD_EVENTS_STREAM",
-    subjects: [subjects.builds.status(), subjects.builds.logs()],
-    storage: StorageType.Memory,
-    max_age: 1000 * 1000 * 60 * 60 * 24, // 1 day, in nanoseconds
-    discard: DiscardPolicy.Old,
-  });
 
   const publishBuildStatus = async (event: BuildEvent): Promise<boolean> => {
     const subject = subjects.builds.status(event.buildId);

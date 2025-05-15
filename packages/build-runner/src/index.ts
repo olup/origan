@@ -144,6 +144,7 @@ async function runBuild() {
       `git fetch origin ${config.COMMIT_SHA} --depth 1`,
       logger
     );
+    await execWithLogs("git config advice.detachedHead false", logger);
     await execWithLogs(`git checkout ${config.COMMIT_SHA}`, logger);
 
     // TODO this is where the build process would be executed

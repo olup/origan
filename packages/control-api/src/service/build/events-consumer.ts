@@ -83,10 +83,6 @@ export class BuildEventsDatabaseConsumer {
         );
 
         await this.handleBuildStatusEvent(event);
-
-        if (event.status === "completed" || event.status === "failed") {
-          await this.flushLogBatch(event.buildId);
-        }
       } catch (error) {
         console.error("Error processing build status message:", error);
       }
@@ -187,46 +183,18 @@ export class BuildEventsDatabaseConsumer {
   }
 
   private async handleBuildStatusEvent(event: BuildEvent): Promise<void> {
-    const { buildId, status, message, error, timestamp } = event;
+    const { buildId, status, message } = event;
     console.log(`[Build Event Consumer] ${buildId} - ${status}: ${message}`);
 
     try {
-      if (status === "in_progress") {
-        await db
-          .update(buildSchema)
-          .set({ status: "in_progress", updatedAt: new Date().toISOString() })
-          .where(eq(buildSchema.id, buildId));
-      } else if (status === "completed") {
-        const newLogEntry = JSON.stringify({
-          timestamp,
-          level: "info",
-          message: message || "Build completed successfully",
-        } as BuildLogEntry);
+      await db
+        .update(buildSchema)
+        .set({
+          // FIXME better shared typing for status
+          status,
+        })
+        .where(eq(buildSchema.id, buildId));
 
-        await db
-          .update(buildSchema)
-          .set({
-            status: "completed",
-            updatedAt: new Date().toISOString(),
-            logs: sql`${buildSchema.logs} || ${newLogEntry}::jsonb`,
-          })
-          .where(eq(buildSchema.id, buildId));
-      } else if (status === "failed") {
-        const newLogEntry = JSON.stringify({
-          timestamp,
-          level: "error",
-          message: message || error || "Build failed",
-        } as BuildLogEntry);
-
-        await db
-          .update(buildSchema)
-          .set({
-            status: "failed",
-            updatedAt: new Date().toISOString(),
-            logs: sql`${buildSchema.logs} || ${newLogEntry}::jsonb`,
-          })
-          .where(eq(buildSchema.id, buildId));
-      }
       console.log(`Updated build ${buildId} status to ${status} in database`);
     } catch (error) {
       console.error(

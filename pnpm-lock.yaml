@@ -254,6 +254,12 @@ importers:
       '@kubernetes/client-node':
         specifier: ^1.2.0
         version: 1.2.0(encoding@0.1.13)(ws@8.18.2)
+      '@nats-io/jetstream':
+        specifier: ^3.0.2
+        version: 3.0.2
+      '@nats-io/nats-core':
+        specifier: ^3.0.2
+        version: 3.0.2
       '@nats-io/nkeys':
         specifier: ^2.0.3
         version: 2.0.3

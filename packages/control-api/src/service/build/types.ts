@@ -1,6 +1,6 @@
 export interface BuildEvent {
   buildId: string;
-  status: "queued" | "in_progress" | "completed" | "failed";
+  status: "pending" | "in_progress" | "completed" | "failed";
   timestamp: string;
   error?: string;
   exitCode?: number;
