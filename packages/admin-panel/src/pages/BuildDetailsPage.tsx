@@ -5,6 +5,7 @@ import {
   Code,
   Container,
   Group,
+  Progress,
   Stack,
   Text,
   Title,
@@ -13,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { client } from "../libs/client";
 import { createQueryHelper } from "../utils/honoQuery.js";
+import { useEffect } from "react";
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -44,12 +46,21 @@ export const BuildDetailsPage = () => {
   const params = useParams();
   const reference = params?.reference;
 
-  const { data: build } = useQuery({
+  const { data: build, refetch } = useQuery({
     ...createQueryHelper(client.builds[":reference"].$get, {
       param: { reference: reference || "" },
     }),
     enabled: Boolean(reference),
   });
+
+  useEffect(() => {
+    if (!build) return;
+    if (build.status === "completed" || build.status === "failed") return;
+    const interval = setInterval(() => {
+      refetch();
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [refetch, build]);
 
   if (!reference || !build) return null;
   if ("error" in build) return null;
@@ -77,7 +88,6 @@ export const BuildDetailsPage = () => {
               <Text>{new Date(build.createdAt).toLocaleString()}</Text>
             </Group>
             <Stack>
-              <Text fw={500}>Logs:</Text>
               <Code block bg="dark" p="md">
                 {build.logs.map((log) => (
                   <Box
@@ -87,6 +97,9 @@ export const BuildDetailsPage = () => {
                     {log.message}
                   </Box>
                 ))}
+                {build.status === "in_progress" && (
+                  <Progress mt={10} color="gray" w={100} value={100} animated />
+                )}
               </Code>
             </Stack>
           </Stack>
