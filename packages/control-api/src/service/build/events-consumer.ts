@@ -156,29 +156,31 @@ export class BuildEventsDatabaseConsumer {
         );
       });
 
-      batch.logs = [];
-      batch.lastFlush = Date.now();
+      this.logBatches.delete(buildId);
     } catch (error) {
       console.error(`Error flushing log batch for build ${buildId}:`, error);
     }
   }
 
   private async flushAllLogBatches() {
-    console.log(`Flushing all log batches (${this.logBatches.size} builds)`);
-
     const now = Date.now();
     const buildIds = [...this.logBatches.keys()];
 
-    for (const buildId of buildIds) {
+    const buildsToFlush = buildIds.filter((buildId) => {
       const batch = this.logBatches.get(buildId);
-      if (!batch) continue;
-
-      if (
+      return (
+        batch &&
         batch.logs.length > 0 &&
         now - batch.lastFlush >= this.flushIntervalMs
-      ) {
-        await this.flushLogBatch(buildId);
-      }
+      );
+    });
+
+    if (buildsToFlush.length > 0) {
+      console.log(`Flushing log batches (${buildsToFlush.length} builds)`);
+    }
+
+    for (const buildId of buildsToFlush) {
+      await this.flushLogBatch(buildId);
     }
   }
 

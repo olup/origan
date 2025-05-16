@@ -161,3 +161,37 @@ export async function getBuildById(buildId: string) {
     throw error;
   }
 }
+
+export async function getProjectBuilds(projectId: string, userId: string) {
+  try {
+    const builds = await db.query.buildSchema.findMany({
+      where: eq(buildSchema.projectId, projectId),
+      with: {
+        project: {
+          with: {
+            user: true,
+          },
+        },
+      },
+      orderBy: (builds) => [sql`${builds.createdAt} DESC`],
+    });
+
+    if (!builds.length || builds[0].project.userId !== userId) {
+      return [];
+    }
+
+    return builds.map((build) => ({
+      id: build.id,
+      status: build.status,
+      createdAt: build.createdAt,
+      updatedAt: build.updatedAt,
+      logs: build.logs,
+      branch: build.branch,
+      commitSha: build.commitSha,
+      reference: build.reference,
+    }));
+  } catch (error) {
+    console.error(`Error fetching builds for project ${projectId}:`, error);
+    throw error;
+  }
+}

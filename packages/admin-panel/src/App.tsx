@@ -16,6 +16,7 @@ import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { BuildDetailsPage } from "./pages/BuildDetailsPage";
 
 function App() {
   const { user, isLoading } = useAuth();
@@ -87,6 +88,9 @@ function App() {
               </Route>
               <Route path="/projects/:id/settings">
                 <ProjectPage />
+              </Route>
+              <Route path="/builds/:id">
+                <BuildDetailsPage />
               </Route>
             </Switch>
           </Router>

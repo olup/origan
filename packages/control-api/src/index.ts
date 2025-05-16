@@ -7,8 +7,8 @@ console.log(`Starting API server on port ${port}`);
 
 // Start listening to build events
 await startBuildEventsConsumer({
-  batchSize: 50, // Flush after this many logs
-  flushIntervalMs: 5000, // Flush after this much time (5 seconds)
+  batchSize: 10, // Flush after this many logs
+  flushIntervalMs: 1000, // Flush after this much time (5 seconds)
 });
 
 console.log("Build events consumer started");
