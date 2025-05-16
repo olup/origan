@@ -1,13 +1,13 @@
 import {
   Badge,
+  Box,
   Card,
+  Code,
   Container,
   Group,
   Stack,
   Text,
   Title,
-  Code,
-  Box,
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
@@ -42,16 +42,16 @@ function getLogColor(level: string) {
 
 export const BuildDetailsPage = () => {
   const params = useParams();
-  const buildId = params?.id;
+  const reference = params?.reference;
 
   const { data: build } = useQuery({
-    ...createQueryHelper(client.builds[":buildId"].$get, {
-      param: { buildId: buildId || "" },
+    ...createQueryHelper(client.builds[":reference"].$get, {
+      param: { reference: reference || "" },
     }),
-    enabled: Boolean(buildId),
+    enabled: Boolean(reference),
   });
 
-  if (!buildId || !build) return null;
+  if (!reference || !build) return null;
   if ("error" in build) return null;
 
   return (
@@ -79,8 +79,11 @@ export const BuildDetailsPage = () => {
             <Stack>
               <Text fw={500}>Logs:</Text>
               <Code block bg="dark" p="md">
-                {build.logs.map((log, i) => (
-                  <Box key={i} c={getLogColor(log.level)}>
+                {build.logs.map((log) => (
+                  <Box
+                    key={`${log.timestamp}-${log.message}`}
+                    c={getLogColor(log.level)}
+                  >
                     {log.message}
                   </Box>
                 ))}

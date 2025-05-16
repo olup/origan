@@ -22,7 +22,7 @@ async function updateBuildStatus(
   status: BuildStatus,
   message?: string,
   error?: string,
-  exitCode?: number
+  exitCode?: number,
 ) {
   try {
     const buildEvent = {
@@ -41,7 +41,7 @@ async function updateBuildStatus(
   } catch (error) {
     console.error(
       `Failed to message update build status ${status} for build ${config.BUILD_ID}:`,
-      error
+      error,
     );
     process.exit(1); // Exit with error as the status update is critical
   }
@@ -93,14 +93,14 @@ async function execWithLogs(command: string, logger: Logger) {
       };
       if (execaError.failed) {
         await logger.error(
-          `Command failed with exit code ${execaError.exitCode}`
+          `Command failed with exit code ${execaError.exitCode}`,
         );
       }
     } else {
       await logger.error(
         `Command failed: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
     throw error;
@@ -110,7 +110,7 @@ async function execWithLogs(command: string, logger: Logger) {
 async function runBuild() {
   const nc = await getNatsClient(
     config.EVENTS_NATS_SERVER,
-    config.EVENTS_NATS_NKEY_CREDS
+    config.EVENTS_NATS_NKEY_CREDS,
   );
   console.log(`Connected to NATS server ${config.EVENTS_NATS_SERVER}`);
 
@@ -123,12 +123,12 @@ async function runBuild() {
       eventsClient,
       logger,
       "in_progress",
-      "Build started"
+      "Build started",
     );
 
     // Execute the build using configuration
     await logger.info(
-      `Starting build for repository: ${config.REPO_FULL_NAME}`
+      `Starting build for repository: ${config.REPO_FULL_NAME}`,
     );
 
     await logger.info(`Branch: ${config.BRANCH}, Commit: ${config.COMMIT_SHA}`);
@@ -137,12 +137,12 @@ async function runBuild() {
     await logger.info("Cloning repository...");
     await execWithLogs(
       `git clone --depth 1 --branch ${config.BRANCH} https://x-access-token:${config.GITHUB_TOKEN}@github.com/${config.REPO_FULL_NAME}.git /app`,
-      logger
+      logger,
     );
     process.chdir("/app");
     await execWithLogs(
       `git fetch origin ${config.COMMIT_SHA} --depth 1`,
-      logger
+      logger,
     );
     await execWithLogs("git config advice.detachedHead false", logger);
     await execWithLogs(`git checkout ${config.COMMIT_SHA}`, logger);
@@ -156,7 +156,7 @@ async function runBuild() {
       "completed",
       "Build completed successfully",
       undefined,
-      0
+      0,
     );
   } catch (error) {
     // On failure
@@ -168,7 +168,7 @@ async function runBuild() {
       "failed",
       "Build failed",
       errorMessage,
-      1
+      1,
     );
   } finally {
     // Close NATS connection

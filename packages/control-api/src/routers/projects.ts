@@ -31,19 +31,19 @@ export const projectsRouter = new Hono()
     }
   })
   .get(
-    "/by-id/:id",
+    "/:reference",
     auth(),
-    zValidator("param", z.object({ id: z.string() })),
+    zValidator("param", z.object({ reference: z.string().min(1) })),
     async (c) => {
-      const { id } = c.req.valid("param");
+      const { reference } = c.req.valid("param");
       const userId = c.get("userId");
 
       try {
-        const project = await getProject({ id, userId });
+        const project = await getProject({ reference, userId });
         if (!project) {
           const errorResponse: ProjectError = {
             error: "Project not found",
-            details: `No project found with ID ${id}`,
+            details: `No project found with reference ${reference}`,
           };
           return c.json(errorResponse, 404);
         }
@@ -104,21 +104,21 @@ export const projectsRouter = new Hono()
     }
   })
   .put(
-    "/:id",
+    "/:reference",
     auth(),
-    zValidator("param", z.object({ id: z.string() })),
+    zValidator("param", z.object({ reference: z.string().min(1) })),
     zValidator("json", projectUpdateSchema),
     async (c) => {
-      const { id } = c.req.valid("param");
+      const { reference } = c.req.valid("param");
       const data = await c.req.valid("json");
 
       try {
         const userId = c.get("userId");
-        const project = await updateProject(id, userId, data);
+        const project = await updateProject(reference, userId, data);
         if (!project) {
           const errorResponse: ProjectError = {
             error: "Project not found",
-            details: `No project found with ID ${id}`,
+            details: `No project found with reference ${reference}`,
           };
           return c.json(errorResponse, 404);
         }
@@ -133,9 +133,9 @@ export const projectsRouter = new Hono()
     },
   )
   .delete(
-    "/:id",
+    "/:reference",
     auth(),
-    zValidator("param", z.object({ id: z.string() })),
+    zValidator("param", z.object({ reference: z.string().min(1) })),
     async (_c) => {
       // TODO - Implementation pending
       // Delete each remaining deployment (which involves cleaning the directory in s3)
@@ -144,9 +144,9 @@ export const projectsRouter = new Hono()
   )
   // GitHub Configuration Endpoints
   .post(
-    "/:id/github/config",
+    "/:reference/github/config",
     auth(),
-    zValidator("param", z.object({ id: z.string() })),
+    zValidator("param", z.object({ reference: z.string().min(1) })),
     zValidator(
       "json",
       z.object({
@@ -158,13 +158,13 @@ export const projectsRouter = new Hono()
       }),
     ),
     async (c) => {
-      const { id } = c.req.valid("param");
+      const { reference } = c.req.valid("param");
       const githubData = await c.req.valid("json");
       const userId = c.get("userId");
 
       try {
         const githubConfig = await setProjectGithubConfig(
-          id,
+          reference,
           userId,
           githubData,
         );
@@ -179,15 +179,15 @@ export const projectsRouter = new Hono()
     },
   )
   .delete(
-    "/:id/github/config",
+    "/:reference/github/config",
     auth(),
-    zValidator("param", z.object({ id: z.string() })),
+    zValidator("param", z.object({ reference: z.string().min(1) })),
     async (c) => {
-      const { id } = c.req.valid("param");
+      const { reference } = c.req.valid("param");
       const userId = c.get("userId");
 
       try {
-        await removeProjectGithubConfig(id, userId);
+        await removeProjectGithubConfig(reference, userId);
         return c.json({ success: true });
       } catch (error) {
         const errorResponse = {

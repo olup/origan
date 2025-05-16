@@ -27,12 +27,12 @@ function getStatusColor(status: string) {
   }
 }
 
-const BuildsList = ({ projectId }: { projectId: string }) => {
+const BuildsList = ({ projectReference }: { projectReference: string }) => {
   const [, navigate] = useLocation();
   const { data: builds } = useQuery(
-    createQueryHelper(client.builds["by-project"][":projectId"].$get, {
-      param: { projectId },
-    })
+    createQueryHelper(client.builds["by-project"][":projectReference"].$get, {
+      param: { projectReference },
+    }),
   );
 
   if (!builds?.length) {
@@ -54,7 +54,7 @@ const BuildsList = ({ projectId }: { projectId: string }) => {
           <Table.Tr
             key={build.id}
             style={{ cursor: "pointer" }}
-            onClick={() => navigate(`/builds/${build.id}`)}
+            onClick={() => navigate(`/builds/${build.reference}`)}
           >
             <Table.Td>
               <Badge color={getStatusColor(build.status)}>{build.status}</Badge>
@@ -71,16 +71,16 @@ const BuildsList = ({ projectId }: { projectId: string }) => {
 
 export const ProjectPage = () => {
   const params = useParams();
-  const projectId = params?.id;
+  const projectReference = params?.reference;
 
   const { data: project } = useQuery({
-    ...createQueryHelper(client.projects["by-id"][":id"].$get, {
-      param: { id: projectId || "" },
+    ...createQueryHelper(client.projects[":reference"].$get, {
+      param: { reference: projectReference || "" },
     }),
-    enabled: Boolean(projectId),
+    enabled: Boolean(projectReference),
   });
 
-  if (!projectId || !project) return null;
+  if (!projectReference || !project) return null;
   if ("error" in project) return null;
 
   return (
@@ -111,7 +111,7 @@ export const ProjectPage = () => {
         <Card withBorder padding="xl">
           <Stack>
             <Title order={3}>Builds</Title>
-            <BuildsList projectId={projectId} />
+            <BuildsList projectReference={projectReference} />
           </Stack>
         </Card>
       </Stack>

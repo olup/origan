@@ -28,7 +28,7 @@ export async function handleInstallationCreated({
       .where(eq(userSchema.githubProviderReference, githubAccountId));
 
     console.log(
-      `GitHub App installed: ${installationId} for account ${githubAccountId}`
+      `GitHub App installed: ${installationId} for account ${githubAccountId}`,
     );
   } catch (dbError) {
     console.error("Database error updating user installation ID:", dbError);
@@ -50,7 +50,7 @@ export async function handleInstallationDeleted({
       .set({ githubAppInstallationId: null })
       .where(eq(userSchema.githubProviderReference, githubAccountId));
     console.log(
-      `Removed installation ID for user with GitHub account ID ${githubAccountId}`
+      `Removed installation ID for user with GitHub account ID ${githubAccountId}`,
     );
   } catch (dbError) {
     console.error("Database error removing user installation ID:", dbError);
@@ -60,16 +60,15 @@ export async function handleInstallationDeleted({
 
 export async function getRepoById(
   installationId: number,
-  githubRepositoryId: number
+  githubRepositoryId: number,
 ): Promise<RepoResponse["data"] | null> {
   if (!installationId || !githubRepositoryId) {
     throw new Error("Installation ID and Repository ID are required.");
   }
 
   try {
-    const octokit = await githubAppInstance.getInstallationOctokit(
-      installationId
-    );
+    const octokit =
+      await githubAppInstance.getInstallationOctokit(installationId);
 
     // undocumented but reliable endpoint
     const response = (await octokit.request("GET /repositories/{id}", {
@@ -80,7 +79,7 @@ export async function getRepoById(
   } catch (error) {
     console.error(
       `Failed to fetch repository by ID ${githubRepositoryId}:`,
-      error
+      error,
     );
     return null;
   }
@@ -88,23 +87,22 @@ export async function getRepoById(
 
 export async function getRepoBranches(
   installationId: number,
-  githubRepositoryId: number
+  githubRepositoryId: number,
 ) {
   try {
     const repo = await getRepoById(installationId, githubRepositoryId);
     if (!repo) {
       throw new Error(`Repository with ID ${githubRepositoryId} not found.`);
     }
-    const octokit = await githubAppInstance.getInstallationOctokit(
-      installationId
-    );
+    const octokit =
+      await githubAppInstance.getInstallationOctokit(installationId);
 
     const branchesReponse = await octokit.request(
       "GET /repos/{owner}/{repo}/branches",
       {
         owner: repo.owner.login,
         repo: repo.name,
-      }
+      },
     );
     return branchesReponse.data;
   } catch (error) {
@@ -119,9 +117,8 @@ export async function listInstallationRepositories(installationId: number) {
   }
 
   try {
-    const octokit = await githubAppInstance.getInstallationOctokit(
-      installationId
-    );
+    const octokit =
+      await githubAppInstance.getInstallationOctokit(installationId);
 
     const response = await octokit.request("GET /installation/repositories");
 
@@ -129,7 +126,7 @@ export async function listInstallationRepositories(installationId: number) {
   } catch (error) {
     throw new Error(
       `Failed to list repositories for installation ID ${installationId}`,
-      { cause: error }
+      { cause: error },
     );
   }
 }
@@ -145,7 +142,7 @@ export async function handlePushEvent(payload: {
   };
 }) {
   console.log(
-    `Handling push event for repository: ${payload.repository.full_name}, ref: ${payload.ref}`
+    `Handling push event for repository: ${payload.repository.full_name}, ref: ${payload.ref}`,
   );
 
   const branchName = payload.ref.replace("refs/heads/", "");
@@ -163,12 +160,12 @@ export async function handlePushEvent(payload: {
             },
           },
         },
-      }
+      },
     );
 
     if (!githubConfigWithProject || !githubConfigWithProject.project) {
       console.log(
-        `No project or GitHub configuration found for repository ID ${githubRepositoryId}.`
+        `No project or GitHub configuration found for repository ID ${githubRepositoryId}.`,
       );
       return;
     }
@@ -176,50 +173,49 @@ export async function handlePushEvent(payload: {
     // TODO this will soon become a configurable option
     if (branchName !== "main") {
       console.log(
-        `Push to non-production branch "${branchName}" for project ${githubConfigWithProject.project.name}. No build triggered.`
+        `Push to non-production branch "${branchName}" for project ${githubConfigWithProject.project.name}. No build triggered.`,
       );
       return;
     }
 
     console.log(
-      `Push to production branch "${branchName}" for project ${githubConfigWithProject.project.name}. Triggering build for commit ${commitSha}.`
+      `Push to production branch "${branchName}" for project ${githubConfigWithProject.project.name}. Triggering build for commit ${commitSha}.`,
     );
 
     const buildReference = await triggerBuildTask(
       githubConfigWithProject.project.id,
       branchName,
-      commitSha
+      commitSha,
     );
 
     return buildReference;
   } catch (error) {
     console.error(
       `Error handling push event for repository ${payload.repository.full_name}:`,
-      error
+      error,
     );
   }
 }
 
 export async function generateGitHubInstallationToken(
   installationId: number,
-  repositoryId?: number
+  repositoryId?: number,
 ): Promise<string> {
   try {
-    const octokit = await githubAppInstance.getInstallationOctokit(
-      installationId
-    );
+    const octokit =
+      await githubAppInstance.getInstallationOctokit(installationId);
     const tokenResponse = await octokit.request(
       "POST /app/installations/{installation_id}/access_tokens",
       {
         installation_id: installationId,
         repository_ids: repositoryId ? [repositoryId] : undefined,
-      }
+      },
     );
     return tokenResponse.data.token;
   } catch (error) {
     console.error(
       `Failed to generate GitHub installation token for installation ID ${installationId} and repository ID ${repositoryId}:`,
-      error
+      error,
     );
     throw new Error("Could not generate GitHub installation token.");
   }

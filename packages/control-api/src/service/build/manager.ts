@@ -6,6 +6,7 @@ import type { ResourceLimits } from "../../utils/task.js";
 import { triggerTask } from "../../utils/task.js";
 import { generateGitHubInstallationToken } from "../github.service.js";
 import type { BuildLogEntry } from "./types.js";
+import { generateReference } from "../../utils/reference.js";
 
 export async function triggerBuildTask(
   projectId: string,
@@ -62,7 +63,7 @@ export async function triggerBuildTask(
     throw new Error("Failed to generate GitHub token for project user");
   }
 
-  const buildReference = `build-${Date.now()}`;
+  const buildReference = `bld-${generateReference()}`;
 
   const [build] = await db
     .insert(buildSchema)
@@ -142,10 +143,10 @@ export async function triggerBuildTask(
   };
 }
 
-export async function getBuildById(buildId: string) {
+export async function getBuildByReference(reference: string) {
   try {
     const build = await db.query.buildSchema.findFirst({
-      where: eq(buildSchema.id, buildId),
+      where: eq(buildSchema.reference, reference),
       with: {
         project: {
           with: {
@@ -157,15 +158,23 @@ export async function getBuildById(buildId: string) {
 
     return build;
   } catch (error) {
-    console.error(`Error fetching build ${buildId}:`, error);
+    console.error(`Error fetching build ${reference}:`, error);
     throw error;
   }
 }
 
-export async function getProjectBuilds(projectId: string, userId: string) {
+export async function getProjectBuilds(reference: string, userId: string) {
   try {
+    const project = await db.query.projectSchema.findFirst({
+      where: eq(projectSchema.reference, reference),
+    });
+
+    if (!project) {
+      throw new Error(`Project ${reference} not found`);
+    }
+
     const builds = await db.query.buildSchema.findMany({
-      where: eq(buildSchema.projectId, projectId),
+      where: eq(buildSchema.projectId, project.id),
       with: {
         project: {
           with: {
@@ -191,7 +200,7 @@ export async function getProjectBuilds(projectId: string, userId: string) {
       reference: build.reference,
     }));
   } catch (error) {
-    console.error(`Error fetching builds for project ${projectId}:`, error);
+    console.error(`Error fetching builds for project ${reference}:`, error);
     throw error;
   }
 }

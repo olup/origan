@@ -121,7 +121,7 @@ export function deployRunner({
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [image.image] }
+    { provider: k8sProvider, dependsOn: [image.image] },
   );
 
   // Create a LoadBalancer service for the runner
@@ -149,7 +149,7 @@ export function deployRunner({
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [deployment] }
+    { provider: k8sProvider, dependsOn: [deployment] },
   );
 
   return {

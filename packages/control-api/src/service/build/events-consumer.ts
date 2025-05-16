@@ -22,7 +22,7 @@ export class BuildEventsDatabaseConsumer {
     options?: {
       batchSize?: number;
       flushIntervalMs?: number;
-    }
+    },
   ) {
     this.client = nc;
 
@@ -46,19 +46,19 @@ export class BuildEventsDatabaseConsumer {
 
     console.log(
       "Starting build events consumer for status on subject:",
-      this.getStatusSubject()
+      this.getStatusSubject(),
     );
     this.statusSubscription = this.client.subscribe(this.getStatusSubject());
 
     console.log(
       "Starting build events consumer for logs on subject:",
-      this.getLogsSubject()
+      this.getLogsSubject(),
     );
     this.logsSubscription = this.client.subscribe(this.getLogsSubject());
 
     this.flushInterval = setInterval(
       () => this.flushAllLogBatches(),
-      this.flushIntervalMs
+      this.flushIntervalMs,
     );
 
     this.processStatusMessages().catch((err) => {
@@ -79,7 +79,7 @@ export class BuildEventsDatabaseConsumer {
       try {
         const event = JSON.parse(msg.data.toString()) as BuildEvent;
         console.log(
-          `Received build status event: ${event.buildId} - ${event.status}`
+          `Received build status event: ${event.buildId} - ${event.status}`,
         );
 
         await this.handleBuildStatusEvent(event);
@@ -140,7 +140,7 @@ export class BuildEventsDatabaseConsumer {
           .set({
             logs: sql`${buildSchema.logs} || jsonb_build_array(${sql.join(
               logsJson.map((log) => sql`${log}::jsonb`),
-              sql`,`
+              sql`,`,
             )})`,
             updatedAt: new Date().toISOString(),
           })
@@ -152,7 +152,7 @@ export class BuildEventsDatabaseConsumer {
         }
 
         console.log(
-          `Flushed ${logs.length} logs for build ${buildId} to database`
+          `Flushed ${logs.length} logs for build ${buildId} to database`,
         );
       });
 
@@ -201,7 +201,7 @@ export class BuildEventsDatabaseConsumer {
     } catch (error) {
       console.error(
         `Error updating build ${buildId} status in database:`,
-        error
+        error,
       );
     }
   }
@@ -237,7 +237,7 @@ export async function startBuildEventsConsumer(options?: {
     const nc = await getNatsClient();
     buildEventsDatabaseConsumerInstance = new BuildEventsDatabaseConsumer(
       nc,
-      options
+      options,
     );
     await buildEventsDatabaseConsumerInstance.start();
   }

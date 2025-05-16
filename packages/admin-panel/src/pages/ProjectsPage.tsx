@@ -48,7 +48,7 @@ export const ProjectsPage = () => {
               withBorder
               padding="lg"
               radius="md"
-              onClick={() => navigate(`/projects/${project.id}`)}
+              onClick={() => navigate(`/projects/${project.reference}`)}
               styles={{
                 root: {
                   backgroundColor: "white",

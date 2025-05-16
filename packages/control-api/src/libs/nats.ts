@@ -1,7 +1,7 @@
 import {
   DiscardPolicy,
-  jetstreamManager,
   StorageType,
+  jetstreamManager,
 } from "@nats-io/jetstream";
 import type { NatsConnection } from "@nats-io/nats-core";
 import * as nkeys from "@nats-io/nkeys";

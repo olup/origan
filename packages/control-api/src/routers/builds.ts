@@ -3,28 +3,31 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { auth } from "../middleware/auth.js";
-import { getBuildById, getProjectBuilds } from "../service/build/index.js";
+import {
+  getBuildByReference,
+  getProjectBuilds,
+} from "../service/build/index.js";
 
 export const buildsRouter = new Hono()
   .get(
-    "/:buildId",
+    "/:reference",
     auth(),
     zValidator(
       "param",
       z.object({
-        buildId: z.string().uuid(),
-      })
+        reference: z.string().min(1),
+      }),
     ),
     async (c) => {
-      const { buildId } = c.req.valid("param");
+      const { reference } = c.req.valid("param");
       const userId = c.get("userId");
 
       try {
-        const build = await getBuildById(buildId);
+        const build = await getBuildByReference(reference);
 
         if (!build) {
           throw new HTTPException(404, {
-            message: `Build ${buildId} not found.`,
+            message: `Build ${reference} not found.`,
           });
         }
 
@@ -46,35 +49,38 @@ export const buildsRouter = new Hono()
           reference: build.reference,
         });
       } catch (error) {
-        console.error(`Error fetching build ${buildId}:`, error);
+        console.error(`Error fetching build ${reference}:`, error);
         if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, {
           message: "Failed to retrieve build.",
         });
       }
-    }
+    },
   )
   .get(
-    "/by-project/:projectId",
+    "/by-project/:projectReference",
     auth(),
     zValidator(
       "param",
       z.object({
-        projectId: z.string().uuid(),
-      })
+        projectReference: z.string().min(1),
+      }),
     ),
     async (c) => {
-      const { projectId } = c.req.valid("param");
+      const { projectReference } = c.req.valid("param");
       const userId = c.get("userId");
 
       try {
-        const builds = await getProjectBuilds(projectId, userId);
+        const builds = await getProjectBuilds(projectReference, userId);
         return c.json(builds);
       } catch (error) {
-        console.error(`Error fetching builds for project ${projectId}:`, error);
+        console.error(
+          `Error fetching builds for project ${projectReference}:`,
+          error,
+        );
         throw new HTTPException(500, {
           message: "Failed to retrieve builds.",
         });
       }
-    }
+    },
   );

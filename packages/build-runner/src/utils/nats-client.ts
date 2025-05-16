@@ -60,7 +60,7 @@ export async function createBuildEventsClient(nc: NatsConnection) {
 
   const publishBuildLog = async (
     buildId: string,
-    log: BuildLogEntry
+    log: BuildLogEntry,
   ): Promise<boolean> => {
     const subject = subjects.builds.logs(buildId);
     try {
