@@ -9,9 +9,13 @@ FROM base AS build
 WORKDIR /app
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-# other packages depends on control api, we build it first
+# build shared packages
+RUN pnpm run --filter="./shared/*" -r build
+# build control-api - other packages depends on its types
 RUN pnpm run --filter=@origan/control-api -r build
+# build other packages
 RUN pnpm run --filter=@origan/gateway --filter=@origan/build-runner -r build
+
 RUN pnpm deploy --filter=@origan/control-api --prod /prod/control-api
 RUN pnpm deploy --filter=@origan/gateway --prod /prod/gateway
 RUN pnpm deploy --filter=@origan/build-runner --prod /prod/build-runner

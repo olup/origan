@@ -8,8 +8,6 @@ export function deployGateway({
   registry,
   registryApiKey,
   k8sProvider,
-  controlApiUrl,
-  runnerUrl,
   bucketConfig,
 }: {
   registry: scaleway.registry.Namespace;
@@ -147,7 +145,7 @@ export function deployGateway({
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [image.image] },
+    { provider: k8sProvider, dependsOn: [image.image] }
   );
 
   // Create a LoadBalancer service for the gateway
@@ -184,7 +182,7 @@ export function deployGateway({
         },
       },
     },
-    { provider: k8sProvider },
+    { provider: k8sProvider }
   );
 
   return {

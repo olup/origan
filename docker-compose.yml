@@ -1,8 +1,8 @@
 services:
   control-api:
-    image: origan-control-api
+    image: origan-dev
+    working_dir: /app/packages/control-api
     command: sh -c "pnpm run db:migrate && pnpm run dev"
-    working_dir: /app
     ports:
       - "9999:9999"
     environment:
@@ -38,9 +38,9 @@ services:
       - origan-network
 
   admin-panel:
-    image: origan-admin-panel
+    image: origan-dev
     command: sh -c "pnpm run dev --host 0.0.0.0"
-    working_dir: /app
+    working_dir: /app/packages/admin-panel
     ports:
       - "5199:5199"
     environment:
@@ -54,9 +54,9 @@ services:
       - origan-network
 
   gateway:
-    image: origan-gateway
+    image: origan-dev
     command: sh -c "pnpm run dev"
-    working_dir: /app
+    working_dir: /app/packages/gateway
     environment:
       - ORIGAN_DEPLOY_DOMAIN=localtest.me:7777
       - CONTROL_API_URL=http://control-api:9999

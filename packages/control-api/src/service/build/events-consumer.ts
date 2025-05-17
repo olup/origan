@@ -1,15 +1,25 @@
-import type * as nats from "@nats-io/transport-node";
+import {
+  type BuildEvent,
+  type BuildLogEntry,
+  type Msg,
+  NatsClient,
+  type Subscription,
+} from "@origan/nats";
 import { eq, sql } from "drizzle-orm";
+import { env } from "../../config.js";
 import { db } from "../../libs/db/index.js";
-import { buildSchema } from "../../libs/db/schema.js";
-import { subjects } from "../../libs/nats-subjects.js";
-import { getNatsClient } from "../../libs/nats.js";
-import type { BuildEvent, BuildLogEntry, LogBatch } from "./types.js";
+import { buildSchema, type buildStatusEnum } from "../../libs/db/schema.js";
+
+interface LogBatch {
+  buildId: string;
+  logs: BuildLogEntry[];
+  lastFlush: number;
+}
 
 export class BuildEventsDatabaseConsumer {
-  client: nats.NatsConnection;
-  statusSubscription: nats.Subscription | undefined;
-  logsSubscription: nats.Subscription | undefined;
+  private natsClient: NatsClient;
+  private statusSubscription: Subscription | undefined;
+  private logsSubscription: Subscription | undefined;
 
   batchSize = 50;
   flushIntervalMs = 5000;
@@ -17,26 +27,15 @@ export class BuildEventsDatabaseConsumer {
   private logBatches: Map<string, LogBatch> = new Map();
   private flushInterval: NodeJS.Timeout | null = null;
 
-  constructor(
-    nc: nats.NatsConnection,
-    options?: {
-      batchSize?: number;
-      flushIntervalMs?: number;
-    },
-  ) {
-    this.client = nc;
+  constructor(options?: { batchSize?: number; flushIntervalMs?: number }) {
+    this.natsClient = new NatsClient({
+      server: env.EVENTS_NATS_SERVER,
+      nkeyCreds: env.EVENTS_NATS_NKEY_CREDS,
+    });
 
     if (options?.batchSize) this.batchSize = options.batchSize;
     if (options?.flushIntervalMs)
       this.flushIntervalMs = options.flushIntervalMs;
-  }
-
-  getStatusSubject(buildId = "*") {
-    return subjects.builds.status(buildId);
-  }
-
-  getLogsSubject(buildId = "*") {
-    return subjects.builds.logs(buildId);
   }
 
   async start() {
@@ -44,68 +43,28 @@ export class BuildEventsDatabaseConsumer {
       throw new Error("Consumer already running");
     }
 
-    console.log(
-      "Starting build events consumer for status on subject:",
-      this.getStatusSubject(),
-    );
-    this.statusSubscription = this.client.subscribe(this.getStatusSubject());
+    await this.natsClient.connect();
 
-    console.log(
-      "Starting build events consumer for logs on subject:",
-      this.getLogsSubject(),
+    console.log("Starting build events consumer");
+
+    this.statusSubscription = await this.natsClient.subscriber.onBuildStatus(
+      async (event: BuildEvent) => {
+        await this.handleBuildStatusEvent(event);
+      }
     );
-    this.logsSubscription = this.client.subscribe(this.getLogsSubject());
+
+    this.logsSubscription = await this.natsClient.subscriber.onBuildLog(
+      async (log: BuildLogEntry, msg: Msg) => {
+        const parts = msg.subject.split(".");
+        const buildId = parts[parts.length - 2];
+        await this.addLogToBatch(buildId, log);
+      }
+    );
 
     this.flushInterval = setInterval(
       () => this.flushAllLogBatches(),
-      this.flushIntervalMs,
+      this.flushIntervalMs
     );
-
-    this.processStatusMessages().catch((err) => {
-      console.error("Error processing build status events:", err);
-    });
-
-    this.processLogMessages().catch((err) => {
-      console.error("Error processing build log events:", err);
-    });
-  }
-
-  private async processStatusMessages() {
-    if (!this.statusSubscription) {
-      throw new Error("No status subscription available");
-    }
-
-    for await (const msg of this.statusSubscription) {
-      try {
-        const event = JSON.parse(msg.data.toString()) as BuildEvent;
-        console.log(
-          `Received build status event: ${event.buildId} - ${event.status}`,
-        );
-
-        await this.handleBuildStatusEvent(event);
-      } catch (error) {
-        console.error("Error processing build status message:", error);
-      }
-    }
-  }
-
-  private async processLogMessages() {
-    if (!this.logsSubscription) {
-      throw new Error("No logs subscription available");
-    }
-
-    for await (const msg of this.logsSubscription) {
-      try {
-        const log = JSON.parse(msg.data.toString()) as BuildLogEntry;
-        const subject = msg.subject;
-        const parts = subject.split(".");
-        const buildId = parts[parts.length - 2];
-
-        await this.addLogToBatch(buildId, log);
-      } catch (error) {
-        console.error("Error processing build log message:", error);
-      }
-    }
   }
 
   private async addLogToBatch(buildId: string, log: BuildLogEntry) {
@@ -140,7 +99,7 @@ export class BuildEventsDatabaseConsumer {
           .set({
             logs: sql`${buildSchema.logs} || jsonb_build_array(${sql.join(
               logsJson.map((log) => sql`${log}::jsonb`),
-              sql`,`,
+              sql`,`
             )})`,
             updatedAt: new Date().toISOString(),
           })
@@ -152,7 +111,7 @@ export class BuildEventsDatabaseConsumer {
         }
 
         console.log(
-          `Flushed ${logs.length} logs for build ${buildId} to database`,
+          `Flushed ${logs.length} logs for build ${buildId} to database`
         );
       });
 
@@ -192,8 +151,7 @@ export class BuildEventsDatabaseConsumer {
       await db
         .update(buildSchema)
         .set({
-          // FIXME better shared typing for status
-          status,
+          status: status as (typeof buildStatusEnum.enumValues)[number],
         })
         .where(eq(buildSchema.id, buildId));
 
@@ -201,7 +159,7 @@ export class BuildEventsDatabaseConsumer {
     } catch (error) {
       console.error(
         `Error updating build ${buildId} status in database:`,
-        error,
+        error
       );
     }
   }
@@ -234,10 +192,8 @@ export async function startBuildEventsConsumer(options?: {
   flushIntervalMs?: number;
 }): Promise<BuildEventsDatabaseConsumer> {
   if (!buildEventsDatabaseConsumerInstance) {
-    const nc = await getNatsClient();
     buildEventsDatabaseConsumerInstance = new BuildEventsDatabaseConsumer(
-      nc,
-      options,
+      options
     );
     await buildEventsDatabaseConsumerInstance.start();
   }

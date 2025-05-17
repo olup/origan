@@ -1,14 +1,12 @@
-import { getConfig } from "./config.js";
-import { type Logger, createBuildLogger } from "./utils/logger.js";
 import {
   type BuildStatus,
-  type NatsClient,
-  createBuildEventsClient,
-  getNatsClient,
-} from "./utils/nats-client.js";
-import { detectPackageManager } from "./utils/package-manager.js";
+  NatsClient,
+} from "../../../shared/nats/dist/index.js";
+import { getConfig } from "./config.js";
 import { executeBuild } from "./utils/build.js";
 import { execWithLogs } from "./utils/exec.js";
+import { type Logger, createBuildLogger } from "./utils/logger.js";
+import { detectPackageManager } from "./utils/package-manager.js";
 
 const config = getConfig();
 
@@ -32,7 +30,7 @@ async function updateBuildStatus(
       exitCode,
     };
 
-    await client.publishBuildStatus(buildEvent);
+    await client.publisher.publishBuildStatus(buildEvent);
     await logger.info(`Build status changed to ${status}: ${message || ""}`);
   } catch (error) {
     console.error(
@@ -44,22 +42,18 @@ async function updateBuildStatus(
 }
 
 async function runBuild() {
-  const nc = await getNatsClient(
-    config.EVENTS_NATS_SERVER,
-    config.EVENTS_NATS_NKEY_CREDS
-  );
+  const nc = new NatsClient({
+    server: config.EVENTS_NATS_SERVER,
+    nkeyCreds: config.EVENTS_NATS_NKEY_CREDS,
+  });
+  await nc.connect();
+
   console.log(`Connected to NATS server ${config.EVENTS_NATS_SERVER}`);
 
-  const eventsClient = await createBuildEventsClient(nc);
-  const logger = await createBuildLogger(eventsClient, config.BUILD_ID);
+  const logger = await createBuildLogger(nc, config.BUILD_ID);
 
   try {
-    await updateBuildStatus(
-      eventsClient,
-      logger,
-      "in_progress",
-      "Build started"
-    );
+    await updateBuildStatus(nc, logger, "in_progress", "Build started");
 
     await logger.info(
       `Starting build for repository: ${config.REPO_FULL_NAME}`
@@ -85,7 +79,7 @@ async function runBuild() {
     await executeBuild(packageManager, execWithLogs, logger);
 
     await updateBuildStatus(
-      eventsClient,
+      nc,
       logger,
       "completed",
       "Build completed successfully",
@@ -96,7 +90,7 @@ async function runBuild() {
     const errorMessage = error instanceof Error ? error.message : String(error);
     await logger.error(`Build failed: ${errorMessage}`);
     await updateBuildStatus(
-      eventsClient,
+      nc,
       logger,
       "failed",
       "Build failed",
@@ -104,8 +98,8 @@ async function runBuild() {
       1
     );
   } finally {
-    if (eventsClient) {
-      await eventsClient.close();
+    if (nc) {
+      await nc.disconnect();
     }
   }
 }

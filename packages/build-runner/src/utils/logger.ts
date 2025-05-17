@@ -1,4 +1,4 @@
-import type { BuildLogEntry, NatsClient } from "./nats-client.js";
+import type { BuildLogEntry, NatsClient } from "../../../../shared/nats/dist";
 
 export type LogLevel = "info" | "error" | "warn" | "debug";
 
@@ -23,10 +23,9 @@ export function createBuildLogger(client: NatsClient, buildId: string) {
 
     // Publish to NATS
     try {
-      await client.publishBuildLog(buildId, entry);
+      await client.publisher.publishBuildLog(buildId, entry);
     } catch (error) {
       console.error(`Failed to publish log to NATS: ${error}`);
-      // Continue execution even if NATS publishing fails
     }
   };
 

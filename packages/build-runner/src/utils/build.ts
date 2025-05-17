@@ -6,7 +6,7 @@ type ExecWithLogs = (command: string, logger: Logger) => Promise<string>;
 export async function executeBuild(
   packageManager: PackageManager,
   execWithLogs: ExecWithLogs,
-  logger: Logger
+  logger: Logger,
 ): Promise<void> {
   await logger.info(`Using package manager: ${packageManager}`);
 

@@ -11,10 +11,10 @@ import {
   Title,
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useParams } from "wouter";
 import { client } from "../libs/client";
 import { createQueryHelper } from "../utils/honoQuery.js";
-import { useEffect } from "react";
 
 function getStatusColor(status: string) {
   switch (status) {

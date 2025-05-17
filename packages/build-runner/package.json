@@ -14,19 +14,16 @@
     "check": "biome check --write ."
   },
   "dependencies": {
-    "@nats-io/jetstream": "^3.0.2",
-    "@nats-io/nats-core": "^3.0.2",
-    "@nats-io/nkeys": "^2.0.3",
-    "@nats-io/transport-node": "^3.0.2",
+    "@origan/nats": "workspace:*",
     "execa": "^9.5.3",
     "yargs": "^17.7.2",
-    "zod": "^3.23.4"
+    "zod": "^3.24.4"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.7.0",
-    "@types/node": "^20.12.7",
-    "@types/yargs": "^17.0.32",
-    "tsx": "^4.7.2",
-    "typescript": "^5.4.5"
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.15.18",
+    "@types/yargs": "^17.0.33",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
   }
 }

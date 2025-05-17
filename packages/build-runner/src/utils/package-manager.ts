@@ -4,7 +4,7 @@ export type PackageManager = "npm" | "yarn" | "pnpm";
 
 export async function detectPackageManager(
   execWithLogs: (command: string, logger: Logger) => Promise<string>,
-  logger: Logger
+  logger: Logger,
 ): Promise<PackageManager> {
   try {
     const packageJsonContent = await execWithLogs("cat package.json", logger);
@@ -12,7 +12,7 @@ export async function detectPackageManager(
 
     if (packageJson.packageManager) {
       const packageManager = packageJson.packageManager.split(
-        "@"
+        "@",
       )[0] as PackageManager;
       return packageManager;
     }
@@ -20,17 +20,17 @@ export async function detectPackageManager(
     const hasYarnLock =
       (await execWithLogs(
         "test -f yarn.lock && echo 'true' || echo 'false'",
-        logger
+        logger,
       )) === "true";
     const hasPnpmLock =
       (await execWithLogs(
         "test -f pnpm-lock.yaml && echo 'true' || echo 'false'",
-        logger
+        logger,
       )) === "true";
     const hasNpmLock =
       (await execWithLogs(
         "test -f package-lock.json && echo 'true' || echo 'false'",
-        logger
+        logger,
       )) === "true";
 
     if (hasYarnLock) {
@@ -48,7 +48,7 @@ export async function detectPackageManager(
     await logger.warn(
       `Failed to detect package manager, defaulting to npm: ${
         error instanceof Error ? error.message : String(error)
-      }`
+      }`,
     );
     return "npm";
   }

@@ -15,6 +15,8 @@ import { s3Client } from "./utils/s3.js";
 // Create ACME challenge handler
 const acmeHandler = handleAcmeChallenge(s3Client, envConfig.bucketName);
 
+console.log("ACME challenge handler initialized");
+
 // Main request handler
 async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   try {
@@ -45,7 +47,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     if (!result) {
       res.writeHead(404, { "Content-Type": "application/json" });
       return res.end(
-        JSON.stringify({ error: "Domain configuration not found" }),
+        JSON.stringify({ error: "Domain configuration not found" })
       );
     }
 

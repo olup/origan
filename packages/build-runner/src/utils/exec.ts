@@ -4,7 +4,7 @@ import type { Logger } from "./logger.js";
 
 export async function execWithLogs(
   command: string,
-  logger: Logger
+  logger: Logger,
 ): Promise<string> {
   try {
     await logger.info(`Executing: ${command}`);
@@ -46,14 +46,14 @@ export async function execWithLogs(
       };
       if (execaError.failed) {
         await logger.error(
-          `Command failed with exit code ${execaError.exitCode}`
+          `Command failed with exit code ${execaError.exitCode}`,
         );
       }
     } else {
       await logger.error(
         `Command failed: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
     throw error;

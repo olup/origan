@@ -59,7 +59,7 @@ export class DockerTaskRunner implements TaskRunner {
     const containerId = `${namePrefix}-${taskId}`;
 
     console.log(
-      `[Docker Task - ${taskId}] Starting task with image ${imageName}`,
+      `[Docker Task - ${taskId}] Starting task with image ${imageName}`
     );
 
     const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
@@ -67,12 +67,12 @@ export class DockerTaskRunner implements TaskRunner {
 
     try {
       console.log(
-        `[Docker Task - ${taskId}] Creating container ${containerId} with image ${imageName}`,
+        `[Docker Task - ${taskId}] Creating container ${containerId} with image ${imageName}`
       );
 
       // Parse and convert resource constraints to Docker format
       const hostConfig: Dockerode.HostConfig = {
-        AutoRemove: true,
+        // AutoRemove: true,
         NetworkMode: "origan_origan-network",
       };
 
@@ -88,7 +88,7 @@ export class DockerTaskRunner implements TaskRunner {
         // Convert memory requests
         if (resources.memoryRequests) {
           const memoryReservation = convertK8sResourceToBytes(
-            resources.memoryRequests,
+            resources.memoryRequests
           );
           if (memoryReservation > 0) {
             hostConfig.MemoryReservation = memoryReservation;
@@ -106,7 +106,7 @@ export class DockerTaskRunner implements TaskRunner {
 
       // Convert env object to array format required by Docker
       const envArray = Object.entries(env).map(
-        ([key, value]) => `${key}=${value}`,
+        ([key, value]) => `${key}=${value}`
       );
 
       const container = await docker.createContainer({
@@ -125,7 +125,7 @@ export class DockerTaskRunner implements TaskRunner {
       await container.start();
 
       console.log(
-        `[Docker Task - ${taskId}] Container ${containerId} (ID: ${container.id}) started.`,
+        `[Docker Task - ${taskId}] Container ${containerId} (ID: ${container.id}) started.`
       );
 
       // Set timeout if specified
@@ -133,13 +133,13 @@ export class DockerTaskRunner implements TaskRunner {
         timeoutHandle = setTimeout(async () => {
           try {
             console.log(
-              `[Docker Task - ${taskId}] Task exceeded timeout of ${resources.timeoutSeconds}s, stopping container.`,
+              `[Docker Task - ${taskId}] Task exceeded timeout of ${resources.timeoutSeconds}s, stopping container.`
             );
             await container.stop();
           } catch (error) {
             console.log(
               `[Docker Task - ${taskId}] Failed to stop container that exceeded timeout:`,
-              error,
+              error
             );
           }
         }, resources.timeoutSeconds * 1000);
@@ -160,7 +160,7 @@ export class DockerTaskRunner implements TaskRunner {
         }
 
         console.log(
-          `[Docker Task - ${taskId}] Container ${containerId} exited with status code ${data.StatusCode}.`,
+          `[Docker Task - ${taskId}] Container ${containerId} exited with status code ${data.StatusCode}.`
         );
 
         // try {
@@ -248,7 +248,7 @@ export class KubernetesTaskRunner implements TaskRunner {
 
     try {
       console.log(
-        `[K8s Task - ${taskId}] Attempting to create Job: ${jobName} in namespace ${namespace}`,
+        `[K8s Task - ${taskId}] Attempting to create Job: ${jobName} in namespace ${namespace}`
       );
 
       await k8sBatchV1Api.createNamespacedJob({
@@ -257,7 +257,7 @@ export class KubernetesTaskRunner implements TaskRunner {
       });
 
       console.log(
-        `[K8s Task - ${taskId}] Job ${jobName} created successfully.`,
+        `[K8s Task - ${taskId}] Job ${jobName} created successfully.`
       );
 
       return {

@@ -1,0 +1,31 @@
+{
+  "name": "@origan/nats",
+  "version": "0.0.1",
+  "private": true,
+  "description": "NATS client package for Origan services",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "format": "biome format . --write",
+    "check": "biome check --write ."
+  },
+  "dependencies": {
+    "@nats-io/transport-node": "^3.0.2",
+    "@nats-io/jetstream": "^3.0.2",
+    "@nats-io/nats-core": "^3.0.2",
+    "@nats-io/nkeys": "^2.0.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}
