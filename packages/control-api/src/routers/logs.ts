@@ -1,11 +1,11 @@
 import { zValidator } from "@hono/zod-validator";
+import { NatsClient } from "@origan/nats";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import { env } from "../config.js";
 import { auth } from "../middleware/auth.js";
 import { getDeployment } from "../service/deployment.service.js";
-import { NatsClient } from "@origan/nats";
 
 export const logsRouter = new Hono().get(
   "/stream/:deploymentId",
@@ -38,7 +38,7 @@ export const logsRouter = new Hono().get(
           });
         },
         deployment.projectId,
-        deploymentId
+        deploymentId,
       );
 
       stream.onAbort(async () => {
@@ -48,5 +48,5 @@ export const logsRouter = new Hono().get(
         await nc.disconnect();
       });
     });
-  }
+  },
 );

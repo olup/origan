@@ -50,7 +50,7 @@ export class BuildEventsDatabaseConsumer {
     this.statusSubscription = await this.natsClient.subscriber.onBuildStatus(
       async (event: BuildEvent) => {
         await this.handleBuildStatusEvent(event);
-      }
+      },
     );
 
     this.logsSubscription = await this.natsClient.subscriber.onBuildLog(
@@ -58,12 +58,12 @@ export class BuildEventsDatabaseConsumer {
         const parts = msg.subject.split(".");
         const buildId = parts[parts.length - 2];
         await this.addLogToBatch(buildId, log);
-      }
+      },
     );
 
     this.flushInterval = setInterval(
       () => this.flushAllLogBatches(),
-      this.flushIntervalMs
+      this.flushIntervalMs,
     );
   }
 
@@ -99,7 +99,7 @@ export class BuildEventsDatabaseConsumer {
           .set({
             logs: sql`${buildSchema.logs} || jsonb_build_array(${sql.join(
               logsJson.map((log) => sql`${log}::jsonb`),
-              sql`,`
+              sql`,`,
             )})`,
             updatedAt: new Date().toISOString(),
           })
@@ -111,7 +111,7 @@ export class BuildEventsDatabaseConsumer {
         }
 
         console.log(
-          `Flushed ${logs.length} logs for build ${buildId} to database`
+          `Flushed ${logs.length} logs for build ${buildId} to database`,
         );
       });
 
@@ -159,7 +159,7 @@ export class BuildEventsDatabaseConsumer {
     } catch (error) {
       console.error(
         `Error updating build ${buildId} status in database:`,
-        error
+        error,
       );
     }
   }
@@ -193,7 +193,7 @@ export async function startBuildEventsConsumer(options?: {
 }): Promise<BuildEventsDatabaseConsumer> {
   if (!buildEventsDatabaseConsumerInstance) {
     buildEventsDatabaseConsumerInstance = new BuildEventsDatabaseConsumer(
-      options
+      options,
     );
     await buildEventsDatabaseConsumerInstance.start();
   }

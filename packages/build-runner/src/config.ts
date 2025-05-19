@@ -9,11 +9,17 @@ export const BuildRunnerEnvSchema = z.object({
   COMMIT_SHA: z.string(),
   BRANCH: z.string(),
 
+  // API configuration
+  CONTROL_API_URL: z.string().url(),
+
   // NATS configuration
   EVENTS_NATS_SERVER: z.string().url(),
 
   // Optional environment variables
   EVENTS_NATS_NKEY_CREDS: z.string().optional().default(""),
+
+  // Deploy token for authentication
+  DEPLOY_TOKEN: z.string(),
 });
 
 // Parse and validate the environment variables

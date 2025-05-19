@@ -47,7 +47,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     if (!result) {
       res.writeHead(404, { "Content-Type": "application/json" });
       return res.end(
-        JSON.stringify({ error: "Domain configuration not found" })
+        JSON.stringify({ error: "Domain configuration not found" }),
       );
     }
 

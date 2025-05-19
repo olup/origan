@@ -27,12 +27,17 @@ function getStatusColor(status: string) {
   }
 }
 
-const BuildsList = ({ projectReference }: { projectReference: string }) => {
+const BuildsList = ({
+  projectReference,
+}: {
+  projectReference: string;
+  project: { reference: string };
+}) => {
   const [, navigate] = useLocation();
   const { data: builds } = useQuery(
     createQueryHelper(client.builds["by-project"][":projectReference"].$get, {
       param: { projectReference },
-    }),
+    })
   );
 
   if (!builds?.length) {
@@ -46,6 +51,7 @@ const BuildsList = ({ projectReference }: { projectReference: string }) => {
           <Table.Th>Status</Table.Th>
           <Table.Th>Branch</Table.Th>
           <Table.Th>Commit</Table.Th>
+          <Table.Th>Deployment</Table.Th>
           <Table.Th>Created At</Table.Th>
         </Table.Tr>
       </Table.Thead>
@@ -61,6 +67,22 @@ const BuildsList = ({ projectReference }: { projectReference: string }) => {
             </Table.Td>
             <Table.Td>{build.branch}</Table.Td>
             <Table.Td>{build.commitSha.substring(0, 7)}</Table.Td>
+            <Table.Td>
+              {build.buildUrl && (
+                <Group gap="xs">
+                  <Text
+                    component="a"
+                    href={build.buildUrl}
+                    target="_blank"
+                    c="blue"
+                    size="sm"
+                    style={{ textDecoration: "underline" }}
+                  >
+                    Open
+                  </Text>
+                </Group>
+              )}
+            </Table.Td>
             <Table.Td>{new Date(build.createdAt).toLocaleString()}</Table.Td>
           </Table.Tr>
         ))}
@@ -111,7 +133,7 @@ export const ProjectPage = () => {
         <Card withBorder padding="xl">
           <Stack>
             <Title order={3}>Builds</Title>
-            <BuildsList projectReference={projectReference} />
+            <BuildsList projectReference={projectReference} project={project} />
           </Stack>
         </Card>
       </Stack>

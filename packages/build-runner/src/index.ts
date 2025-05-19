@@ -1,16 +1,13 @@
-import {
-  type BuildStatus,
-  NatsClient,
-} from "../../../shared/nats/dist/index.js";
+import { type BuildEvent, type BuildStatus, NatsClient } from "@origan/nats";
 import { getConfig } from "./config.js";
 import { executeBuild } from "./utils/build.js";
+import { createDeployment } from "./utils/deploy.js";
 import { execWithLogs } from "./utils/exec.js";
-import { type Logger, createBuildLogger } from "./utils/logger.js";
+import { createBuildLogger } from "./utils/logger.js";
+import type { Logger } from "./utils/logger.js";
 import { detectPackageManager } from "./utils/package-manager.js";
 
 const config = getConfig();
-
-console.log("Build Runner Configuration:", config);
 
 async function updateBuildStatus(
   client: NatsClient,
@@ -18,27 +15,19 @@ async function updateBuildStatus(
   status: BuildStatus,
   message?: string,
   error?: string,
-  exitCode?: number
+  exitCode?: number,
 ) {
-  try {
-    const buildEvent = {
-      buildId: config.BUILD_ID,
-      status,
-      timestamp: new Date().toISOString(),
-      message,
-      error,
-      exitCode,
-    };
+  const buildEvent: BuildEvent = {
+    buildId: config.BUILD_ID,
+    status,
+    timestamp: new Date().toISOString(),
+    message,
+    error,
+    exitCode,
+  };
 
-    await client.publisher.publishBuildStatus(buildEvent);
-    await logger.info(`Build status changed to ${status}: ${message || ""}`);
-  } catch (error) {
-    console.error(
-      `Failed to message update build status ${status} for build ${config.BUILD_ID}:`,
-      error
-    );
-    process.exit(1);
-  }
+  await client.publisher.publishBuildStatus(buildEvent);
+  await logger.info(`Build status changed to ${status}: ${message || ""}`);
 }
 
 async function runBuild() {
@@ -56,35 +45,48 @@ async function runBuild() {
     await updateBuildStatus(nc, logger, "in_progress", "Build started");
 
     await logger.info(
-      `Starting build for repository: ${config.REPO_FULL_NAME}`
+      `Starting build for repository: ${config.REPO_FULL_NAME}`,
     );
-
     await logger.info(`Branch: ${config.BRANCH}, Commit: ${config.COMMIT_SHA}`);
 
+    // Clone repository
     await logger.info("Cloning repository...");
     await execWithLogs(
       `git clone --depth 1 --branch ${config.BRANCH} https://x-access-token:${config.GITHUB_TOKEN}@github.com/${config.REPO_FULL_NAME}.git /app`,
-      logger
+      logger,
     );
     process.chdir("/app");
     await execWithLogs(
       `git fetch origin ${config.COMMIT_SHA} --depth 1`,
-      logger
+      logger,
     );
     await execWithLogs("git config advice.detachedHead false", logger);
     await execWithLogs(`git checkout ${config.COMMIT_SHA}`, logger);
 
-    // Detect package manager and run build
-    const packageManager = await detectPackageManager(execWithLogs, logger);
-    await executeBuild(packageManager, execWithLogs, logger);
+    // Build
+    await logger.info("Starting build...");
+    const buildResult = await executeBuild(
+      await detectPackageManager(execWithLogs, logger),
+      execWithLogs,
+      logger,
+    );
+
+    // Deploy
+    await updateBuildStatus(
+      nc,
+      logger,
+      "in_progress",
+      "Creating deployment...",
+    );
+    await createDeployment(config.BUILD_ID, buildResult.buildDir, logger);
 
     await updateBuildStatus(
       nc,
       logger,
       "completed",
-      "Build completed successfully",
+      "Build and deployment completed successfully",
       undefined,
-      0
+      0,
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -95,25 +97,15 @@ async function runBuild() {
       "failed",
       "Build failed",
       errorMessage,
-      1
+      1,
     );
+    throw error;
   } finally {
-    if (nc) {
-      await nc.disconnect();
-    }
+    await nc.disconnect();
   }
 }
 
-let buildSuccessful = false;
-
-runBuild()
-  .then(() => {
-    buildSuccessful = true;
-  })
-  .catch((err) => {
-    console.error("Unhandled error in build process:", err);
-    buildSuccessful = false;
-  })
-  .finally(() => {
-    process.exit(buildSuccessful ? 0 : 1);
-  });
+runBuild().catch((error) => {
+  console.error("Build failed:", error);
+  process.exit(1);
+});

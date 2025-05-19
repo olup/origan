@@ -1,20 +1,23 @@
 import {
   Badge,
   Box,
+  Button,
   Card,
-  Code,
   Container,
   Group,
   Progress,
+  ScrollArea,
   Stack,
   Text,
   Title,
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { useParams } from "wouter";
+import { useCallback, useEffect, useRef } from "react";
+import { useLocation, useParams } from "wouter";
 import { client } from "../libs/client";
 import { createQueryHelper } from "../utils/honoQuery.js";
+import { ArrowLeftIcon } from "lucide-react";
+import "overlayscrollbars/overlayscrollbars.css";
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -43,8 +46,10 @@ function getLogColor(level: string) {
 }
 
 export const BuildDetailsPage = () => {
+  const [, navigate] = useLocation();
   const params = useParams();
   const reference = params?.reference;
+  const osComponentRef = useRef<HTMLDivElement>(null);
 
   const { data: build, refetch } = useQuery({
     ...createQueryHelper(client.builds[":reference"].$get, {
@@ -53,21 +58,52 @@ export const BuildDetailsPage = () => {
     enabled: Boolean(reference),
   });
 
+  // Function to scroll logs container to the bottom
+  const scrollLogsToBottom = useCallback(() => {
+    osComponentRef.current?.scrollTo({
+      top: osComponentRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, []);
+
+  // Refetch and scroll on build status
   useEffect(() => {
     if (!build) return;
     if (build.status === "completed" || build.status === "failed") return;
+
+    // Initial scroll to bottom
+    scrollLogsToBottom();
+
     const interval = setInterval(() => {
       refetch();
+      scrollLogsToBottom();
     }, 1000);
     return () => clearInterval(interval);
-  }, [refetch, build]);
+  }, [refetch, build, scrollLogsToBottom]);
+
+  // Effect to auto-scroll when logs change
+  useEffect(() => {
+    if (build?.logs && build.status === "in_progress") {
+      scrollLogsToBottom();
+    }
+  }, [build?.logs, build?.status, scrollLogsToBottom]);
 
   if (!reference || !build) return null;
   if ("error" in build) return null;
 
   return (
     <Container size="xl">
-      <Stack gap="xl">
+      <Stack gap="sm">
+        <Box>
+          <Button
+            variant="subtle"
+            color="black"
+            leftSection={<ArrowLeftIcon size="1rem" />}
+            onClick={() => navigate(`/projects/${build.project.reference}`)}
+          >
+            Back to project
+          </Button>
+        </Box>
         <Card withBorder padding="xl">
           <Stack>
             <Title order={2}>Build Details</Title>
@@ -88,19 +124,36 @@ export const BuildDetailsPage = () => {
               <Text>{new Date(build.createdAt).toLocaleString()}</Text>
             </Group>
             <Stack>
-              <Code block bg="dark" p="md">
-                {build.logs.map((log) => (
-                  <Box
-                    key={`${log.timestamp}-${log.message}`}
-                    c={getLogColor(log.level)}
-                  >
-                    {log.message}
-                  </Box>
-                ))}
-                {build.status === "in_progress" && (
-                  <Progress mt={10} color="gray" w={100} value={100} animated />
-                )}
-              </Code>
+              <ScrollArea h={300}>
+                <Box
+                  ref={osComponentRef}
+                  bg="dark"
+                  p="md"
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: "0.8rem",
+                  }}
+                >
+                  {build.logs.map((log, index) => (
+                    <Box
+                      // biome-ignore lint/suspicious/noArrayIndexKey: no other way to make a key
+                      key={index}
+                      c={getLogColor(log.level)}
+                    >
+                      {log.message}
+                    </Box>
+                  ))}
+                  {build.status === "in_progress" && (
+                    <Progress
+                      mt={10}
+                      color="gray"
+                      w={100}
+                      value={100}
+                      animated
+                    />
+                  )}
+                </Box>
+              </ScrollArea>
             </Stack>
           </Stack>
         </Card>

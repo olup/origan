@@ -2,6 +2,7 @@
   "name": "@origan/build-runner",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -15,12 +16,16 @@
   },
   "dependencies": {
     "@origan/nats": "workspace:*",
+    "archiver": "^6.0.0",
+    "esbuild": "^0.20.0",
     "execa": "^9.5.3",
+    "hono": "4.7.7",
     "yargs": "^17.7.2",
     "zod": "^3.24.4"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@types/archiver": "^6.0.0",
     "@types/node": "^22.15.18",
     "@types/yargs": "^17.0.33",
     "tsx": "^4.19.4",

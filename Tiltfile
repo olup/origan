@@ -1,15 +1,16 @@
 docker_compose("docker-compose.yml")
 docker_prune_settings()
 
+
 # General dev docker image
 docker_build(
     "origan-dev",
     context=".",
     dockerfile="build/docker/dev.Dockerfile",
+    ignore=["_tmp_*"],
     live_update=[
-        sync("./packages/control-api", "/app/packages/control-api"),
-        sync("./packages/gateway", "/app/packages/gateway"),
-        sync("./packages/admin-panel", "/app/packages/admin-panel"),
+        sync("./packages", "/app/packages"),
+        sync("./shared", "/app/shared"),
         run("pnpm install", trigger=["package.json", "pnpm-lock.yaml"]),
     ],
 )
@@ -18,8 +19,10 @@ docker_build(
     "origan-runner",
     context=".",
     dockerfile="build/docker/runner.Dockerfile",
+    ignore=["_tmp_*"],
     live_update=[
         sync("./packages", "/app/packages"),
+        sync("./shared", "/app/shared"),
         run("pnpm install", trigger=["package.json", "pnpm-lock.yaml"]),
     ],
 )

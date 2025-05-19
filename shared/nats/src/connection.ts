@@ -50,7 +50,7 @@ async function setupStreams(nc: NatsConnection) {
 }
 
 export async function connect(
-  config: NatsConfig
+  config: NatsConfig,
 ): Promise<{ nc: NatsConnection; js: JetStreamClient }> {
   if (natsClient && jsClient) {
     return { nc: natsClient, js: jsClient };

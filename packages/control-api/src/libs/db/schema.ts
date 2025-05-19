@@ -170,7 +170,15 @@ export const buildSchema = pgTable("build", {
   status: buildStatusEnum("status").notNull().default("pending"),
   commitSha: text("commit_sha").notNull(),
   branch: text("branch").notNull(),
-  logs: jsonb("logs").default([]).notNull(), // Array of log entries
+  logs: jsonb("logs").default([]).notNull().$type<
+    // this type is only enforced at build time
+    {
+      level: "info" | "error" | "warning";
+      message: string;
+      timestamp: string;
+    }[]
+  >(), // Array of log entries
+  deployToken: text("deploy_token"), // Encrypted one-time use token
   ...timestamps,
 });
 

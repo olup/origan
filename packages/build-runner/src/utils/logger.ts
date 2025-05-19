@@ -1,4 +1,4 @@
-import type { BuildLogEntry, NatsClient } from "../../../../shared/nats/dist";
+import type { BuildLogEntry, NatsClient } from "@origan/nats";
 
 export type LogLevel = "info" | "error" | "warn" | "debug";
 

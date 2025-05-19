@@ -15,7 +15,6 @@ export const deployParamsSchema = z.object({
   branchRef: z.string(),
   bundle: z.instanceof(File),
   config: deploymentConfigSchema,
-  deploymentsRoot: z.string().optional(),
   bucketName: z.string().optional(),
 });
 

@@ -54,14 +54,13 @@ export const deploymentsRouter = new Hono()
         return c.json(errorResponse, 400);
       }
 
+      // TODO - check user permissions
       try {
-        const userId = c.get("userId");
         const result = await deploy({
           projectRef,
           branchRef,
           bundle,
           config: configResult.data,
-          userId,
         });
 
         const response = {

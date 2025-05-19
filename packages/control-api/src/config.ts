@@ -23,7 +23,7 @@ export const config = z.object({
   GITHUB_APP_ID: z.string(),
   GITHUB_APP_PRIVATE_KEY_BASE64: z.string(),
 
-  // JWT Configuration
+  // Security Configuration
   JWT_SECRET: z.string(),
 
   EVENTS_NATS_SERVER: z.string(),

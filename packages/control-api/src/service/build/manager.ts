@@ -5,16 +5,17 @@ import { buildSchema, projectSchema } from "../../libs/db/schema.js";
 import { generateReference } from "../../utils/reference.js";
 import type { ResourceLimits } from "../../utils/task.js";
 import { triggerTask } from "../../utils/task.js";
+import { generateDeployToken, hashToken } from "../../utils/token.js";
 import { generateGitHubInstallationToken } from "../github.service.js";
 import type { BuildLogEntry } from "./types.js";
 
 export async function triggerBuildTask(
   projectId: string,
   branch: string,
-  commitSha: string,
+  commitSha: string
 ) {
   console.log(
-    `Attempting to trigger build task for project ${projectId}, branch ${branch}, commit ${commitSha}`,
+    `Attempting to trigger build task for project ${projectId}, branch ${branch}, commit ${commitSha}`
   );
 
   const project = await db.query.projectSchema.findFirst({
@@ -27,21 +28,21 @@ export async function triggerBuildTask(
 
   if (!project) {
     console.error(
-      `BUILD SERVICE: Project not found for project ID ${projectId}.`,
+      `BUILD SERVICE: Project not found for project ID ${projectId}.`
     );
     return { error: "Project not found" };
   }
 
   if (!project.githubConfig) {
     console.error(
-      `GitHub configuration not found for project ID ${projectId}.`,
+      `GitHub configuration not found for project ID ${projectId}.`
     );
     return { error: "GitHub configuration not found for project" };
   }
 
   if (!project.user?.githubAppInstallationId) {
     console.error(
-      `GitHub App Installation ID not found for user associated with project ${projectId}.`,
+      `GitHub App Installation ID not found for user associated with project ${projectId}.`
     );
     return { error: "GitHub App Installation ID not found for project user" };
   }
@@ -50,7 +51,7 @@ export async function triggerBuildTask(
   try {
     githubToken = await generateGitHubInstallationToken(
       project.user.githubAppInstallationId,
-      project.githubConfig.githubRepositoryId,
+      project.githubConfig.githubRepositoryId
     );
     if (!githubToken) {
       throw new Error("Failed to generate GitHub token, received undefined.");
@@ -58,13 +59,14 @@ export async function triggerBuildTask(
   } catch (error) {
     console.error(
       `Failed to generate GitHub token for project ${projectId}:`,
-      error,
+      error
     );
     throw new Error("Failed to generate GitHub token for project user");
   }
 
   const buildReference = `bld-${generateReference()}`;
 
+  const deployToken = generateDeployToken();
   const [build] = await db
     .insert(buildSchema)
     .values({
@@ -74,6 +76,7 @@ export async function triggerBuildTask(
       reference: buildReference,
       status: "pending",
       logs: [],
+      deployToken: hashToken(deployToken),
     })
     .returning();
 
@@ -99,6 +102,11 @@ export async function triggerBuildTask(
       BRANCH: build.branch,
       EVENTS_NATS_SERVER: env.EVENTS_NATS_SERVER,
       EVENTS_NATS_NKEY_CREDS: env.EVENTS_NATS_NKEY_CREDS || "",
+      DEPLOY_TOKEN: deployToken,
+      CONTROL_API_URL:
+        env.APP_ENV === "production"
+          ? "http://control-api"
+          : "http://control-api:9999",
     };
 
     const imageName = env.BUILD_RUNNER_IMAGE;
@@ -181,6 +189,15 @@ export async function getProjectBuilds(reference: string, userId: string) {
             user: true,
           },
         },
+        deployment: {
+          with: {
+            hosts: {
+              columns: {
+                name: true,
+              },
+            },
+          },
+        },
       },
       orderBy: (builds) => [sql`${builds.createdAt} DESC`],
     });
@@ -189,16 +206,18 @@ export async function getProjectBuilds(reference: string, userId: string) {
       return [];
     }
 
-    return builds.map((build) => ({
-      id: build.id,
-      status: build.status,
-      createdAt: build.createdAt,
-      updatedAt: build.updatedAt,
-      logs: build.logs,
-      branch: build.branch,
-      commitSha: build.commitSha,
-      reference: build.reference,
-    }));
+    return builds.map((build) => {
+      const protocol = env.APP_ENV === "production" ? "https" : "http";
+      const buildDeploymentHost = build.deployment?.hosts[0]?.name;
+      const buildUrl = buildDeploymentHost
+        ? `${protocol}://${buildDeploymentHost}${env.ORIGAN_DEPLOY_DOMAIN}`
+        : null;
+
+      return {
+        ...build,
+        buildUrl,
+      };
+    });
   } catch (error) {
     console.error(`Error fetching builds for project ${reference}:`, error);
     throw error;

@@ -172,9 +172,8 @@ export async function deploy({
   projectRef,
   bundle,
   config,
-  userId,
   bucketName = process.env.BUCKET_NAME || "deployment-bucket",
-}: DeployParams & { userId: string }): Promise<DeploymentResult> {
+}: DeployParams): Promise<DeploymentResult> {
   console.log("Starting deployment...");
 
   // Validate config
@@ -187,16 +186,11 @@ export async function deploy({
 
   // Get or create project
   const project = await db.query.projectSchema.findFirst({
-    where: and(
-      eq(projectSchema.reference, projectRef),
-      eq(projectSchema.userId, userId),
-    ),
+    where: and(eq(projectSchema.reference, projectRef)),
   });
 
   if (!project) {
-    throw new ProjectNotFoundError(
-      `Project ${projectRef} not found or you don't have access to it`,
-    );
+    throw new ProjectNotFoundError(`Project ${projectRef} not found`);
   }
 
   console.log("Creating deployment record...");
