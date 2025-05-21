@@ -1,54 +1,150 @@
-# React + TypeScript + Vite
+# Origan Admin Panel
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The administration interface for the Origan platform, built with React and Vite, providing a comprehensive dashboard for managing projects, deployments, and platform settings.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Project management dashboard
+- Deployment monitoring
+- User authentication and authorization
+- GitHub repository integration
+- Build logs viewer
+- System configuration
+- Real-time status updates
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- React 18+
+- TypeScript
+- Vite
+- React Router
+- Tailwind CSS
+- Hono Query for API integration
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Development
+
+1. Environment Setup:
+```bash
+# Copy example env file
+cp .env.example .env
+
+# Install dependencies
+pnpm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+2. Start Development Server:
+```bash
+pnpm dev
 ```
+
+Access the admin panel at [http://localhost:5173](http://localhost:5173)
+
+## Project Structure
+
+```
+admin-panel/
+├── src/
+│   ├── hooks/      # Custom React hooks
+│   ├── libs/       # Utility libraries
+│   ├── pages/      # Route components
+│   └── utils/      # Helper functions
+└── public/         # Static assets
+```
+
+## Authentication
+
+The admin panel uses JWT-based authentication:
+
+1. User logs in via GitHub
+2. Receives JWT token
+3. Token stored in secure storage
+4. Token included in API requests
+
+## API Integration
+
+API calls are handled through the Hono Query client:
+
+```typescript
+import { useProjects } from '@/hooks/useProjects'
+
+function ProjectList() {
+  const { data, isLoading } = useProjects()
+  // ...
+}
+```
+
+## Building
+
+Create production build:
+```bash
+pnpm build
+```
+
+Preview production build:
+```bash
+pnpm preview
+```
+
+## Type Safety
+
+The project uses TypeScript for type safety. Run type checks:
+
+```bash
+pnpm typecheck
+```
+
+## Testing
+
+Run tests:
+```bash
+pnpm test
+```
+
+Run with coverage:
+```bash
+pnpm coverage
+```
+
+## Deployment
+
+The admin panel is automatically deployed through our CI/CD pipeline:
+
+1. Push changes to main branch
+2. CI builds the application
+3. Deploy to production environment
+
+## Adding New Features
+
+1. Create new component:
+```typescript
+// src/pages/NewFeature.tsx
+export function NewFeature() {
+  return (
+    <div>
+      <h1>New Feature</h1>
+    </div>
+  )
+}
+```
+
+2. Add route in router configuration
+3. Implement required API integration
+4. Add tests
+
+## State Management
+
+State is managed through React hooks and context:
+
+- Authentication state
+- Project data
+- User preferences
+- Real-time updates
+
+## Error Handling
+
+The application implements comprehensive error handling:
+
+- API error boundaries
+- Form validation
+- Network error recovery
+- User feedback

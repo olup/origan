@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Origan Landing Page
 
-## Getting Started
+The landing page for Origan platform, built with Next.js, showcasing our features and providing documentation.
 
-First, run the development server:
+## Features
 
+- Modern, responsive design
+- Platform feature showcase
+- Documentation sections
+- Interactive examples
+- SEO optimization
+
+## Tech Stack
+
+- Next.js 14+ with App Router
+- TypeScript
+- Panda CSS for styling
+- Geist font
+- Static site generation
+
+## Development
+
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Start development server:
+```bash
+pnpm dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Access the site at [http://localhost:3000](http://localhost:3000)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+```
+landing/
+├── public/          # Static assets
+├── src/
+│   ├── app/        # App router pages
+│   ├── components/ # React components
+│   ├── styles/     # Global styles
+│   └── utils/      # Utility functions
+└── content/        # Page content
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Content Management
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Page content is managed through Markdown files in the `content` directory. To update content:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Locate the relevant `.md` file
+2. Edit content using Markdown
+3. Commit changes
+4. Content updates automatically on build
 
-## Deploy on Vercel
+## Styling
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project uses Panda CSS for styling:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Modify styles in `panda.config.ts`
+- Use utility classes in components
+- Create custom patterns as needed
+
+## Building
+
+Build for production:
+```bash
+pnpm build
+```
+
+Preview production build:
+```bash
+pnpm start
+```
+
+## Deployment
+
+The site is automatically deployed through our CI/CD pipeline:
+
+1. Push changes to main branch
+2. CI builds the site
+3. Site deploys to production
+
+## Adding New Pages
+
+1. Create new page in `src/app`:
+```typescript
+// src/app/new-page/page.tsx
+export default function NewPage() {
+  return (
+    <main>
+      <h1>New Page</h1>
+    </main>
+  )
+}
+```
+
+2. Add content in `content/new-page.md`
+3. Update navigation if needed
+
+## SEO
+
+Each page should include proper metadata:
+
+```typescript
+export const metadata = {
+  title: 'Page Title | Origan',
+  description: 'Page description for search engines'
+}
+```
+
+## Testing
+
+Run tests:
+```bash
+pnpm test
+```
+
+Run linter:
+```bash
+pnpm lint
