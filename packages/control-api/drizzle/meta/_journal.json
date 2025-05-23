@@ -78,6 +78,13 @@
       "when": 1747823071424,
       "tag": "0010_greedy_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1748032204208,
+      "tag": "0011_lowly_skrulls",
+      "breakpoints": true
     }
   ]
 }

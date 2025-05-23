@@ -12,12 +12,24 @@ import {
   Title,
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowLeftIcon } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { client } from "../libs/client";
 import { createQueryHelper } from "../utils/honoQuery.js";
-import { ArrowLeftIcon } from "lucide-react";
-import "overlayscrollbars/overlayscrollbars.css";
+
+// Format duration between two dates as "X min Y sec" or "X hr Y min Z sec" if hours > 0
+function formatDuration(startDate: Date, endDate: Date): string {
+  const durationMs = endDate.getTime() - startDate.getTime();
+  const seconds = Math.floor(durationMs / 1000) % 60;
+  const minutes = Math.floor(durationMs / 1000 / 60) % 60;
+  const hours = Math.floor(durationMs / 1000 / 60 / 60);
+
+  if (hours > 0) {
+    return `${hours} hr ${minutes} min ${seconds} sec`;
+  }
+  return `${minutes} min ${seconds} sec`;
+}
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -123,6 +135,22 @@ export const BuildDetailsPage = () => {
               <Text fw={500}>Created:</Text>
               <Text>{new Date(build.createdAt).toLocaleString()}</Text>
             </Group>
+            {build.buildStartedAt && build.status !== "pending" && (
+              <Group>
+                <Text fw={500}>Duration:</Text>
+                <Text>
+                  {build.buildEndedAt
+                    ? formatDuration(
+                        new Date(build.buildStartedAt),
+                        new Date(build.buildEndedAt)
+                      )
+                    : formatDuration(
+                        new Date(build.buildStartedAt),
+                        new Date()
+                      )}
+                </Text>
+              </Group>
+            )}
             <Stack>
               <ScrollArea h={300}>
                 <Box

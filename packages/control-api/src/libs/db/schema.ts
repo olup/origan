@@ -179,6 +179,8 @@ export const buildSchema = pgTable("build", {
     }[]
   >(), // Array of log entries
   deployToken: text("deploy_token"), // Encrypted one-time use token
+  buildStartedAt: timestamp("build_started_at", { withTimezone: true }), // When the build process actually started
+  buildEndedAt: timestamp("build_ended_at", { withTimezone: true }), // When the build process finished (successfully or with failure)
   ...timestamps,
 });
 

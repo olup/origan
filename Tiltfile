@@ -12,6 +12,7 @@ docker_build(
         sync("./packages", "/app/packages"),
         sync("./shared", "/app/shared"),
         run("pnpm install", trigger=["package.json", "pnpm-lock.yaml"]),
+        run("pnpm run db:migrate", trigger=["packages/control-api/drizzle"]),
     ],
 )
 

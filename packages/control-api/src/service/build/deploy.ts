@@ -15,7 +15,7 @@ export async function deployBuild(
       functionPath: string;
     }[];
   },
-  token: string
+  token: string,
 ) {
   const build = await db.query.buildSchema.findFirst({
     where: eq(buildSchema.id, buildId),

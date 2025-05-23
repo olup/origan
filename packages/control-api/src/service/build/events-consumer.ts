@@ -148,11 +148,20 @@ export class BuildEventsDatabaseConsumer {
     console.log(`[Build Event Consumer] ${buildId} - ${status}: ${message}`);
 
     try {
+      const updateData: Record<string, unknown> = {
+        status: status as (typeof buildStatusEnum.enumValues)[number],
+      };
+
+      // Update timestamp fields based on build status
+      if (status === "in_progress") {
+        updateData.buildStartedAt = new Date();
+      } else if (status === "completed" || status === "failed") {
+        updateData.buildEndedAt = new Date();
+      }
+
       await db
         .update(buildSchema)
-        .set({
-          status: status as (typeof buildStatusEnum.enumValues)[number],
-        })
+        .set(updateData)
         .where(eq(buildSchema.id, buildId));
 
       console.log(`Updated build ${buildId} status to ${status} in database`);

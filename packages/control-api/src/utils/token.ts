@@ -32,7 +32,7 @@ export function hashToken(token: string): string {
  */
 export function verifyToken(
   providedToken: string,
-  storedValue: string
+  storedValue: string,
 ): boolean {
   // Extract the salt and hash from the stored value
   const parts = storedValue.split(":");

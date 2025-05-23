@@ -12,10 +12,10 @@ import type { BuildLogEntry } from "./types.js";
 export async function triggerBuildTask(
   projectId: string,
   branch: string,
-  commitSha: string
+  commitSha: string,
 ) {
   console.log(
-    `Attempting to trigger build task for project ${projectId}, branch ${branch}, commit ${commitSha}`
+    `Attempting to trigger build task for project ${projectId}, branch ${branch}, commit ${commitSha}`,
   );
 
   const project = await db.query.projectSchema.findFirst({
@@ -28,21 +28,21 @@ export async function triggerBuildTask(
 
   if (!project) {
     console.error(
-      `BUILD SERVICE: Project not found for project ID ${projectId}.`
+      `BUILD SERVICE: Project not found for project ID ${projectId}.`,
     );
     return { error: "Project not found" };
   }
 
   if (!project.githubConfig) {
     console.error(
-      `GitHub configuration not found for project ID ${projectId}.`
+      `GitHub configuration not found for project ID ${projectId}.`,
     );
     return { error: "GitHub configuration not found for project" };
   }
 
   if (!project.user?.githubAppInstallationId) {
     console.error(
-      `GitHub App Installation ID not found for user associated with project ${projectId}.`
+      `GitHub App Installation ID not found for user associated with project ${projectId}.`,
     );
     return { error: "GitHub App Installation ID not found for project user" };
   }
@@ -51,7 +51,7 @@ export async function triggerBuildTask(
   try {
     githubToken = await generateGitHubInstallationToken(
       project.user.githubAppInstallationId,
-      project.githubConfig.githubRepositoryId
+      project.githubConfig.githubRepositoryId,
     );
     if (!githubToken) {
       throw new Error("Failed to generate GitHub token, received undefined.");
@@ -59,7 +59,7 @@ export async function triggerBuildTask(
   } catch (error) {
     console.error(
       `Failed to generate GitHub token for project ${projectId}:`,
-      error
+      error,
     );
     throw new Error("Failed to generate GitHub token for project user");
   }

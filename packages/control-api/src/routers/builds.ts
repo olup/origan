@@ -32,7 +32,7 @@ export const buildsRouter = new Hono()
           message: "Failed to process build artifact",
         });
       }
-    }
+    },
   )
   .get(
     "/:reference",
@@ -41,7 +41,7 @@ export const buildsRouter = new Hono()
       "param",
       z.object({
         reference: z.string().min(1),
-      })
+      }),
     ),
     async (c) => {
       const { reference } = c.req.valid("param");
@@ -68,6 +68,8 @@ export const buildsRouter = new Hono()
           status: build.status,
           createdAt: build.createdAt,
           updatedAt: build.updatedAt,
+          buildStartedAt: build.buildStartedAt,
+          buildEndedAt: build.buildEndedAt,
           logs: build.logs,
           branch: build.branch,
           commitSha: build.commitSha,
@@ -83,7 +85,7 @@ export const buildsRouter = new Hono()
           message: "Failed to retrieve build.",
         });
       }
-    }
+    },
   )
   .get(
     "/by-project/:projectReference",
@@ -92,7 +94,7 @@ export const buildsRouter = new Hono()
       "param",
       z.object({
         projectReference: z.string().min(1),
-      })
+      }),
     ),
     async (c) => {
       const { projectReference } = c.req.valid("param");
@@ -106,20 +108,22 @@ export const buildsRouter = new Hono()
             status: build.status,
             createdAt: build.createdAt,
             updatedAt: build.updatedAt,
+            buildStartedAt: build.buildStartedAt,
+            buildEndedAt: build.buildEndedAt,
             branch: build.branch,
             commitSha: build.commitSha,
             reference: build.reference,
             buildUrl: build.buildUrl,
-          }))
+          })),
         );
       } catch (error) {
         console.error(
           `Error fetching builds for project ${projectReference}:`,
-          error
+          error,
         );
         throw new HTTPException(500, {
           message: "Failed to retrieve builds.",
         });
       }
-    }
+    },
   );
