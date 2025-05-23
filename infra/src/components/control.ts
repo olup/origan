@@ -6,6 +6,7 @@ import { config } from "../config";
 import { cn, dockerImageWithTag } from "../utils";
 import type { BucketConfig } from "./bucket";
 import type { DatabaseOutputs } from "./database";
+import type { Global } from "./global";
 
 export function deployControl({
   registry,
@@ -15,6 +16,7 @@ export function deployControl({
   bucketConfig,
   nginxIngress,
   buildRunnerImage,
+  nats,
 }: {
   registry: scaleway.registry.Namespace;
   registryApiKey: scaleway.iam.ApiKey;
@@ -23,6 +25,7 @@ export function deployControl({
   bucketConfig: BucketConfig;
   nginxIngress: k8s.helm.v3.Release;
   buildRunnerImage: pulumi.Output<string>;
+  nats: Global["nats"];
 }) {
   // Generate a secure JWT secret
   const jwtSecret = new random.RandomPassword(cn("jwt-secret"), {
@@ -165,6 +168,15 @@ export function deployControl({
                     name: "JWT_SECRET",
                     value: jwtSecret.result,
                   },
+                  // NATS Configuration
+                  {
+                    name: "EVENTS_NATS_SERVER",
+                    value: nats.account.endpoint,
+                  },
+                  {
+                    name: "EVENTS_NATS_NKEY_CREDS",
+                    value: nats.creds.file,
+                  },
                 ],
               },
             ],
@@ -172,7 +184,7 @@ export function deployControl({
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [image.image] },
+    { provider: k8sProvider, dependsOn: [image.image] }
   );
 
   // Create a LoadBalancer service for the control API
@@ -200,7 +212,7 @@ export function deployControl({
         },
       },
     },
-    { provider: k8sProvider },
+    { provider: k8sProvider }
   );
 
   // Configure ingress with proper service routing using control service name
@@ -245,7 +257,7 @@ export function deployControl({
         ],
       },
     },
-    { provider: k8sProvider, dependsOn: [nginxIngress, controlService] },
+    { provider: k8sProvider, dependsOn: [nginxIngress, controlService] }
   );
 
   return {

@@ -35,6 +35,7 @@ export function deployAll() {
     bucketConfig: bucketDeployment.config,
     nginxIngress: kubernetes.nginxIngress,
     buildRunnerImage: buildRunnerImage.imageUri,
+    nats: globals.nats,
   });
 
   // Deploy runner with Kubernetes configuration
