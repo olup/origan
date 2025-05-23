@@ -5,7 +5,6 @@ import {
   Card,
   Container,
   Group,
-  Progress,
   ScrollArea,
   Stack,
   Text,
@@ -152,7 +151,7 @@ export const BuildDetailsPage = () => {
               </Group>
             )}
             <Stack>
-              <ScrollArea h={300}>
+              <ScrollArea.Autosize mah={300}>
                 <Box
                   ref={osComponentRef}
                   bg="dark"
@@ -171,17 +170,9 @@ export const BuildDetailsPage = () => {
                       {log.message}
                     </Box>
                   ))}
-                  {build.status === "in_progress" && (
-                    <Progress
-                      mt={10}
-                      color="gray"
-                      w={100}
-                      value={100}
-                      animated
-                    />
-                  )}
+                  {build.status === "in_progress" && <Box c="gray">...</Box>}
                 </Box>
-              </ScrollArea>
+              </ScrollArea.Autosize>
             </Stack>
           </Stack>
         </Card>

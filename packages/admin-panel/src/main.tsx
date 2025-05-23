@@ -16,7 +16,18 @@ if (!rootElement) {
 
 const mantineTheme = createTheme({
   fontFamily: "Fira Code, sans-serif",
+  defaultRadius: "sm",
+
+  components: {
+    Button: {
+      defaultProps: {
+        variant: "outline",
+        color: "black",
+      },
+    },
+  },
 });
+
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -24,5 +35,5 @@ ReactDOM.createRoot(rootElement).render(
         <App />
       </MantineProvider>
     </QueryClientProvider>
-  </React.StrictMode>,
+  </React.StrictMode>
 );

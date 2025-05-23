@@ -37,12 +37,14 @@ const BuildsList = ({
   const { data: builds } = useQuery(
     createQueryHelper(client.builds["by-project"][":projectReference"].$get, {
       param: { projectReference },
-    }),
+    })
   );
 
   if (!builds?.length) {
     return <Text c="dimmed">No builds yet</Text>;
   }
+
+  const truncatedBuilds = builds.slice(0, 5);
 
   return (
     <Table>
@@ -56,7 +58,7 @@ const BuildsList = ({
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {builds.map((build) => (
+        {truncatedBuilds.map((build) => (
           <Table.Tr
             key={build.id}
             style={{ cursor: "pointer" }}
@@ -118,7 +120,13 @@ export const ProjectPage = () => {
             {project.githubConfig && (
               <Stack>
                 <Badge
+                  component="a"
+                  href={`https://github.com/${project.githubConfig.githubRepositoryFullName}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   radius="sm"
+                  variant="outline"
+                  color="black"
                   leftSection={
                     <GithubIcon style={{ height: "10px", width: "auto" }} />
                   }
