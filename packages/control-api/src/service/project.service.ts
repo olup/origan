@@ -106,21 +106,21 @@ export async function deleteProject(id: string, userId: string) {
 
 // Create or update GitHub config for a project
 export async function setProjectGithubConfig(
-  projectId: string,
+  reference: string,
   userId: string,
   githubData: Omit<typeof schema.githubConfigSchema.$inferInsert, "projectId">,
 ) {
   // Verify project exists and belongs to user
-  const project = await getProject({ id: projectId, userId });
-  if (!project) {
-    throw new Error(`Project not found with ID: ${projectId}`);
+  const project = await getProject({ reference: reference, userId });
+  if (project == null) {
+    throw new Error(`Project not found with reference: ${reference} (userId: ${userId})`);
   }
 
   // Use upsert operation instead of separate query and update/insert
   const [githubConfig] = await db
     .insert(schema.githubConfigSchema)
     .values({
-      projectId,
+      projectId: project.id,
       githubRepositoryId: githubData.githubRepositoryId,
       githubRepositoryFullName: githubData.githubRepositoryFullName,
     })

@@ -159,7 +159,7 @@ export const projectsRouter = new Hono()
     ),
     async (c) => {
       const { reference } = c.req.valid("param");
-      const githubData = await c.req.valid("json");
+      const githubData = c.req.valid("json");
       const userId = c.get("userId");
 
       try {
