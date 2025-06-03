@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "lint": "biome check .",
     "format": "biome format . --write",
-    "check": "biome check --write ."
+    "check": "biome check --write .",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@nats-io/transport-node": "^3.0.2",

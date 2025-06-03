@@ -12,7 +12,9 @@
     "format": "biome format . --write",
     "check": "biome check --write .",
     "prepublishOnly": "pnpm run build",
-    "publish": "pnpm publish --access public"
+    "publish": "pnpm publish --access public",
+    "clean": "rm -rf dist; rm -rf tsconfig.tsbuildinfo",
+    "test": "echo \"No tests specified\""
   },
   "files": [
     "dist"

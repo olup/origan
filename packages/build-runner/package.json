@@ -12,10 +12,12 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "biome check .",
     "format": "biome format . --write",
-    "check": "biome check --write ."
+    "check": "biome check --write .",
+    "clean": "rm -rf dist; rm -rf tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@origan/nats": "workspace:*",
+    "@origan/control-api": "workspace:*",
     "archiver": "^6.0.0",
     "esbuild": "^0.20.0",
     "execa": "^9.5.3",

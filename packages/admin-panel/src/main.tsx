@@ -35,5 +35,5 @@ ReactDOM.createRoot(rootElement).render(
         <App />
       </MantineProvider>
     </QueryClientProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

@@ -113,7 +113,9 @@ export async function setProjectGithubConfig(
   // Verify project exists and belongs to user
   const project = await getProject({ reference: reference, userId });
   if (project == null) {
-    throw new Error(`Project not found with reference: ${reference} (userId: ${userId})`);
+    throw new Error(
+      `Project not found with reference: ${reference} (userId: ${userId})`,
+    );
   }
 
   // Use upsert operation instead of separate query and update/insert

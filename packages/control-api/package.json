@@ -2,6 +2,17 @@
   "name": "@origan/control-api",
   "version": "0.1.0",
   "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./routers": "./dist/routers/index.js"
+  },
+  "typesVersions": {
+    "*": {
+      "*": ["./src/*"]
+    }
+  },
   "scripts": {
     "build": "tsc -b",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -10,7 +21,8 @@
     "format": "biome format . --write",
     "check": "biome check --write .",
     "db:migrate": "drizzle-kit migrate",
-    "db:generate": "pnpm tsx node_modules/drizzle-kit/bin.cjs generate"
+    "db:generate": "pnpm tsx node_modules/drizzle-kit/bin.cjs generate",
+    "clean": "rm -rf dist; rm -rf tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.787.0",

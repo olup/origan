@@ -6,20 +6,20 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "pnpm -r build",
-    "dev": "concurrently \"pnpm run -w --filter @origan/control-api dev\" \"pnpm run -w --filter @origan/control-frontend dev\"",
-    "test": "pnpm -r test",
-    "lint": "pnpm -r lint",
-    "format": "pnpm -r format",
-    "check": "pnpm -r check"
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "format": "turbo format",
+    "check": "turbo check",
+    "clean": "turbo clean",
+    "build:cli": "turbo build --filter=@origan/cli"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.3",
     "@types/node": "^20.17.30",
+    "turbo": "^2.5.4",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "@origan/cli": "link:packages/cli"
   },
   "pnpm": {
     "overrides": {

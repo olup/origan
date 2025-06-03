@@ -37,7 +37,7 @@ const BuildsList = ({
   const { data: builds } = useQuery(
     createQueryHelper(client.builds["by-project"][":projectReference"].$get, {
       param: { projectReference },
-    })
+    }),
   );
 
   if (!builds?.length) {

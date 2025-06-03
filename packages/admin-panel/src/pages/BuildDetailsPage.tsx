@@ -141,11 +141,11 @@ export const BuildDetailsPage = () => {
                   {build.buildEndedAt
                     ? formatDuration(
                         new Date(build.buildStartedAt),
-                        new Date(build.buildEndedAt)
+                        new Date(build.buildEndedAt),
                       )
                     : formatDuration(
                         new Date(build.buildStartedAt),
-                        new Date()
+                        new Date(),
                       )}
                 </Text>
               </Group>

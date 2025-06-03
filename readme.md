@@ -63,6 +63,8 @@ Marketing site featuring:
 
 ## Development
 
+This project uses [Turborepo](https://turbo.build/) to manage the monorepo build system and task orchestration.
+
 ### Prerequisites
 
 - Node.js 22+
