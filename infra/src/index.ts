@@ -65,5 +65,6 @@ export function deployAll() {
     bucketRegion: bucketDeployment.config.bucketRegion,
     bucketAccessKey: bucketDeployment.config.bucketAccessKey,
     bucketSecretKey: bucketDeployment.config.bucketSecretKey,
+    nats: globals.nats,
   };
 }

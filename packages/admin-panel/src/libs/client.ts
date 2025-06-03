@@ -1,10 +1,6 @@
 import { hc } from "hono/client";
 import type { ApiType } from "../../../control-api/src/routers/index";
-
-const apiUrl = import.meta.env.VITE_API_URL;
-if (!apiUrl) {
-  throw new Error("VITE_API_URL is not defined in the environment variables.");
-}
+import { getConfig } from "../config";
 
 // in memory state for access token and refresh status
 const state = {
@@ -13,7 +9,7 @@ const state = {
   refreshPromise: null as Promise<boolean> | null,
 };
 
-const baseClient = hc<ApiType>(apiUrl, {
+const baseClient = hc<ApiType>(getConfig().apiUrl, {
   init: {
     credentials: "include",
   },
@@ -104,6 +100,6 @@ const authenticatedFetch: typeof fetch = async (input, init) => {
 };
 
 // Main client with auth : uses the fetch interceptor for automatic token refresh
-export const client = hc<ApiType>(apiUrl, {
+export const client = hc<ApiType>(getConfig().apiUrl, {
   fetch: authenticatedFetch,
 });

@@ -1,9 +1,18 @@
 import type { JetStreamClient } from "@nats-io/jetstream/lib/types";
 import type { NatsConnection } from "@nats-io/nats-core";
-import { connect } from "./connection";
+import { createConnection } from "./connection";
 import { Publisher } from "./publisher";
 import { Subscriber } from "./subscriber";
 import type { NatsConfig } from "./types";
+
+export class NatsAlreadyConnectedError extends Error {
+  constructor(
+    message = "NATS client already connected. Following connect calls are forbidden.",
+  ) {
+    super(message);
+    this.name = "NatsAlreadyConnectedError";
+  }
+}
 
 export class NatsClient {
   private connection: NatsConnection | null = null;
@@ -14,7 +23,11 @@ export class NatsClient {
   constructor(private config: NatsConfig) {}
 
   async connect(): Promise<void> {
-    const { nc, js } = await connect(this.config);
+    if (this.connection && this.js) {
+      throw new NatsAlreadyConnectedError();
+    }
+
+    const { nc, js } = await createConnection(this.config);
     this.connection = nc;
     this.js = js;
   }

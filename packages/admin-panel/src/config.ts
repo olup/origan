@@ -6,7 +6,7 @@ type Config = {
 
 const productionConfig: Config = {
   appEnv: "production",
-  apiUrl: "https://api.origna.dev",
+  apiUrl: "https://api.origan.dev",
   ghAppName: "OriganEu",
 };
 const developmentConfig: Config = {

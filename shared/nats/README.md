@@ -20,7 +20,7 @@ import { NatsClient } from '@origan/nats'
 
 const client = new NatsClient({
   server: 'nats://localhost:4222',
-  credentials: 'optional-nkey-credentials'
+  nkeyCreds: 'optional-nkey-credentials'
 })
 
 await client.connect()
@@ -51,7 +51,7 @@ await subscriber.subscribe('subject.name', (msg) => {
 Configure the NATS client using environment variables:
 
 - `EVENTS_NATS_SERVER`: URL of the NATS server
-- `EVENTS_NATS_NKEY_CREDS`: (Optional) NATS credentials
+- `EVENTS_NATS_NKEY_CREDS`: (Optional) NATS NKey credentials
 
 ## Integration
 

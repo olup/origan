@@ -3,15 +3,12 @@ import { NatsClient } from "../src/client";
 import { Publisher } from "../src/publisher";
 import { Subscriber } from "../src/subscriber";
 
-vi.mock("nats", () => ({
-  connect: vi.fn().mockResolvedValue({
-    jetstream: vi.fn().mockReturnValue({}),
-    jetstreamManager: vi.fn().mockResolvedValue({
-      streams: {
-        add: vi.fn().mockResolvedValue(undefined),
-      },
-    }),
-    close: vi.fn().mockResolvedValue(undefined),
+vi.mock("../src/connection", () => ({
+  createConnection: vi.fn().mockResolvedValue({
+    nc: {
+      close: vi.fn().mockResolvedValue(undefined),
+    },
+    js: {},
   }),
 }));
 

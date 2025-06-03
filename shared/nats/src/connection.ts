@@ -1,25 +1,28 @@
 import { DiscardPolicy, StorageType } from "@nats-io/jetstream";
 import { jetstreamManager } from "@nats-io/jetstream";
 import type { JetStreamClient } from "@nats-io/jetstream";
-import type { NatsConnection } from "@nats-io/nats-core";
+import {
+  type ConnectionOptions,
+  type NatsConnection,
+  credsAuthenticator,
+} from "@nats-io/nats-core";
 import { connect as natsConnect } from "@nats-io/transport-node";
 import { STREAM_NAMES, subjects } from "./subjects";
 import type { NatsConfig } from "./types";
 
-const MAX_AGE_24H = 1000 * 1000 * 60 * 60 * 24;
+const MAX_AGE_1H = 1000 * 1000 * 60 * 60;
 
-let natsClient: NatsConnection | null = null;
-let jsClient: JetStreamClient | null = null;
-
-async function setupStreams(nc: NatsConnection) {
-  const jsm = await await jetstreamManager(nc);
+export async function setupStreams(
+  nc: NatsConnection,
+): Promise<JetStreamClient> {
+  const jsm = await jetstreamManager(nc);
 
   await jsm.streams
     .add({
       name: STREAM_NAMES.BUILD_EVENTS,
       subjects: [subjects.builds.status(), subjects.builds.logs()],
-      storage: StorageType.Memory,
-      max_age: MAX_AGE_24H,
+      storage: StorageType.File,
+      max_age: MAX_AGE_1H,
       discard: DiscardPolicy.Old,
     })
     .catch((error: Error) => {
@@ -34,8 +37,8 @@ async function setupStreams(nc: NatsConnection) {
     .add({
       name: STREAM_NAMES.DEPLOYMENT_EVENTS,
       subjects: ["logs.*.*", "events.*.*"],
-      storage: StorageType.Memory,
-      max_age: MAX_AGE_24H,
+      storage: StorageType.File,
+      max_age: MAX_AGE_1H,
       discard: DiscardPolicy.Old,
     })
     .catch((error: Error) => {
@@ -49,32 +52,26 @@ async function setupStreams(nc: NatsConnection) {
   return jsm.jetstream();
 }
 
-export async function connect(
+export async function createConnection(
   config: NatsConfig,
 ): Promise<{ nc: NatsConnection; js: JetStreamClient }> {
-  if (natsClient && jsClient) {
-    return { nc: natsClient, js: jsClient };
+  const connectionOptions: ConnectionOptions = {
+    servers: [config.server],
+  };
+
+  if (config.nkeyCreds) {
+    connectionOptions.authenticator = credsAuthenticator(
+      Buffer.from(config.nkeyCreds, "utf-8"),
+    );
   }
 
-  natsClient = await natsConnect({
-    servers: [config.server],
-    user: config.nkeyCreds ? config.nkeyCreds.split("\n")[1] : undefined,
-    nkey: config.nkeyCreds ? config.nkeyCreds.split("\n")[0] : undefined,
-  });
+  const nc = await natsConnect(connectionOptions);
 
-  if (!natsClient) {
+  if (!nc) {
     throw new Error("Failed to connect to NATS server");
   }
 
-  const jetstreamClient = await setupStreams(natsClient);
+  const js = await setupStreams(nc);
 
-  return { nc: natsClient, js: jetstreamClient };
-}
-
-export async function disconnect(): Promise<void> {
-  if (natsClient) {
-    await natsClient.close();
-    natsClient = null;
-    jsClient = null;
-  }
+  return { nc, js };
 }
