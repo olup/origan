@@ -6,7 +6,7 @@ docker_prune_settings()
 docker_build(
     "origan-dev",
     context=".",
-    dockerfile="build/docker/dev.Dockerfile",
+    dockerfile="dockerfiles/dev.Dockerfile",
     ignore=["_tmp_*"],
     live_update=[
         sync("./packages", "/app/packages"),
@@ -19,7 +19,7 @@ docker_build(
 docker_build(
     "origan-runner",
     context=".",
-    dockerfile="build/docker/runner.Dockerfile",
+    dockerfile="dockerfiles/runner.Dockerfile",
     ignore=["_tmp_*"],
     live_update=[
         sync("./packages", "/app/packages"),
@@ -38,7 +38,7 @@ local_resource(
 
 local_resource(
     "origan-build-runner",
-    "docker build --target build-runner -t origan-build-runner .",
+    "docker build --target build-runner -f dockerfiles/prod.Dockerfile -t origan-build-runner .",
     deps=["packages/build-runner"],
     labels=["1-main"],
 )

@@ -15,7 +15,8 @@ export function deployAdminPanel({
   const image = dockerImageWithTag(adminNamespace("admin-panel-image"), {
     build: {
       context: "../",
-      dockerfile: "../infra/dockerfiles/admin-panel.dockerfile",
+      dockerfile: "../dockerfiles/prod.Dockerfile",
+      target: "admin-panel",
       platform: "linux/amd64",
     },
     imageName: pulumi.interpolate`${registry.endpoint}/admin-panel`,

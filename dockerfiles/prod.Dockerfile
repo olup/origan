@@ -7,14 +7,18 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 FROM base AS build
 WORKDIR /app
+
+# Copy package files for dependency resolution
 COPY . .
+
+# Install dependencies with cache mount
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-# build shared packages
-RUN pnpm run --filter="./shared/*" -r build
-# build control-api - other packages depends on its types
-RUN pnpm run --filter=@origan/control-api -r build
-# build other packages
-RUN pnpm run --filter=@origan/gateway --filter=@origan/build-runner -r build
+
+# Set environment variable for admin panel Vite build
+ENV VITE_APP_ENV=production
+
+# Build all packages using turbo (builds in dependency order)
+RUN pnpm run build
 
 RUN pnpm deploy --filter=@origan/control-api --prod /prod/control-api
 RUN pnpm deploy --filter=@origan/gateway --prod /prod/gateway
@@ -41,6 +45,12 @@ RUN apt-get update && \
 COPY --from=build /prod/build-runner /prod/build-runner
 WORKDIR /prod/build-runner
 ENTRYPOINT [ "node", "dist/index.js" ]
+
+FROM nginx:alpine AS admin-panel
+COPY --from=build /app/packages/admin-panel/dist /usr/share/nginx/html
+COPY ./dockerfiles/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
 
 FROM ghcr.io/supabase/edge-runtime:v1.67.4 AS runner
 COPY --from=build app/packages/runner /app

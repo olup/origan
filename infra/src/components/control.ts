@@ -36,7 +36,7 @@ export function deployControl({
   const image = dockerImageWithTag(cn("image"), {
     build: {
       context: "../",
-      dockerfile: "../Dockerfile",
+      dockerfile: "../dockerfiles/prod.Dockerfile",
       platform: "linux/amd64",
       target: "control-api",
     },

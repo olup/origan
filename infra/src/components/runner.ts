@@ -27,7 +27,7 @@ export function deployRunner({
   const image = dockerImageWithTag(rn("runner-image"), {
     build: {
       context: "../",
-      dockerfile: "../Dockerfile",
+      dockerfile: "../dockerfiles/prod.Dockerfile",
       platform: "linux/amd64",
       target: "runner",
     },
