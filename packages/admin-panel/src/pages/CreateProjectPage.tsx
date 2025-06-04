@@ -106,7 +106,7 @@ export const CreateProjectPage = () => {
       branch: input.mainBranchName,
     });
 
-    navigate(`/projects/${project.id}`);
+    navigate(`/projects/${project.reference}`);
   };
 
   const handleSubmit = async (values: typeof form.values) => {

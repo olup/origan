@@ -14,18 +14,18 @@ export function deployControl({
   k8sProvider,
   db,
   bucketConfig,
-  nginxIngress,
   buildRunnerImage,
   nats,
+  buildRunnerServiceAccount,
 }: {
   registry: scaleway.registry.Namespace;
   registryApiKey: scaleway.iam.ApiKey;
   k8sProvider: k8s.Provider;
   db: DatabaseOutputs;
   bucketConfig: BucketConfig;
-  nginxIngress: k8s.helm.v3.Release;
   buildRunnerImage: pulumi.Output<string>;
   nats: Global["nats"];
+  buildRunnerServiceAccount?: k8s.rbac.v1.RoleBinding;
 }) {
   // Generate a secure JWT secret
   const jwtSecret = new random.RandomPassword(cn("jwt-secret"), {
@@ -70,6 +70,7 @@ export function deployControl({
             },
           },
           spec: {
+            serviceAccountName: "build-runner-sa",
             containers: [
               {
                 name: "control",
@@ -116,7 +117,7 @@ export function deployControl({
                   },
                   {
                     name: "ORIGAN_ADMIN_PANEL_URL",
-                    value: "app.origan.dev",
+                    value: "https://app.origan.dev",
                   },
                   {
                     name: "ORIGAN_API_URL",
@@ -184,7 +185,12 @@ export function deployControl({
         },
       },
     },
-    { provider: k8sProvider, dependsOn: [image.image] },
+    {
+      provider: k8sProvider,
+      dependsOn: buildRunnerServiceAccount
+        ? [image.image, buildRunnerServiceAccount]
+        : [image.image],
+    },
   );
 
   // Create a LoadBalancer service for the control API
@@ -215,52 +221,9 @@ export function deployControl({
     { provider: k8sProvider },
   );
 
-  // Configure ingress with proper service routing using control service name
-  const ingress = new k8s.networking.v1.Ingress(
-    cn("k8s-api-ingress"),
-    {
-      metadata: {
-        name: "main-ingress",
-        annotations: {
-          "cert-manager.io/cluster-issuer": "letsencrypt-prod",
-          "nginx.ingress.kubernetes.io/ssl-redirect": "false",
-          "nginx.ingress.kubernetes.io/force-ssl-redirect": "false",
-          "nginx.ingress.kubernetes.io/proxy-body-size": "100m",
-        },
-      },
-      spec: {
-        ingressClassName: "nginx",
-        tls: [
-          {
-            hosts: ["api.origan.dev"],
-            secretName: "api-origan-tls", // cert-manager will create this
-          },
-        ],
-        rules: [
-          {
-            host: "api.origan.dev",
-            http: {
-              paths: [
-                {
-                  path: "/",
-                  pathType: "Prefix",
-                  backend: {
-                    service: {
-                      name: controlService.metadata.name,
-                      port: { number: 80 },
-                    },
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-    { provider: k8sProvider, dependsOn: [nginxIngress, controlService] },
-  );
-
   return {
     apiUrl: pulumi.output("https://api.origan.dev"),
+    service: controlService,
+    deployment: controlDeployment,
   };
 }

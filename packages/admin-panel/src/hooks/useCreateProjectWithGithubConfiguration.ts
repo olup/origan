@@ -21,8 +21,8 @@ export const useCreateProjectWithGithubConfiguration = () =>
       );
 
       await safeQuery(
-        client.projects[":id"].github.config.$post({
-          param: { id: project.id },
+        client.projects[":reference"].github.config.$post({
+          param: { reference: project.reference },
           json: {
             githubRepositoryId: repoId,
             githubRepositoryFullName: repoName,

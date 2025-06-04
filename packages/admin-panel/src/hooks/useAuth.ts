@@ -18,6 +18,8 @@ export function useAuth() {
         }
         return res.json();
       }),
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const doLogout = async () => {

@@ -6,6 +6,7 @@ export const gn = (name: string) => `global-${name}-${stack}`;
 export const cn = (name: string) => `control-${name}-${stack}`;
 export const gan = (name: string) => `gateway-${name}-${stack}`;
 export const rn = (name: string) => `runner-${name}-${stack}`;
+export const adminNamespace = (name: string) => `admin-${name}-${stack}`;
 
 export function objectWithoutUndefined<O extends Record<string, unknown>>(
   obj: O,

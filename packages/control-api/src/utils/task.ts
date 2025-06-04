@@ -191,7 +191,7 @@ export class KubernetesTaskRunner implements TaskRunner {
     kc.loadFromDefault();
     const k8sBatchV1Api = kc.makeApiClient(k8s.BatchV1Api);
 
-    // TODO do we want to parametrize this ?
+    // TODO: Currently using default namespace and service account - we could consider moving to a different namespace
     const namespace = "default";
     const jobName = `${namePrefix}-${taskId.substring(0, 8)}-${Date.now()}`;
 
@@ -216,6 +216,7 @@ export class KubernetesTaskRunner implements TaskRunner {
             },
           },
           spec: {
+            serviceAccountName: "build-runner-sa",
             containers: [
               {
                 name: `${namePrefix}-container`,

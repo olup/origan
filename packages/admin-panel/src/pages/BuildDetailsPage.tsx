@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Card,
+  CardSection,
   Container,
   Group,
   ScrollArea,
@@ -150,30 +151,32 @@ export const BuildDetailsPage = () => {
                 </Text>
               </Group>
             )}
-            <Stack>
-              <ScrollArea.Autosize mah={300}>
-                <Box
-                  ref={osComponentRef}
-                  bg="dark"
-                  p="md"
-                  style={{
-                    fontFamily: "monospace",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  {build.logs.map((log, index) => (
-                    <Box
-                      // biome-ignore lint/suspicious/noArrayIndexKey: no other way to make a key
-                      key={index}
-                      c={getLogColor(log.level)}
-                    >
-                      {log.message}
-                    </Box>
-                  ))}
-                  {build.status === "in_progress" && <Box c="gray">...</Box>}
-                </Box>
-              </ScrollArea.Autosize>
-            </Stack>
+            <CardSection>
+              <Stack>
+                <ScrollArea.Autosize mah={300}>
+                  <Box
+                    ref={osComponentRef}
+                    bg="dark"
+                    p="md"
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    {build.logs.map((log, index) => (
+                      <Box
+                        // biome-ignore lint/suspicious/noArrayIndexKey: no other way to make a key
+                        key={index}
+                        c={getLogColor(log.level)}
+                      >
+                        {log.message}
+                      </Box>
+                    ))}
+                    {build.status === "in_progress" && <Box c="gray">...</Box>}
+                  </Box>
+                </ScrollArea.Autosize>
+              </Stack>
+            </CardSection>
           </Stack>
         </Card>
       </Stack>

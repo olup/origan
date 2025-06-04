@@ -1,9 +1,11 @@
+import { deployAdminPanel } from "./components/admin-panel";
 import { deployBucket } from "./components/bucket";
 import { deployBuildRunnerImage } from "./components/build-runner";
 import { deployControl } from "./components/control";
 import { deployDatabase } from "./components/database";
 import { deployGateway } from "./components/gateway";
 import { deployGlobal } from "./components/global";
+import { deploySharedIngress } from "./components/ingress";
 import { deployKubernetes } from "./components/kubernetes";
 import { deployRegistry } from "./components/registry";
 import { deployRunner } from "./components/runner";
@@ -26,16 +28,41 @@ export function deployAll() {
   // Deploy Kubernetes cluster first
   const kubernetes = deployKubernetes();
 
-  // Deploy control API with Kubernetes configuration (including nginx ingress)
+  // Deploy admin panel frontend
+  const adminPanelResult = deployAdminPanel({
+    registry: registryDeployment.namespace,
+    registryApiKey: registryDeployment.registryApiKey,
+    k8sProvider: kubernetes.k8sProvider,
+  });
+
+  // Deploy control API
   const controlResult = deployControl({
     registry: registryDeployment.namespace,
     registryApiKey: registryDeployment.registryApiKey,
     k8sProvider: kubernetes.k8sProvider,
     db,
     bucketConfig: bucketDeployment.config,
-    nginxIngress: kubernetes.nginxIngress,
     buildRunnerImage: buildRunnerImage.imageUri,
     nats: globals.nats,
+    buildRunnerServiceAccount: kubernetes.buildRunnerRoleBinding,
+  });
+
+  // Deploy shared ingress for both control API and admin panel
+  deploySharedIngress({
+    k8sProvider: kubernetes.k8sProvider,
+    nginxIngress: kubernetes.nginxIngress,
+    services: [
+      {
+        host: "api.origan.dev",
+        serviceName: "control-api",
+        port: 80,
+      },
+      {
+        host: "app.origan.dev",
+        serviceName: "admin-panel",
+        port: 80,
+      },
+    ],
   });
 
   // Deploy runner with Kubernetes configuration
@@ -60,11 +87,13 @@ export function deployAll() {
   // Export outputs
   return {
     apiUrl: controlResult.apiUrl,
+    adminPanelUrl: adminPanelResult.adminPanelUrl,
     bucketUrl: bucketDeployment.config.bucketUrl,
     bucketName: bucketDeployment.config.bucketName,
     bucketRegion: bucketDeployment.config.bucketRegion,
     bucketAccessKey: bucketDeployment.config.bucketAccessKey,
     bucketSecretKey: bucketDeployment.config.bucketSecretKey,
     nats: globals.nats,
+    database: db,
   };
 }

@@ -1,4 +1,4 @@
-import type * as pulumi from "@pulumi/pulumi";
+import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 import * as scaleway from "@pulumiverse/scaleway";
 import { gn } from "../utils";
@@ -9,6 +9,7 @@ export interface DatabaseOutputs {
   user: pulumi.Output<string>;
   password: pulumi.Output<string>;
   database: pulumi.Output<string>;
+  connectionString: pulumi.Output<string>;
 }
 
 export function deployDatabase(): DatabaseOutputs {
@@ -48,11 +49,25 @@ export function deployDatabase(): DatabaseOutputs {
     permission: "all",
   });
 
+  const connectionString = pulumi
+    .all([
+      lb.ip,
+      lb.port,
+      sharedDb.userName,
+      password.result,
+      sharedMainDatabase.name,
+    ])
+    .apply(
+      ([host, port, user, password, database]) =>
+        `postgresql://${user}:${password}@${host}:${port}/${database}`,
+    );
+
   return {
     host: lb.ip,
     port: lb.port,
     user: sharedDb.userName,
     password: password.result,
     database: sharedMainDatabase.name,
+    connectionString,
   };
 }

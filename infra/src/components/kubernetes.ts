@@ -1,7 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
-import { accessKey } from "@pulumiverse/scaleway/config";
 import { gn } from "../utils";
 
 const scalewayConfig = new pulumi.Config("scaleway");
@@ -20,7 +19,7 @@ export function deployKubernetes() {
 
   // Create a Kubernetes cluster
   const cluster = new scaleway.kubernetes.Cluster(k("test-cluster"), {
-    version: "1.28.15",
+    version: "1.31.7",
     privateNetworkId: privateNetwork.id,
     cni: "cilium",
     deleteAdditionalResources: true,
@@ -195,9 +194,9 @@ export function deployKubernetes() {
     },
   );
 
-  // Create wildcard certificate
-  const wildcardCert = new k8s.apiextensions.CustomResource(
-    k("wildcard-deploy-origan-dev"),
+  // Create wildcard certificate for origan.app
+  const wildcardCertApp = new k8s.apiextensions.CustomResource(
+    k("wildcard-origan-app"),
     {
       apiVersion: "cert-manager.io/v1",
       kind: "Certificate",
@@ -218,6 +217,86 @@ export function deployKubernetes() {
     { provider: k8sProvider, dependsOn: [clusterIssuer] },
   );
 
+  // Create wildcard certificate for origan.dev (for API and admin panel)
+  const wildcardCertDev = new k8s.apiextensions.CustomResource(
+    k("wildcard-origan-dev"),
+    {
+      apiVersion: "cert-manager.io/v1",
+      kind: "Certificate",
+      metadata: {
+        name: "wildcard-origan-dev",
+        namespace: "default",
+      },
+      spec: {
+        secretName: "wildcard-origan-dev-tls",
+        commonName: "*.origan.dev",
+        dnsNames: ["*.origan.dev"],
+        issuerRef: {
+          name: "letsencrypt-prod",
+          kind: "ClusterIssuer",
+        },
+      },
+    },
+    { provider: k8sProvider, dependsOn: [clusterIssuer] },
+  );
+
+  const buildRunnerServiceAccount = new k8s.core.v1.ServiceAccount(
+    k("build-runner-sa"),
+    {
+      metadata: {
+        name: "build-runner-sa",
+        namespace: "default",
+      },
+    },
+    { provider: k8sProvider },
+  );
+
+  const buildRunnerRole = new k8s.rbac.v1.Role(
+    k("job-creator-role"),
+    {
+      metadata: {
+        namespace: "default",
+        name: "job-creator",
+      },
+      rules: [
+        {
+          apiGroups: ["batch"],
+          resources: ["jobs"],
+          verbs: ["create", "get", "list", "watch", "delete"],
+        },
+        {
+          apiGroups: [""],
+          resources: ["pods"],
+          verbs: ["get", "list", "watch"],
+        },
+      ],
+    },
+    { provider: k8sProvider },
+  );
+
+  const buildRunnerRoleBinding = new k8s.rbac.v1.RoleBinding(
+    k("build-runner-binding"),
+    {
+      metadata: {
+        name: "build-runner-binding",
+        namespace: "default",
+      },
+      subjects: [
+        {
+          kind: "ServiceAccount",
+          name: "build-runner-sa",
+          namespace: "default",
+        },
+      ],
+      roleRef: {
+        kind: "Role",
+        name: "job-creator",
+        apiGroup: "rbac.authorization.k8s.io",
+      },
+    },
+    { provider: k8sProvider, dependsOn: [buildRunnerRole] },
+  );
+
   // Return the cluster details and configuration
   return {
     kubeconfig: cluster.kubeconfigs[0].configFile,
@@ -227,6 +306,10 @@ export function deployKubernetes() {
     nginxIngress,
     certManager,
     scalewayWebhook,
-    wildcardCert,
+    wildcardCertApp,
+    wildcardCertDev,
+    buildRunnerServiceAccount,
+    buildRunnerRoleBinding,
+    nodePool,
   };
 }
