@@ -1,3 +1,4 @@
+import { otel } from "@hono/otel";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -12,6 +13,7 @@ import { projectsRouter } from "./projects.js";
 // Create main router with middleware
 const api = new Hono()
   .use(logger())
+  .use(otel())
   .use(
     cors({
       origin: [env.ORIGAN_ADMIN_PANEL_URL],

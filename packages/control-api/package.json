@@ -29,6 +29,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.787.0",
     "@hono/node-server": "^1.14.1",
+    "@hono/otel": "^0.2.0",
     "@hono/zod-validator": "^0.4.3",
     "@kubernetes/client-node": "^1.2.0",
     "@octokit/app": "^15.1.6",
@@ -36,9 +37,15 @@
     "@octokit/types": "^14.0.0",
     "@octokit/webhooks-methods": "^5.1.1",
     "@octokit/webhooks-types": "^7.6.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.60.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.202.0",
+    "@opentelemetry/resources": "^2.0.1",
+    "@opentelemetry/sdk-node": "^0.202.0",
+    "@opentelemetry/sdk-trace-base": "^2.0.1",
+    "@opentelemetry/semantic-conventions": "^1.34.0",
+    "@origan/nats": "workspace:*",
     "dockerode": "^4.0.6",
     "dotenv": "^16.5.0",
-    "@origan/nats": "workspace:*",
     "drizzle-kit": "0.31.1",
     "drizzle-orm": "0.43.1",
     "hono": "4.7.7",
@@ -57,7 +64,11 @@
     "esbuild": "^0.20.2",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "ws": "^8.18.2"
   },
-  "packageManager": "pnpm@10.8.0"
+  "packageManager": "pnpm@10.8.0",
+  "peerDependencies": {
+    "ws": "*"
+  }
 }
