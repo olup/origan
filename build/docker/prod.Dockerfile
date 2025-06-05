@@ -48,7 +48,7 @@ ENTRYPOINT [ "node", "dist/index.js" ]
 
 FROM nginx:alpine AS admin-panel
 COPY --from=build /app/packages/admin-panel/dist /usr/share/nginx/html
-COPY ./dockerfiles/nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./build/docker/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 

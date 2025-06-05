@@ -15,7 +15,7 @@ export function deployAdminPanel({
   const image = dockerImageWithTag(adminNamespace("admin-panel-image"), {
     build: {
       context: "../",
-      dockerfile: "../dockerfiles/prod.Dockerfile",
+      dockerfile: "../build/docker/prod.Dockerfile",
       target: "admin-panel",
       platform: "linux/amd64",
     },

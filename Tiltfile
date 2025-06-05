@@ -1,51 +1,52 @@
 docker_compose("docker-compose.yml")
 docker_prune_settings()
 
-
-# General dev docker image
+# Base image with pnpm already installed
 docker_build(
-    "origan-dev",
-    context=".",
-    dockerfile="dockerfiles/dev.Dockerfile",
-    ignore=["_tmp_*"],
-    live_update=[
-        sync("./packages", "/app/packages"),
-        sync("./shared", "/app/shared"),
-        run("pnpm install", trigger=["package.json", "pnpm-lock.yaml"]),
-        run("pnpm run db:migrate", trigger=["packages/control-api/drizzle"]),
-    ],
+    "origan-node-base",
+    context="build/docker",
+    dockerfile="build/docker/dev.base.Dockerfile",
 )
 
+# Image with most of the dependencies fetched into the store
+# This is mostly to avoid refetching all the dependencies between services,
+# even though they're the same.
 docker_build(
-    "origan-runner",
+    "origan-workspace",
     context=".",
-    dockerfile="dockerfiles/runner.Dockerfile",
-    ignore=["_tmp_*"],
-    live_update=[
-        sync("./packages", "/app/packages"),
-        sync("./shared", "/app/shared"),
-        run("pnpm install", trigger=["package.json", "pnpm-lock.yaml"]),
+    only=[
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "packages/control-api/package.json",
+        "shared/nats/package.json",
     ],
+    dockerfile="build/docker/dev.workspace.Dockerfile",
 )
 
-local_resource(
-    "cli",
-    cmd="cd packages/cli && pnpm build",
-    deps="packages/cli",
-    ignore=["packages/cli/dist"],
-    labels=["1-main"],
-)
 
-local_resource(
-    "origan-build-runner",
-    "docker build --target build-runner -f dockerfiles/prod.Dockerfile -t origan-build-runner .",
-    deps=["packages/build-runner"],
-    labels=["1-main"],
-)
+def build_with_reload(name):
+    live_update = [
+        sync("./packages/{}".format(name), "/app/"),
+    ]
+    if os.path.exists("./packages/{}/package.json".format(name)):
+        live_update.append(
+            run("pnpm install", trigger=["package.json", "pnpm-lock.yaml"])
+        )
 
-dc_resource("control-api", labels=["1-main"])
-dc_resource("gateway", labels=["1-main"])
-dc_resource("admin-panel", labels=["1-main"])
+    return docker_build(
+        "origan-{}".format(name),
+        context=".",
+        dockerfile="build/docker/dev.{}.Dockerfile".format(name),
+        live_update=live_update,
+    )
+
+
+services = ["control-api", "admin-panel", "gateway", "runner"]
+
+
+for service in services:
+    build_with_reload(service)
+    dc_resource(service, labels=["1-main"])
 
 dc_resource("runner", labels=["1-main"])
 
@@ -53,3 +54,20 @@ dc_resource("db", labels=["2-external"])
 dc_resource("nats", labels=["2-external"])
 dc_resource("minio", labels=["2-external"])
 dc_resource("smee", labels=["2-external"])
+
+local_resource(
+    "cli",
+    cmd="cd packages/cli && pnpm build",
+    deps="packages/cli",
+    ignore=["packages/cli/dist"],
+    labels=["1-main"],
+    allow_parallelism=True,
+)
+
+local_resource(
+    "origan-build-runner",
+    "docker build --target build-runner -t origan-build-runner -f ./build/docker/prod.Dockerfile .",
+    deps=["packages/build-runner"],
+    labels=["1-main"],
+    allow_parallelism=True,
+)

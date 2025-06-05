@@ -20,7 +20,7 @@ export function deployGateway({
   const image = dockerImageWithTag(gan("image"), {
     build: {
       context: "../",
-      dockerfile: "../dockerfiles/prod.Dockerfile",
+      dockerfile: "../build/docker/prod.Dockerfile",
       platform: "linux/amd64",
       target: "gateway",
     },
