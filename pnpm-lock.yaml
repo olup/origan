@@ -177,6 +177,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@origan/control-api':
+        specifier: workspace:^
+        version: file:packages/control-api(@opentelemetry/api@1.9.0)(@types/pg@8.11.13)(gel@2.1.0)
       '@types/form-data':
         specifier: ^2.5.2
         version: 2.5.2

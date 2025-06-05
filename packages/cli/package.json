@@ -36,6 +36,7 @@
   "license": "MIT",
   "dependencies": {
     "@types/form-data": "^2.5.2",
+    "@origan/control-api": "workspace:^",
     "archiver": "^7.0.1",
     "clipanion": "4.0.0-rc.4",
     "commander": "^11.1.0",

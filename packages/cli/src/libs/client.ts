@@ -1,5 +1,5 @@
+import type { ApiType } from "@origan/control-api/routers";
 import { hc } from "hono/client";
-import type { ApiType } from "../../../control-api/src/routers/index.js";
 import { config } from "../config.js";
 
 import { getAccessToken } from "../services/auth.service.js";
