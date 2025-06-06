@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.787.0",
+    "@types/pg": "^8.15.4",
     "@hono/node-server": "^1.14.1",
     "@hono/otel": "^0.2.0",
     "@hono/zod-validator": "^0.4.3",
@@ -59,7 +60,6 @@
     "@types/dockerode": "^3.3.38",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20.17.30",
-    "@types/pg": "^8.11.13",
     "@types/unzipper": "^0.10.11",
     "esbuild": "^0.20.2",
     "ts-node-dev": "^2.0.0",
@@ -67,7 +67,6 @@
     "typescript": "^5.8.3",
     "ws": "^8.18.2"
   },
-  "packageManager": "pnpm@10.8.0",
   "peerDependencies": {
     "ws": "*"
   }
