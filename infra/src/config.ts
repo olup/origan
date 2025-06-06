@@ -8,9 +8,17 @@ const GithubConfig = z.object({
   appId: z.string(),
   appPrivateKeyBase64: z.string(),
 });
+
+const AxiomConfig = z.object({
+  token: z.string(),
+  dataset: z.string(),
+});
+
 const Config = z.object({
   github: GithubConfig,
+  axiom: AxiomConfig,
 });
+
 type Config = z.infer<typeof Config>;
 
 export function parseConfig(): Config {
