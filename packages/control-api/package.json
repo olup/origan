@@ -30,7 +30,7 @@
     "@aws-sdk/client-s3": "^3.787.0",
     "@types/pg": "^8.15.4",
     "@hono/node-server": "^1.14.1",
-    "@hono/otel": "^0.2.0",
+    "@hono/otel": "^0.2.1",
     "@hono/zod-validator": "^0.4.3",
     "@kubernetes/client-node": "^1.2.0",
     "@octokit/app": "^15.1.6",
