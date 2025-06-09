@@ -15,6 +15,7 @@ import {
 import { auth } from "../middleware/auth.js";
 import { type jwtPayloadSchema, oauthStateSchema } from "../schemas/auth.js";
 import type { GitHubTokenResponse, GitHubUser } from "../types/github.js";
+import { Env } from "../instrumentation.js";
 
 // Token expiry times
 const ACCESS_TOKEN_EXPIRY = "15m"; // 15 minutes
@@ -56,7 +57,7 @@ type AuthSessionStatusResponse =
       tokens: { accessToken: string; refreshToken: string };
     };
 
-export const authRouter = new Hono()
+export const authRouter = new Hono<Env>()
   // Start GitHub OAuth flow
   .get(
     "/login",
@@ -231,7 +232,7 @@ export const authRouter = new Hono()
       // TODO - handle callback for web login
       throw new Error("Only CLI login is supported at the moment.");
     } catch (error) {
-      console.error("Error during GitHub OAuth callback:", error);
+      c.var.log.withError(error).error("Error during GitHub OAuth callback");
       // TODO: Consider more specific error handling based on error type
       return c.json(
         { error: "Internal server error during authentication." },

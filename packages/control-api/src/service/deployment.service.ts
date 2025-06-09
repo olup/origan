@@ -17,6 +17,7 @@ import {
   deploymentConfigSchema,
 } from "../schemas/deploy.js";
 import { generateReference } from "../utils/reference.js";
+import { log } from "../instrumentation.js";
 
 // Custom Error Types
 export class BundleProcessingError extends Error {
@@ -80,28 +81,28 @@ function getContentType(filename: string): string {
  */
 async function processBundle(bundle: File): Promise<string> {
   try {
-    console.log("Starting bundle processing...");
-    console.log("Converting bundle to array buffer...");
+    log.info("Starting bundle processing...");
+    log.info("Converting bundle to array buffer...");
     const arrayBuffer = await bundle.arrayBuffer();
-    console.log(`Array buffer size: ${arrayBuffer.byteLength} bytes`);
+    log.info(`Array buffer size: ${arrayBuffer.byteLength} bytes`);
 
-    console.log("Setting up streams...");
+    log.info("Setting up streams...");
     const extractedPath = join(process.cwd(), "tmp", "extract");
-    console.log(`Creating extraction directory: ${extractedPath}`);
+    log.info(`Creating extraction directory: ${extractedPath}`);
     await mkdir(extractedPath, { recursive: true });
 
-    console.log("Starting zip extraction...");
+    log.info("Starting zip extraction...");
     const extractStream = unzipper.Extract({ path: extractedPath });
 
     // Add event listeners to debug extraction
     extractStream.on("entry", (entry) => {
-      console.log(`Extracting: ${entry.path}`);
+      log.info(`Extracting: ${entry.path}`);
     });
     extractStream.on("error", (err) => {
-      console.error("Extraction error:", err);
+      log.withError(err).error("Extraction error");
     });
     extractStream.on("close", () => {
-      console.log("Extraction stream closed");
+      log.info("Extraction stream closed");
     });
 
     // Create a readable stream from the buffer and pipe it to the extract stream
@@ -110,11 +111,11 @@ async function processBundle(bundle: File): Promise<string> {
 
       bufferStream.pipe(extractStream).on("close", resolve).on("error", reject);
     });
-    console.log("Zip extraction completed");
+    log.info("Zip extraction completed");
 
     return extractedPath;
   } catch (error) {
-    console.error("Error processing bundle:", error);
+    log.withError(error).error("Error processing bundle");
     throw new BundleProcessingError(
       `Failed to process bundle: ${
         error instanceof Error ? error.message : String(error)
@@ -149,7 +150,7 @@ async function uploadToS3(
 
       try {
         await putObject(bucketName, key, fileContent, getContentType(entry));
-        console.log(`Uploaded: ${entry}`);
+        log.info(`Uploaded: ${entry}`);
       } catch (error) {
         throw new S3UploadError(
           `Failed to upload ${entry}: ${
@@ -174,7 +175,7 @@ export async function deploy({
   config,
   bucketName = process.env.BUCKET_NAME || "deployment-bucket",
 }: DeployParams): Promise<DeploymentResult> {
-  console.log("Starting deployment...");
+  log.info("Starting deployment...");
 
   // Validate config
   const result = deploymentConfigSchema.safeParse(config);
@@ -193,7 +194,7 @@ export async function deploy({
     throw new ProjectNotFoundError(`Project ${projectRef} not found`);
   }
 
-  console.log("Creating deployment record...");
+  log.info("Creating deployment record...");
 
   const deployment = await createDeployment({
     projectId: project.id,
@@ -206,25 +207,25 @@ export async function deploy({
 
   let extractedPath: string | undefined;
   try {
-    console.log("Processing bundle...");
+    log.info("Processing bundle...");
 
     // Process bundle and upload to S3
     extractedPath = await processBundle(bundle);
 
-    console.log("Bundle processed");
-    console.log("Uploading files to bucket...");
+    log.info("Bundle processed");
+    log.info("Uploading files to bucket...");
 
     await uploadToS3(extractedPath, deployment.id, bucketName);
 
-    console.log("Files uploaded");
+    log.info("Files uploaded");
   } catch (error) {
     // Clean up extracted files if they exist
     if (extractedPath) {
       try {
         await rm(extractedPath, { recursive: true, force: true });
-        console.log("Cleaned up temporary files after error");
+        log.info("Cleaned up temporary files after error");
       } catch (cleanupError) {
-        console.error("Failed to clean up after error:", cleanupError);
+        log.withError(cleanupError).error("Failed to clean up after error");
       }
     }
     throw error;
@@ -246,7 +247,7 @@ export async function deploy({
       },
     });
 
-  console.log("Database records created");
+  log.info("Database records created");
 
   return {
     projectRef,

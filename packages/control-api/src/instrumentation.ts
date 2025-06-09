@@ -1,3 +1,4 @@
+import { openTelemetryPlugin } from "@loglayer/plugin-opentelemetry";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
 import { resourceFromAttributes } from "@opentelemetry/resources";
@@ -5,8 +6,48 @@ import { resourceFromAttributes } from "@opentelemetry/resources";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
+import { createMiddleware } from "hono/factory";
+import { LogLayer, type ILogLayer } from "loglayer";
+import { PinoTransport } from "@loglayer/transport-pino";
+import { pino } from "pino";
 
 import { env } from "./config.js";
+
+const transport = new PinoTransport({
+  logger: pino(
+    env.APP_ENV === "development"
+      ? {
+          transport: {
+            target: "pino-pretty",
+            options: {
+              colorize: true,
+              ignore: "pid,hostname",
+            },
+          },
+        }
+      : {},
+  ),
+});
+
+export function getLogger() {
+  return new LogLayer({
+    transport,
+    plugins: [openTelemetryPlugin()],
+  });
+}
+
+export const log = getLogger();
+
+export type Env = {
+  Variables: {
+    log: ILogLayer;
+  };
+};
+
+export const loggerMiddleware = createMiddleware<Env>(async (c, next) => {
+  c.set("log", getLogger().withContext({ reqId: c.var.requestId }));
+  await next();
+});
 
 function startSdk(conf: { token: string; dataset: string }) {
   // Initialize OTLP trace exporter with the endpoint URL and headers

@@ -1,6 +1,7 @@
 import * as k8s from "@kubernetes/client-node";
 import Dockerode from "dockerode";
 import { env } from "../config.js";
+import { log } from "../instrumentation.js";
 
 export type TaskStatus = "started" | "completed" | "failed";
 
@@ -58,15 +59,13 @@ export class DockerTaskRunner implements TaskRunner {
 
     const containerId = `${namePrefix}-${taskId}`;
 
-    console.log(
-      `[Docker Task - ${taskId}] Starting task with image ${imageName}`,
-    );
+    log.info(`[Docker Task - ${taskId}] Starting task with image ${imageName}`);
 
     const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
     let timeoutHandle: NodeJS.Timeout | null = null;
 
     try {
-      console.log(
+      log.info(
         `[Docker Task - ${taskId}] Creating container ${containerId} with image ${imageName}`,
       );
 
@@ -124,7 +123,7 @@ export class DockerTaskRunner implements TaskRunner {
 
       await container.start();
 
-      console.log(
+      log.info(
         `[Docker Task - ${taskId}] Container ${containerId} (ID: ${container.id}) started.`,
       );
 
@@ -132,15 +131,16 @@ export class DockerTaskRunner implements TaskRunner {
       if (resources?.timeoutSeconds && resources.timeoutSeconds > 0) {
         timeoutHandle = setTimeout(async () => {
           try {
-            console.log(
+            log.info(
               `[Docker Task - ${taskId}] Task exceeded timeout of ${resources.timeoutSeconds}s, stopping container.`,
             );
             await container.stop();
           } catch (error) {
-            console.log(
-              `[Docker Task - ${taskId}] Failed to stop container that exceeded timeout:`,
-              error,
-            );
+            log
+              .withError(error)
+              .error(
+                `[Docker Task - ${taskId}] Failed to stop container that exceeded timeout:`,
+              );
           }
         }, resources.timeoutSeconds * 1000);
       }
@@ -159,14 +159,14 @@ export class DockerTaskRunner implements TaskRunner {
           timeoutHandle = null;
         }
 
-        console.log(
+        log.info(
           `[Docker Task - ${taskId}] Container ${containerId} exited with status code ${data.StatusCode}.`,
         );
 
         // try {
         //   await container.remove({ force: true });
         // } catch (_error) {
-        //   console.log(
+        //   log.info(
         //     `[Docker Task - ${taskId}] Container already removed or not found`
         //   );
         // }
@@ -185,7 +185,7 @@ export class KubernetesTaskRunner implements TaskRunner {
   async startTask(params: TaskParams): Promise<TaskDetails> {
     const { taskId, imageName, env = {}, namePrefix = "task-runner" } = params;
 
-    console.log(`[K8s Task - ${taskId}] Starting task with image ${imageName}`);
+    log.info(`[K8s Task - ${taskId}] Starting task with image ${imageName}`);
 
     const kc = new k8s.KubeConfig();
     kc.loadFromDefault();
@@ -248,7 +248,7 @@ export class KubernetesTaskRunner implements TaskRunner {
     };
 
     try {
-      console.log(
+      log.info(
         `[K8s Task - ${taskId}] Attempting to create Job: ${jobName} in namespace ${namespace}`,
       );
 
@@ -257,9 +257,7 @@ export class KubernetesTaskRunner implements TaskRunner {
         body: jobManifest,
       });
 
-      console.log(
-        `[K8s Task - ${taskId}] Job ${jobName} created successfully.`,
-      );
+      log.info(`[K8s Task - ${taskId}] Job ${jobName} created successfully.`);
 
       return {
         id: taskId,

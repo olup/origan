@@ -6,6 +6,7 @@ import {
   type Subscription,
 } from "@origan/nats";
 import { eq, sql } from "drizzle-orm";
+import { log } from "../../instrumentation.js";
 import { env } from "../../config.js";
 import { db } from "../../libs/db/index.js";
 import { buildSchema, type buildStatusEnum } from "../../libs/db/schema.js";
@@ -45,7 +46,7 @@ export class BuildEventsDatabaseConsumer {
 
     await this.natsClient.connect();
 
-    console.log("Starting build events consumer");
+    log.info("Starting build events consumer");
 
     this.statusSubscription = await this.natsClient.subscriber.onBuildStatus(
       async (event: BuildEvent) => {
@@ -87,11 +88,9 @@ export class BuildEventsDatabaseConsumer {
 
     try {
       const logs = [...batch.logs];
-      console.log(`Flushing batch of ${logs.length} logs for build ${buildId}`);
+      log.info(`Flushing batch of ${logs.length} logs for build ${buildId}`);
 
       const logsJson = logs.map((log) => JSON.stringify(log));
-
-      console.log({ logsJson });
 
       await db.transaction(async (tx) => {
         const field = await tx
@@ -107,17 +106,19 @@ export class BuildEventsDatabaseConsumer {
           .returning();
 
         if (field.length === 0) {
-          console.error(`No build found with ID ${buildId} for log flush`);
+          log.error(`No build found with ID ${buildId} for log flush`);
         }
 
-        console.log(
+        log.info(
           `Flushed ${logs.length} logs for build ${buildId} to database`,
         );
       });
 
       this.logBatches.delete(buildId);
     } catch (error) {
-      console.error(`Error flushing log batch for build ${buildId}:`, error);
+      log
+        .withError(error)
+        .error(`Error flushing log batch for build ${buildId}`);
     }
   }
 
@@ -135,7 +136,7 @@ export class BuildEventsDatabaseConsumer {
     });
 
     if (buildsToFlush.length > 0) {
-      console.log(`Flushing log batches (${buildsToFlush.length} builds)`);
+      log.info(`Flushing log batches (${buildsToFlush.length} builds)`);
     }
 
     for (const buildId of buildsToFlush) {
@@ -145,7 +146,7 @@ export class BuildEventsDatabaseConsumer {
 
   private async handleBuildStatusEvent(event: BuildEvent): Promise<void> {
     const { buildId, status, message } = event;
-    console.log(`[Build Event Consumer] ${buildId} - ${status}: ${message}`);
+    log.info(`[Build Event Consumer] ${buildId} - ${status}: ${message}`);
 
     try {
       const updateData: Record<string, unknown> = {
@@ -164,12 +165,11 @@ export class BuildEventsDatabaseConsumer {
         .set(updateData)
         .where(eq(buildSchema.id, buildId));
 
-      console.log(`Updated build ${buildId} status to ${status} in database`);
+      log.info(`Updated build ${buildId} status to ${status} in database`);
     } catch (error) {
-      console.error(
-        `Error updating build ${buildId} status in database:`,
-        error,
-      );
+      log
+        .withError(error)
+        .error(`Error updating build ${buildId} status in database`);
     }
   }
 

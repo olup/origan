@@ -8,13 +8,14 @@ import { triggerTask } from "../../utils/task.js";
 import { generateDeployToken, hashToken } from "../../utils/token.js";
 import { generateGitHubInstallationToken } from "../github.service.js";
 import type { BuildLogEntry } from "./types.js";
+import { log } from "../../instrumentation.js";
 
 export async function triggerBuildTask(
   projectId: string,
   branch: string,
   commitSha: string,
 ) {
-  console.log(
+  log.info(
     `Attempting to trigger build task for project ${projectId}, branch ${branch}, commit ${commitSha}`,
   );
 
@@ -27,21 +28,17 @@ export async function triggerBuildTask(
   });
 
   if (!project) {
-    console.error(
-      `BUILD SERVICE: Project not found for project ID ${projectId}.`,
-    );
+    log.error(`BUILD SERVICE: Project not found for project ID ${projectId}.`);
     return { error: "Project not found" };
   }
 
   if (!project.githubConfig) {
-    console.error(
-      `GitHub configuration not found for project ID ${projectId}.`,
-    );
+    log.error(`GitHub configuration not found for project ID ${projectId}.`);
     return { error: "GitHub configuration not found for project" };
   }
 
   if (!project.user?.githubAppInstallationId) {
-    console.error(
+    log.error(
       `GitHub App Installation ID not found for user associated with project ${projectId}.`,
     );
     return { error: "GitHub App Installation ID not found for project user" };
@@ -57,10 +54,9 @@ export async function triggerBuildTask(
       throw new Error("Failed to generate GitHub token, received undefined.");
     }
   } catch (error) {
-    console.error(
-      `Failed to generate GitHub token for project ${projectId}:`,
-      error,
-    );
+    log
+      .withError(error)
+      .error(`Failed to generate GitHub token for project ${projectId}`);
     throw new Error("Failed to generate GitHub token for project user");
   }
 
@@ -81,7 +77,7 @@ export async function triggerBuildTask(
     .returning();
 
   if (!build) {
-    console.error("Failed to create build record");
+    log.error("Failed to create build record");
     throw new Error("Failed to create build record");
   }
 
@@ -119,7 +115,9 @@ export async function triggerBuildTask(
       resources: buildResourceLimits,
     });
   } catch (error) {
-    console.error(`Failed to trigger build task for build ${build.id}:`, error);
+    log
+      .withError(error)
+      .error(`Failed to trigger build task for build ${build.id}`);
     const errorMessage =
       error instanceof Error
         ? error.message
@@ -166,7 +164,7 @@ export async function getBuildByReference(reference: string) {
 
     return build;
   } catch (error) {
-    console.error(`Error fetching build ${reference}:`, error);
+    log.withError(error).error(`Error fetching build ${reference}`);
     throw error;
   }
 }
@@ -219,7 +217,9 @@ export async function getProjectBuilds(reference: string, userId: string) {
       };
     });
   } catch (error) {
-    console.error(`Error fetching builds for project ${reference}:`, error);
+    log
+      .withError(error)
+      .error(`Error fetching builds for project ${reference}`);
     throw error;
   }
 }

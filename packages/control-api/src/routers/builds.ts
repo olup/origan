@@ -9,6 +9,7 @@ import {
   getBuildByReference,
   getProjectBuilds,
 } from "../service/build/index.js";
+import { log } from "../instrumentation.js";
 
 export const buildsRouter = new Hono()
   .post(
@@ -27,7 +28,7 @@ export const buildsRouter = new Hono()
         await deployBuild(buildId, artifact, config, token);
         return c.json({ success: true });
       } catch (error) {
-        console.error(`Error deploying build ${buildId}:`, error);
+        log.withError(error).error(`Error deploying build ${buildId}`);
         throw new HTTPException(500, {
           message: "Failed to process build artifact",
         });
@@ -79,7 +80,7 @@ export const buildsRouter = new Hono()
           },
         });
       } catch (error) {
-        console.error(`Error fetching build ${reference}:`, error);
+        log.withError(error).error(`Error fetching build ${reference}`);
         if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, {
           message: "Failed to retrieve build.",
@@ -117,10 +118,9 @@ export const buildsRouter = new Hono()
           })),
         );
       } catch (error) {
-        console.error(
-          `Error fetching builds for project ${projectReference}:`,
-          error,
-        );
+        log
+          .withError(error)
+          .error(`Error fetching builds for project ${projectReference}`);
         throw new HTTPException(500, {
           message: "Failed to retrieve builds.",
         });

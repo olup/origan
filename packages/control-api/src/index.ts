@@ -1,10 +1,10 @@
-import "./instrumentation.js";
+import { log } from "./instrumentation.js";
 import { serve } from "@hono/node-server";
 import api from "./routers/index.js";
 import { startBuildEventsConsumer } from "./service/build/index.js";
 
 const port = Number.parseInt(process.env.PORT ?? "9999");
-console.log(`Starting API server on port ${port}`);
+log.info(`Starting API server on port ${port}`);
 
 // Start listening to build events
 await startBuildEventsConsumer({
@@ -12,7 +12,7 @@ await startBuildEventsConsumer({
   flushIntervalMs: 1000, // Flush after this much time (5 seconds)
 });
 
-console.log("Build events consumer started");
+log.info("Build events consumer started");
 
 serve({
   fetch: api.fetch,

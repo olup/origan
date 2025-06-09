@@ -1,6 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
+import { log } from "../instrumentation.js";
 import { auth } from "../middleware/auth.js";
 import {
   projectCreateSchema,
@@ -95,7 +96,9 @@ export const projectsRouter = new Hono()
       });
       return c.json(project, 201);
     } catch (error) {
-      console.error("Error creating project:", error);
+      log
+        .withError(error)
+        .error("Error creating project");
       const errorResponse = {
         error: "Failed to create project",
         details: error instanceof Error ? error.message : String(error),

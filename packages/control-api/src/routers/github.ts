@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
+import { log } from "../instrumentation.js";
 import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
 import { userSchema } from "../libs/db/schema.js";
@@ -53,17 +54,19 @@ export const githubRouter = new Hono()
 
       const isValid = await verify(env.GITHUB_WEBHOOK_SECRET, body, signature);
       if (!isValid) {
-        console.warn("Invalid webhook signature received.");
+        log.warn("Invalid webhook signature received.");
         throw new HTTPException(401, { message: "Invalid signature" });
       }
 
-      console.log(`Received GitHub event: ${event} (Delivery: ${delivery})`);
+      log.info(`Received GitHub event: ${event} (Delivery: ${delivery})`);
 
       let payload: unknown;
       try {
         payload = JSON.parse(body);
       } catch (error) {
-        console.error("Failed to parse webhook payload:", error);
+        log
+          .withError(error)
+          .error("Failed to parse webhook payload");
         throw new HTTPException(400, { message: "Invalid JSON payload" });
       }
 
@@ -87,19 +90,21 @@ export const githubRouter = new Hono()
                 installationEventPayload.installation.account.id.toString(),
             });
           } else {
-            console.log(
+            log.info(
               `Unhandled installation action: ${installationEventPayload.action}`,
             );
           }
         } catch (error) {
-          console.error("Error handling installation event:", error);
+          log
+            .withError(error)
+            .error("Error handling installation event");
           throw new HTTPException(500, { message: "Internal server error" });
         }
       } else if (event === "push") {
         const pushEventPayload = PushEventPayloadSchema.parse(payload);
 
         if (!pushEventPayload.head_commit?.id) {
-          console.log("Push event without head_commit, skipping.");
+          log.info("Push event without head_commit, skipping.");
           return c.json({ received: true });
         }
 
@@ -114,16 +119,20 @@ export const githubRouter = new Hono()
             },
           );
         } catch (error) {
-          console.error("Error handling push event:", error);
+          log
+            .withError(error)
+            .error("Error handling push event");
           throw new HTTPException(500, { message: "Internal server error" });
         }
       } else {
-        console.log(`Received unhandled event type: ${event}`);
+        log.info(`Received unhandled event type: ${event}`);
       }
 
       return c.json({ received: true });
     } catch (error) {
-      console.error("Error processing GitHub webhook:", error);
+      log
+        .withError(error)
+        .error("Error processing GitHub webhook");
       return c.json({ error: "Internal server error" }, 500);
     }
   })
@@ -140,7 +149,7 @@ export const githubRouter = new Hono()
       });
 
       if (!dbUser || !dbUser.githubAppInstallationId) {
-        console.error(
+        log.error(
           `No GitHub App installation found for user ID: ${userId}`,
         );
         throw new HTTPException(404, {
@@ -161,10 +170,9 @@ export const githubRouter = new Hono()
 
       return c.json(repositories);
     } catch (error) {
-      console.error(
-        `Unexpected error fetching installation repositories for user ${userId}:`,
-        error,
-      );
+      log
+        .withError(error)
+        .error(`Unexpected error fetching installation repositories for user ${userId}`);
 
       if (error instanceof HTTPException) {
         throw error;
@@ -206,10 +214,9 @@ export const githubRouter = new Hono()
 
       return c.json(branches);
     } catch (error) {
-      console.error(
-        `Error fetching branches for repository ${githubRepositoryId} for user ${userId}:`,
-        error,
-      );
+      log
+        .withError(error)
+        .error(`Error fetching branches for repository ${githubRepositoryId} for user ${userId}`);
       if (error instanceof HTTPException) {
         throw error;
       }
