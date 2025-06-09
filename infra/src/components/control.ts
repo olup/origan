@@ -164,6 +164,15 @@ export function deployControl({
                     name: "GITHUB_APP_PRIVATE_KEY_BASE64",
                     value: config.github.appPrivateKeyBase64,
                   },
+                  // Axiom configuration
+                  {
+                    name: "AXIOM_TOKEN",
+                    value: config.axiom.token,
+                  },
+                  {
+                    name: "AXIOM_DATASET",
+                    value: config.axiom.dataset,
+                  },
                   // JWT Configuration
                   {
                     name: "JWT_SECRET",
