@@ -16,9 +16,9 @@
     }
   },
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx src/index.ts",
     "lint": "biome check .",
     "format": "biome format . --write",
     "check": "biome check --write .",

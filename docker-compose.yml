@@ -1,8 +1,8 @@
 services:
   control-api:
-    image: origan-control-api
+    image: origan-dev
     working_dir: /app
-    command: sh -c "pnpm run db:migrate && pnpm run dev"
+    command: sh -c "cd packages/control-api && pnpm run db:migrate && cd ../.. && pnpm turbo watch dev  --env-mode=loose --filter=@origan/control-api"
     ports:
       - "9999:9999"
     environment:
@@ -32,30 +32,27 @@ services:
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
       GITHUB_APP_PRIVATE_KEY_BASE64: ${GITHUB_APP_PRIVATE_KEY_BASE64}
     volumes:
-      - /app/node_modules
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - origan-network
 
   admin-panel:
-    image: origan-admin-panel
-    command: sh -c "pnpm run dev --host 0.0.0.0"
+    image: origan-dev
+    command: sh -c "pnpm turbo watch dev  --env-mode=loose --filter=@origan/control-frontend -- --host 0.0.0.0"
     working_dir: /app
     ports:
       - "5199:5199"
     environment:
       - VITE_APP_ENV=development
       - VITE_API_URL=http://localhost:9999
-    volumes:
-      - /app/node_modules
     depends_on:
       - control-api
     networks:
       - origan-network
 
   gateway:
-    image: origan-gateway
-    command: sh -c "pnpm run dev"
+    image: origan-dev
+    command: sh -c "pnpm turbo watch dev  --env-mode=loose --filter=@origan/gateway"
     working_dir: /app
     environment:
       - ORIGAN_DEPLOY_DOMAIN=localtest.me:7777
@@ -69,20 +66,19 @@ services:
       - HAS_TLS_SERVER=false
       - TLS_CERT_FILE=/app/certs/cert.pem
       - TLS_KEY_FILE=/app/certs/key.pem
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - WATCHPACK_POLLING=true
     ports:
       - "7777:7777"
-    volumes:
-      - /app/node_modules
     networks:
       - origan-network
     depends_on:
       - control-api
-    # extra_hosts:
-    #   - "host.docker.internal:host-gateway"
 
   runner:
     image: origan-runner
-    working_dir: /app
+    working_dir: /app/packages/runner
     environment:
       - BUCKET_URL=http://minio:9000
       - BUCKET_ACCESS_KEY=minioadmin

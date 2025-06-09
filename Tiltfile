@@ -3,49 +3,43 @@ docker_prune_settings()
 
 # Base image with pnpm already installed
 docker_build(
-    "origan-node-base",
-    context="build/docker",
-    dockerfile="build/docker/dev.base.Dockerfile",
-)
-
-# Image with most of the dependencies fetched into the store
-# This is mostly to avoid refetching all the dependencies between services,
-# even though they're the same.
-docker_build(
-    "origan-workspace",
+    "origan-dev",
     context=".",
-    only=[
-        "pnpm-lock.yaml",
-        "pnpm-workspace.yaml",
-        "packages/control-api/package.json",
-        "shared/nats/package.json",
+    dockerfile="build/docker/dev.Dockerfile",
+    live_update=[
+        sync(".", "/app"),
+        run(
+            "cd /app && pnpm install",
+            trigger=[
+                "package.json",
+                "pnpm-lock.yaml",
+                "packages/*/package.json",
+                "shared/*/package.json",
+            ],
+        ),
     ],
-    dockerfile="build/docker/dev.workspace.Dockerfile",
 )
 
-
-def build_with_reload(name):
-    live_update = [
-        sync("./packages/{}".format(name), "/app/"),
-    ]
-    if os.path.exists("./packages/{}/package.json".format(name)):
-        live_update.append(
-            run("pnpm install", trigger=["package.json", "pnpm-lock.yaml"])
-        )
-
-    return docker_build(
-        "origan-{}".format(name),
-        context=".",
-        dockerfile="build/docker/dev.{}.Dockerfile".format(name),
-        live_update=live_update,
-    )
-
+docker_build(
+    "origan-runner",
+    context=".",
+    dockerfile="build/docker/dev.runner.Dockerfile",
+    live_update=[
+        sync(".", "/app"),
+        run(
+            "cd /app && pnpm install",
+            trigger=[
+                "package.json",
+                "pnpm-lock.yaml",
+                "packages/*/package.json",
+                "shared/*/package.json",
+            ],
+        ),
+    ],
+)
 
 services = ["control-api", "admin-panel", "gateway", "runner"]
-
-
 for service in services:
-    build_with_reload(service)
     dc_resource(service, labels=["1-main"])
 
 dc_resource("runner", labels=["1-main"])
@@ -61,13 +55,13 @@ local_resource(
     deps="packages/cli",
     ignore=["packages/cli/dist"],
     labels=["1-main"],
-    allow_parallelism=True,
+    allow_parallel=True,
 )
 
 local_resource(
     "origan-build-runner",
-    "docker build --target build-runner -t origan-build-runner -f ./build/docker/prod.Dockerfile .",
+    "docker build -t origan-build-runner -f ./build/docker/dev.buildRunner.Dockerfile .",
     deps=["packages/build-runner"],
     labels=["1-main"],
-    allow_parallelism=True,
+    allow_parallel=True,
 )

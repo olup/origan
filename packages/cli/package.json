@@ -7,7 +7,6 @@
   "description": "Origan CLI tool for managing your applications",
   "scripts": {
     "build": "tsc -b",
-    "build:watch": "tsc -b --watch",
     "lint": "biome check .",
     "format": "biome format . --write",
     "check": "biome check --write .",

@@ -8,11 +8,47 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "build/**"]
+      "outputs": ["dist/**", ".next/**", "build/**"],
+      "inputs": [
+        "src/**",
+        "package.json",
+        "tsconfig.json",
+        "!dist/**",
+        "!dist",
+        "!**/dist",
+        "!**/dist/**",
+        "!**/build/**",
+        "!**/lib/**",
+        "!**/.next/**",
+        "!**/*.js",
+        "!**/*.d.ts",
+        "!**/*.js.map",
+        "!**/.turbo/**",
+        "!**/node_modules/**"
+      ]
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "interruptible": true,
+      "dependsOn": ["^build"],
+      "inputs": [
+        "src/**",
+        "package.json",
+        "tsconfig.json",
+        "!dist/**",
+        "!dist",
+        "!**/dist",
+        "!**/dist/**",
+        "!**/build/**",
+        "!**/lib/**",
+        "!**/.next/**",
+        "!**/*.js",
+        "!**/*.d.ts",
+        "!**/*.js.map",
+        "!**/.turbo/**",
+        "!**/node_modules/**"
+      ]
     },
     "test": {
       "dependsOn": ["build"],
