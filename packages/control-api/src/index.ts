@@ -1,4 +1,4 @@
-import "./instrumentation";
+import "./instrumentation.js";
 import { serve } from "@hono/node-server";
 import api from "./routers/index.js";
 import { startBuildEventsConsumer } from "./service/build/index.js";
