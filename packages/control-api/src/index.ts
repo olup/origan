@@ -1,7 +1,9 @@
-import { log } from "./instrumentation.js";
 import { serve } from "@hono/node-server";
+import { getLogger } from "./instrumentation.js";
 import api from "./routers/index.js";
 import { startBuildEventsConsumer } from "./service/build/index.js";
+
+const log = getLogger();
 
 const port = Number.parseInt(process.env.PORT ?? "9999");
 log.info(`Starting API server on port ${port}`);

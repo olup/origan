@@ -3,7 +3,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { log } from "../instrumentation.js";
+import { getLogger } from "../instrumentation.js";
 
 const s3Client = new S3Client({
   endpoint: process.env.BUCKET_URL,
@@ -19,6 +19,7 @@ export async function getObjectBuffer(
   Bucket: string,
   Key: string,
 ): Promise<Uint8Array> {
+  const log = getLogger();
   log.info(`Fetching ${Key} from S3 bucket ${Bucket}`);
 
   const getObjectCommand = new GetObjectCommand({ Bucket, Key });
@@ -41,6 +42,7 @@ export const putObject = async (
   Body: Uint8Array,
   ContentType: string,
 ): Promise<void> => {
+  const log = getLogger();
   log.info(`Uploading ${Key} to S3 bucket ${Bucket}`);
 
   const putObjectCommand = new PutObjectCommand({

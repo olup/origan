@@ -5,6 +5,7 @@ import { type SQLWrapper, eq } from "drizzle-orm";
 import { and } from "drizzle-orm";
 import * as unzipper from "unzipper";
 import { env } from "../config.js";
+import { getLogger } from "../instrumentation.js";
 import { db } from "../libs/db/index.js";
 import {
   deploymentSchema,
@@ -17,7 +18,6 @@ import {
   deploymentConfigSchema,
 } from "../schemas/deploy.js";
 import { generateReference } from "../utils/reference.js";
-import { log } from "../instrumentation.js";
 
 // Custom Error Types
 export class BundleProcessingError extends Error {
@@ -80,6 +80,8 @@ function getContentType(filename: string): string {
  * Save and extract the deployment bundle
  */
 async function processBundle(bundle: File): Promise<string> {
+  const log = getLogger();
+
   try {
     log.info("Starting bundle processing...");
     log.info("Converting bundle to array buffer...");
@@ -132,6 +134,8 @@ async function uploadToS3(
   deploymentId: string,
   bucketName: string,
 ): Promise<void> {
+  const log = getLogger();
+
   try {
     // List all entries in the extracted directory
     const entries = await readdir(extractedPath, { recursive: true });
@@ -175,6 +179,8 @@ export async function deploy({
   config,
   bucketName = process.env.BUCKET_NAME || "deployment-bucket",
 }: DeployParams): Promise<DeploymentResult> {
+  const log = getLogger();
+
   log.info("Starting deployment...");
 
   // Validate config

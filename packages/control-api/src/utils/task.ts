@@ -1,7 +1,7 @@
 import * as k8s from "@kubernetes/client-node";
 import Dockerode from "dockerode";
 import { env } from "../config.js";
-import { log } from "../instrumentation.js";
+import { getLogger } from "../instrumentation.js";
 
 export type TaskStatus = "started" | "completed" | "failed";
 
@@ -49,6 +49,8 @@ export interface TaskRunner {
 
 export class DockerTaskRunner implements TaskRunner {
   async startTask(params: TaskParams): Promise<TaskDetails> {
+    const log = getLogger();
+
     const {
       taskId,
       imageName,
@@ -183,6 +185,7 @@ export class DockerTaskRunner implements TaskRunner {
 
 export class KubernetesTaskRunner implements TaskRunner {
   async startTask(params: TaskParams): Promise<TaskDetails> {
+    const log = getLogger();
     const { taskId, imageName, env = {}, namePrefix = "task-runner" } = params;
 
     log.info(`[K8s Task - ${taskId}] Starting task with image ${imageName}`);

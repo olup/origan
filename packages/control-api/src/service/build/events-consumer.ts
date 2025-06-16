@@ -6,8 +6,8 @@ import {
   type Subscription,
 } from "@origan/nats";
 import { eq, sql } from "drizzle-orm";
-import { log } from "../../instrumentation.js";
 import { env } from "../../config.js";
+import { getLogger } from "../../instrumentation.js";
 import { db } from "../../libs/db/index.js";
 import { buildSchema, type buildStatusEnum } from "../../libs/db/schema.js";
 
@@ -40,6 +40,7 @@ export class BuildEventsDatabaseConsumer {
   }
 
   async start() {
+    const log = getLogger();
     if (this.statusSubscription || this.logsSubscription) {
       throw new Error("Consumer already running");
     }
@@ -83,6 +84,7 @@ export class BuildEventsDatabaseConsumer {
   }
 
   private async flushLogBatch(buildId: string) {
+    const log = getLogger();
     const batch = this.logBatches.get(buildId);
     if (!batch || batch.logs.length === 0) return;
 
@@ -123,6 +125,7 @@ export class BuildEventsDatabaseConsumer {
   }
 
   private async flushAllLogBatches() {
+    const log = getLogger();
     const now = Date.now();
     const buildIds = [...this.logBatches.keys()];
 
@@ -145,6 +148,7 @@ export class BuildEventsDatabaseConsumer {
   }
 
   private async handleBuildStatusEvent(event: BuildEvent): Promise<void> {
+    const log = getLogger();
     const { buildId, status, message } = event;
     log.info(`[Build Event Consumer] ${buildId} - ${status}: ${message}`);
 

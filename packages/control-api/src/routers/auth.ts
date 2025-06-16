@@ -6,6 +6,7 @@ import { getCookie, setCookie } from "hono/cookie";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { env } from "../config.js";
+import type { Env } from "../instrumentation.js";
 import { db } from "../libs/db/index.js";
 import {
   authSessionSchema,
@@ -15,7 +16,6 @@ import {
 import { auth } from "../middleware/auth.js";
 import { type jwtPayloadSchema, oauthStateSchema } from "../schemas/auth.js";
 import type { GitHubTokenResponse, GitHubUser } from "../types/github.js";
-import { Env } from "../instrumentation.js";
 
 // Token expiry times
 const ACCESS_TOKEN_EXPIRY = "15m"; // 15 minutes

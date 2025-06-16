@@ -1,4 +1,6 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { openTelemetryPlugin } from "@loglayer/plugin-opentelemetry";
+import { PinoTransport } from "@loglayer/transport-pino";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
 import { resourceFromAttributes } from "@opentelemetry/resources";
@@ -7,8 +9,7 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 import { createMiddleware } from "hono/factory";
-import { LogLayer, type ILogLayer } from "loglayer";
-import { PinoTransport } from "@loglayer/transport-pino";
+import { type ILogLayer, LogLayer } from "loglayer";
 import { pino } from "pino";
 
 import { env } from "./config.js";
@@ -29,14 +30,27 @@ const transport = new PinoTransport({
   ),
 });
 
-export function getLogger() {
+function createLogger() {
   return new LogLayer({
     transport,
     plugins: [openTelemetryPlugin()],
   });
 }
 
-export const log = getLogger();
+const defaultLogger = createLogger();
+
+export const asyncLocalStorage = new AsyncLocalStorage<{ logger: ILogLayer }>();
+
+export function getLogger() {
+  const store = asyncLocalStorage.getStore();
+
+  if (!store) {
+    console.log("Using default loger");
+    return defaultLogger;
+  }
+
+  return store.logger;
+}
 
 export type Env = {
   Variables: {
@@ -45,8 +59,11 @@ export type Env = {
 };
 
 export const loggerMiddleware = createMiddleware<Env>(async (c, next) => {
-  c.set("log", getLogger().withContext({ reqId: c.var.requestId }));
-  await next();
+  const logger = createLogger().withContext({
+    request: { id: c.var.requestId },
+  });
+  c.set("log", logger);
+  return asyncLocalStorage.run({ logger }, next);
 });
 
 function startSdk(conf: { token: string; dataset: string }) {

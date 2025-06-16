@@ -1,5 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { env } from "../../config.js";
+import { getLogger } from "../../instrumentation.js";
 import { db } from "../../libs/db/index.js";
 import { buildSchema, projectSchema } from "../../libs/db/schema.js";
 import { generateReference } from "../../utils/reference.js";
@@ -8,13 +9,13 @@ import { triggerTask } from "../../utils/task.js";
 import { generateDeployToken, hashToken } from "../../utils/token.js";
 import { generateGitHubInstallationToken } from "../github.service.js";
 import type { BuildLogEntry } from "./types.js";
-import { log } from "../../instrumentation.js";
 
 export async function triggerBuildTask(
   projectId: string,
   branch: string,
   commitSha: string,
 ) {
+  const log = getLogger();
   log.info(
     `Attempting to trigger build task for project ${projectId}, branch ${branch}, commit ${commitSha}`,
   );
@@ -150,6 +151,7 @@ export async function triggerBuildTask(
 }
 
 export async function getBuildByReference(reference: string) {
+  const log = getLogger();
   try {
     const build = await db.query.buildSchema.findFirst({
       where: eq(buildSchema.reference, reference),
@@ -170,6 +172,7 @@ export async function getBuildByReference(reference: string) {
 }
 
 export async function getProjectBuilds(reference: string, userId: string) {
+  const log = getLogger();
   try {
     const project = await db.query.projectSchema.findFirst({
       where: eq(projectSchema.reference, reference),

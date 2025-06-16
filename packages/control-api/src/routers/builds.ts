@@ -2,6 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
+import type { Env } from "../instrumentation.js";
 import { auth } from "../middleware/auth.js";
 import { BuildArtifactFormSchema } from "../schemas/build.js";
 import { deployBuild } from "../service/build/deploy.js";
@@ -9,9 +10,8 @@ import {
   getBuildByReference,
   getProjectBuilds,
 } from "../service/build/index.js";
-import { log } from "../instrumentation.js";
 
-export const buildsRouter = new Hono()
+export const buildsRouter = new Hono<Env>()
   .post(
     "/:buildId/deploy",
     zValidator("form", BuildArtifactFormSchema),
@@ -28,7 +28,7 @@ export const buildsRouter = new Hono()
         await deployBuild(buildId, artifact, config, token);
         return c.json({ success: true });
       } catch (error) {
-        log.withError(error).error(`Error deploying build ${buildId}`);
+        c.var.log.withError(error).error(`Error deploying build ${buildId}`);
         throw new HTTPException(500, {
           message: "Failed to process build artifact",
         });
@@ -80,7 +80,7 @@ export const buildsRouter = new Hono()
           },
         });
       } catch (error) {
-        log.withError(error).error(`Error fetching build ${reference}`);
+        c.var.log.withError(error).error(`Error fetching build ${reference}`);
         if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, {
           message: "Failed to retrieve build.",
@@ -118,7 +118,7 @@ export const buildsRouter = new Hono()
           })),
         );
       } catch (error) {
-        log
+        c.var.log
           .withError(error)
           .error(`Error fetching builds for project ${projectReference}`);
         throw new HTTPException(500, {

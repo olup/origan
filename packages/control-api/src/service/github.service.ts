@@ -1,11 +1,11 @@
 import type { App } from "@octokit/app";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 import { eq } from "drizzle-orm";
+import { getLogger } from "../instrumentation.js";
 import { db } from "../libs/db/index.js";
 import { githubConfigSchema, userSchema } from "../libs/db/schema.js";
 import { githubAppInstance } from "../libs/github.js";
 import { triggerBuildTask } from "./build/index.js";
-import { log } from "../instrumentation.js";
 
 // We will use an undocumented BUT solidly production ready endpoint of the gh api. See https://github.com/octokit/octokit.js/issues/163
 // As such we'll transfer the documented endpoint types
@@ -22,6 +22,8 @@ export async function handleInstallationCreated({
   installationId,
   githubAccountId,
 }: HandleInstallationCreatedProps) {
+  const log = getLogger();
+
   try {
     await db
       .update(userSchema)
@@ -47,6 +49,8 @@ type HandleInstallationDeletedProps = {
 export async function handleInstallationDeleted({
   githubAccountId,
 }: HandleInstallationDeletedProps) {
+  const log = getLogger();
+
   try {
     await db
       .update(userSchema)
@@ -67,6 +71,8 @@ export async function getRepoById(
   installationId: number,
   githubRepositoryId: number,
 ): Promise<RepoResponse["data"] | null> {
+  const log = getLogger();
+
   if (!installationId || !githubRepositoryId) {
     throw new Error("Installation ID and Repository ID are required.");
   }
@@ -93,6 +99,8 @@ export async function getRepoBranches(
   installationId: number,
   githubRepositoryId: number,
 ) {
+  const log = getLogger();
+
   try {
     const repo = await getRepoById(installationId, githubRepositoryId);
     if (!repo) {
@@ -147,6 +155,8 @@ export async function handlePushEvent(payload: {
     full_name: string;
   };
 }) {
+  const log = getLogger();
+
   log.info(
     `Handling push event for repository: ${payload.repository.full_name}, ref: ${payload.ref}`,
   );
@@ -208,6 +218,8 @@ export async function generateGitHubInstallationToken(
   installationId: number,
   repositoryId?: number,
 ): Promise<string> {
+  const log = getLogger();
+
   try {
     const octokit =
       await githubAppInstance.getInstallationOctokit(installationId);

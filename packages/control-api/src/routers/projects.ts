@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
-import { log } from "../instrumentation.js";
+import type { Env } from "../instrumentation.js";
 import { auth } from "../middleware/auth.js";
 import {
   projectCreateSchema,
@@ -17,7 +17,7 @@ import {
   updateProject,
 } from "../service/project.service.js";
 
-export const projectsRouter = new Hono()
+export const projectsRouter = new Hono<Env>()
   .get("/", auth(), async (c) => {
     try {
       const userId = c.get("userId");
@@ -96,9 +96,7 @@ export const projectsRouter = new Hono()
       });
       return c.json(project, 201);
     } catch (error) {
-      log
-        .withError(error)
-        .error("Error creating project");
+      c.var.log.withError(error).error("Error creating project");
       const errorResponse = {
         error: "Failed to create project",
         details: error instanceof Error ? error.message : String(error),

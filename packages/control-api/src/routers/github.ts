@@ -4,8 +4,8 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
-import { log } from "../instrumentation.js";
 import { env } from "../config.js";
+import type { Env } from "../instrumentation.js";
 import { db } from "../libs/db/index.js";
 import { userSchema } from "../libs/db/schema.js";
 import { auth } from "../middleware/auth.js";
@@ -40,7 +40,7 @@ const PushEventPayloadSchema = z.object({
     .nullable(),
 });
 
-export const githubRouter = new Hono()
+export const githubRouter = new Hono<Env>()
   .post("/webhook", async (c) => {
     try {
       const signature = c.req.header("x-hub-signature-256");
@@ -54,19 +54,17 @@ export const githubRouter = new Hono()
 
       const isValid = await verify(env.GITHUB_WEBHOOK_SECRET, body, signature);
       if (!isValid) {
-        log.warn("Invalid webhook signature received.");
+        c.var.log.warn("Invalid webhook signature received.");
         throw new HTTPException(401, { message: "Invalid signature" });
       }
 
-      log.info(`Received GitHub event: ${event} (Delivery: ${delivery})`);
+      c.var.log.info(`Received GitHub event: ${event} (Delivery: ${delivery})`);
 
       let payload: unknown;
       try {
         payload = JSON.parse(body);
       } catch (error) {
-        log
-          .withError(error)
-          .error("Failed to parse webhook payload");
+        c.var.log.withError(error).error("Failed to parse webhook payload");
         throw new HTTPException(400, { message: "Invalid JSON payload" });
       }
 
@@ -90,21 +88,19 @@ export const githubRouter = new Hono()
                 installationEventPayload.installation.account.id.toString(),
             });
           } else {
-            log.info(
+            c.var.log.info(
               `Unhandled installation action: ${installationEventPayload.action}`,
             );
           }
         } catch (error) {
-          log
-            .withError(error)
-            .error("Error handling installation event");
+          c.var.log.withError(error).error("Error handling installation event");
           throw new HTTPException(500, { message: "Internal server error" });
         }
       } else if (event === "push") {
         const pushEventPayload = PushEventPayloadSchema.parse(payload);
 
         if (!pushEventPayload.head_commit?.id) {
-          log.info("Push event without head_commit, skipping.");
+          c.var.log.info("Push event without head_commit, skipping.");
           return c.json({ received: true });
         }
 
@@ -119,20 +115,16 @@ export const githubRouter = new Hono()
             },
           );
         } catch (error) {
-          log
-            .withError(error)
-            .error("Error handling push event");
+          c.var.log.withError(error).error("Error handling push event");
           throw new HTTPException(500, { message: "Internal server error" });
         }
       } else {
-        log.info(`Received unhandled event type: ${event}`);
+        c.var.log.info(`Received unhandled event type: ${event}`);
       }
 
       return c.json({ received: true });
     } catch (error) {
-      log
-        .withError(error)
-        .error("Error processing GitHub webhook");
+      c.var.log.withError(error).error("Error processing GitHub webhook");
       return c.json({ error: "Internal server error" }, 500);
     }
   })
@@ -149,7 +141,7 @@ export const githubRouter = new Hono()
       });
 
       if (!dbUser || !dbUser.githubAppInstallationId) {
-        log.error(
+        c.var.log.error(
           `No GitHub App installation found for user ID: ${userId}`,
         );
         throw new HTTPException(404, {
@@ -170,9 +162,11 @@ export const githubRouter = new Hono()
 
       return c.json(repositories);
     } catch (error) {
-      log
+      c.var.log
         .withError(error)
-        .error(`Unexpected error fetching installation repositories for user ${userId}`);
+        .error(
+          `Unexpected error fetching installation repositories for user ${userId}`,
+        );
 
       if (error instanceof HTTPException) {
         throw error;
@@ -214,9 +208,11 @@ export const githubRouter = new Hono()
 
       return c.json(branches);
     } catch (error) {
-      log
+      c.var.log
         .withError(error)
-        .error(`Error fetching branches for repository ${githubRepositoryId} for user ${userId}`);
+        .error(
+          `Error fetching branches for repository ${githubRepositoryId} for user ${userId}`,
+        );
       if (error instanceof HTTPException) {
         throw error;
       }

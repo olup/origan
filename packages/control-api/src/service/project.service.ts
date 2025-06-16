@@ -62,7 +62,7 @@ export async function getProjects(userId: string) {
       githubConfig: true,
     },
   });
-  
+
   return projects;
 }
 

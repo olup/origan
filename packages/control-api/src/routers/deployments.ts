@@ -1,9 +1,8 @@
-import { console } from "node:inspector";
 import { zValidator } from "@hono/zod-validator";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
-import { log } from "../instrumentation.js";
+import type { Env } from "../instrumentation.js";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
 import { auth } from "../middleware/auth.js";
@@ -21,7 +20,7 @@ import {
   getDeployment,
 } from "../service/deployment.service.js";
 
-export const deploymentsRouter = new Hono()
+export const deploymentsRouter = new Hono<Env>()
   .post(
     "/create",
     auth(),
@@ -73,9 +72,7 @@ export const deploymentsRouter = new Hono()
         };
         return c.json(response);
       } catch (error) {
-        log
-          .withError(error)
-          .error("Deployment error");
+        c.var.log.withError(error).error("Deployment error");
 
         if (error instanceof ProjectNotFoundError) {
           return c.json(
