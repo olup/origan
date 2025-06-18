@@ -45,7 +45,6 @@ export function getLogger() {
   const store = asyncLocalStorage.getStore();
 
   if (!store) {
-    console.log("Using default loger");
     return defaultLogger;
   }
 

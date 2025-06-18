@@ -9,6 +9,7 @@ import { deploySharedIngress } from "./components/ingress";
 import { deployKubernetes } from "./components/kubernetes";
 import { deployRegistry } from "./components/registry";
 import { deployRunner } from "./components/runner";
+import { config } from "./config";
 
 export function deployAll() {
   const globals = deployGlobal();
@@ -26,7 +27,7 @@ export function deployAll() {
   const buildRunnerImage = deployBuildRunnerImage(registryDeployment);
 
   // Deploy Kubernetes cluster first
-  const kubernetes = deployKubernetes();
+  const kubernetes = deployKubernetes(config.axiom);
 
   // Deploy admin panel frontend
   const adminPanelResult = deployAdminPanel({

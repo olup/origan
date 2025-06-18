@@ -112,7 +112,7 @@ importers:
         version: 19.1.2(@types/react@19.1.2)
       '@vitejs/plugin-react-swc':
         specifier: ^3.8.0
-        version: 3.9.0(vite@6.3.2(@types/node@22.15.18)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.19.4))
+        version: 3.9.0(vite@6.3.2(@types/node@22.15.18)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.19.4)(yaml@2.8.0))
       postcss:
         specifier: ^8.5.3
         version: 8.5.3
@@ -127,7 +127,7 @@ importers:
         version: 5.7.3
       vite:
         specifier: ^6.2.0
-        version: 6.3.2(@types/node@22.15.18)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.19.4)
+        version: 6.3.2(@types/node@22.15.18)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.19.4)(yaml@2.8.0)
 
   packages/build-runner:
     dependencies:
@@ -309,7 +309,7 @@ importers:
         version: 1.34.0
       '@origan/nats':
         specifier: workspace:*
-        version: file:shared/nats
+        version: link:../../shared/nats
       '@types/pg':
         specifier: ^8.15.4
         version: 8.15.4
@@ -6126,6 +6126,11 @@ packages:
   yallist@4.0.0:
     resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
 
+  yaml@2.8.0:
+    resolution: {integrity: sha512-4lLa/EcQCB0cJkyts+FpIRx5G/llPxfP6VQU5KByHEhLxY3IJCH0f0Hy1MHI8sClTvsIb8qwRJ6R/ZdlDJ/leQ==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yargs-parser@21.1.1:
     resolution: {integrity: sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw==}
     engines: {node: '>=12'}
@@ -9520,10 +9525,10 @@ snapshots:
     dependencies:
       '@types/yargs-parser': 21.0.3
 
-  '@vitejs/plugin-react-swc@3.9.0(vite@6.3.2(@types/node@22.15.18)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.19.4))':
+  '@vitejs/plugin-react-swc@3.9.0(vite@6.3.2(@types/node@22.15.18)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.19.4)(yaml@2.8.0))':
     dependencies:
       '@swc/core': 1.11.21
-      vite: 6.3.2(@types/node@22.15.18)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.19.4)
+      vite: 6.3.2(@types/node@22.15.18)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.19.4)(yaml@2.8.0)
     transitivePeerDependencies:
       - '@swc/helpers'
 
@@ -12323,7 +12328,7 @@ snapshots:
       lightningcss: 1.25.1
       sugarss: 4.0.1(postcss@8.5.3)
 
-  vite@6.3.2(@types/node@22.15.18)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.19.4):
+  vite@6.3.2(@types/node@22.15.18)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.19.4)(yaml@2.8.0):
     dependencies:
       esbuild: 0.25.3
       fdir: 6.4.4(picomatch@4.0.2)
@@ -12337,6 +12342,7 @@ snapshots:
       lightningcss: 1.25.1
       sugarss: 4.0.1(postcss@8.5.3)
       tsx: 4.19.4
+      yaml: 2.8.0
 
   vitest@1.6.1(@types/node@20.17.30)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3)):
     dependencies:
@@ -12429,6 +12435,9 @@ snapshots:
   y18n@5.0.8: {}
 
   yallist@4.0.0: {}
+
+  yaml@2.8.0:
+    optional: true
 
   yargs-parser@21.1.1: {}
 

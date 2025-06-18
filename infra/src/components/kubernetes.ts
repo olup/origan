@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
@@ -8,7 +9,213 @@ const scalewayConfig = new pulumi.Config("scaleway");
 const k = (name: string) => gn(`k8s-${name}`);
 const ks = (name: string) => `g-k8s-${name}`;
 
-export function deployKubernetes() {
+interface AxiomConfig {
+  dataset: string;
+  token: string;
+}
+
+function clusterLogsToAxiom(provider: k8s.Provider, axiom: AxiomConfig) {
+  const vectorSa = new k8s.core.v1.ServiceAccount(
+    k("vector-service-account"),
+    {
+      metadata: {
+        name: "vector",
+        namespace: "kube-system",
+      },
+    },
+    { provider: provider },
+  );
+
+  const vectorRole = new k8s.rbac.v1.ClusterRole(
+    k("vector-cluster-role"),
+    {
+      metadata: {
+        name: "vector",
+      },
+      rules: [
+        {
+          apiGroups: [""],
+          resources: ["pods", "nodes", "namespaces"],
+          verbs: ["get", "list", "watch"],
+        },
+      ],
+    },
+    { provider: provider },
+  );
+
+  new k8s.rbac.v1.ClusterRoleBinding(
+    k("vector-cluster-role-binding"),
+    {
+      metadata: {
+        name: "vector",
+      },
+      subjects: [
+        {
+          kind: vectorSa.kind,
+          name: vectorSa.metadata.name,
+          namespace: vectorSa.metadata.namespace,
+        },
+      ],
+      roleRef: {
+        kind: vectorRole.kind,
+        name: vectorRole.metadata.name,
+        // Remove the `/v1` at the end of the role.
+        apiGroup: vectorRole.apiVersion.apply((v) => v.split("/")[0]),
+      },
+    },
+    { provider: provider },
+  );
+
+  const configmap = new k8s.core.v1.ConfigMap(
+    k("vector-config-map"),
+    {
+      metadata: {
+        name: "vector-config",
+        namespace: "kube-system",
+      },
+      data: {
+        "vector.yml": fs.readFileSync("static/vector.yaml", "utf8").toString(),
+      },
+    },
+    { provider: provider },
+  );
+
+  const tokenSecret = new k8s.core.v1.Secret(
+    k("vector-axiom-token-secret"),
+    {
+      metadata: {
+        name: "axiom-token",
+        namespace: "kube-system",
+      },
+      data: {
+        token: Buffer.from(axiom.token).toString("base64"),
+      },
+      type: "Opaque",
+    },
+    { provider: provider },
+  );
+
+  new k8s.apps.v1.DaemonSet(
+    k("vector-daemon-set"),
+    {
+      metadata: {
+        name: "vector",
+        namespace: "kube-system",
+      },
+      spec: {
+        selector: {
+          matchLabels: {
+            name: "vector",
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              name: "vector",
+            },
+          },
+          spec: {
+            serviceAccountName: vectorSa.metadata.name,
+            containers: [
+              {
+                name: "vector",
+                image: "timberio/vector:0.47.0-debian",
+                args: ["--config-dir", "/etc/vector"],
+                env: [
+                  { name: "AXIOM_HOST", value: "https://api.axiom.co:443" },
+                  { name: "AXIOM_DATASET_NAME", value: axiom.dataset },
+                  {
+                    name: "AXIOM_API_TOKEN",
+                    valueFrom: {
+                      secretKeyRef: {
+                        key: "token",
+                        name: tokenSecret.metadata.name,
+                      },
+                    },
+                  },
+                  {
+                    name: "VECTOR_SELF_NODE_NAME",
+                    valueFrom: {
+                      fieldRef: {
+                        fieldPath: "spec.nodeName",
+                      },
+                    },
+                  },
+                ],
+                volumeMounts: [
+                  {
+                    name: "config",
+                    mountPath: "/etc/vector/vector.yaml",
+                    subPath: "vector-config.yml",
+                  },
+                  { name: "data-dir", mountPath: "/var/lib/vector" },
+                  { name: "var-log", mountPath: "/var/log" },
+                  { name: "var-lib", mountPath: "/var/lib", readOnly: true },
+                ],
+                resources: {
+                  limits: {
+                    memory: "500Mi",
+                  },
+                  requests: {
+                    cpu: "200m",
+                    memory: "100Mi",
+                  },
+                },
+                securityContext: {
+                  runAsUser: 0,
+                },
+                terminationMessagePath: "/dev/termination-log",
+                terminationMessagePolicy: "File",
+              },
+            ],
+            volumes: [
+              {
+                name: "config",
+                configMap: {
+                  name: configmap.metadata.name,
+                  items: [{ key: "vector.yml", path: "vector-config.yml" }],
+                },
+              },
+              {
+                name: "data-dir",
+                hostPath: {
+                  path: "/var/lib/vector",
+                  type: "DirectoryOrCreate",
+                },
+              },
+              {
+                name: "var-log",
+                hostPath: {
+                  path: "/var/log",
+                },
+              },
+              {
+                name: "var-lib",
+                hostPath: {
+                  path: "/var/lib",
+                },
+              },
+            ],
+            dnsPolicy: "ClusterFirst",
+            restartPolicy: "Always",
+            schedulerName: "default-scheduler",
+            securityContext: {},
+            terminationGracePeriodSeconds: 30,
+          },
+        },
+        updateStrategy: {
+          rollingUpdate: {
+            maxUnavailable: 1,
+          },
+          type: "RollingUpdate",
+        },
+      },
+    },
+    // { provider: provider },
+  );
+}
+
+export function deployKubernetes(axiomConfig: AxiomConfig) {
   // Create a private network for the cluster
   const privateNetwork = new scaleway.network.PrivateNetwork(
     k("cluster-network"),
@@ -296,6 +503,8 @@ export function deployKubernetes() {
     },
     { provider: k8sProvider, dependsOn: [buildRunnerRole] },
   );
+
+  clusterLogsToAxiom(k8sProvider, axiomConfig);
 
   // Return the cluster details and configuration
   return {
