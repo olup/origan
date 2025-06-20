@@ -31,6 +31,25 @@ export const projectsRouter = new Hono<Env>()
       return c.json(errorResponse, 500);
     }
   })
+  .post("/", auth(), zValidator("json", projectCreateSchema), async (c) => {
+    const data = c.req.valid("json");
+
+    try {
+      const userId = c.get("userId");
+      const project = await createProject({
+        ...data,
+        userId,
+      });
+      return c.json(project, 201);
+    } catch (error) {
+      c.var.log.withError(error).error("Error creating project");
+      const errorResponse = {
+        error: "Failed to create project",
+        details: error instanceof Error ? error.message : String(error),
+      };
+      return c.json(errorResponse, 500);
+    }
+  })
   .get(
     "/:reference",
     auth(),
@@ -58,25 +77,6 @@ export const projectsRouter = new Hono<Env>()
       }
     },
   )
-  .post("/", auth(), zValidator("json", projectCreateSchema), async (c) => {
-    const data = await c.req.valid("json");
-
-    try {
-      const userId = c.get("userId");
-      const project = await createProject({
-        ...data,
-        userId,
-      });
-      return c.json(project, 201);
-    } catch (error) {
-      c.var.log.withError(error).error("Error creating project");
-      const errorResponse = {
-        error: "Failed to create project",
-        details: error instanceof Error ? error.message : String(error),
-      };
-      return c.json(errorResponse, 500);
-    }
-  })
   .put(
     "/:reference",
     auth(),
@@ -84,7 +84,7 @@ export const projectsRouter = new Hono<Env>()
     zValidator("json", projectUpdateSchema),
     async (c) => {
       const { reference } = c.req.valid("param");
-      const data = await c.req.valid("json");
+      const data = c.req.valid("json");
 
       try {
         const userId = c.get("userId");
