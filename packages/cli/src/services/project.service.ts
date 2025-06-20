@@ -52,9 +52,9 @@ export async function getProjects() {
 export async function getProjectByRef(projectRef: string) {
   try {
     const client = await getAuthenticatedClient();
-    const response = await client.projects["by-ref"][":ref"].$get({
+    const response = await client.projects[":reference"].$get({
       param: {
-        ref: projectRef,
+        reference: projectRef,
       },
     });
 

@@ -58,33 +58,6 @@ export const projectsRouter = new Hono<Env>()
       }
     },
   )
-  .get(
-    "/by-ref/:ref",
-    auth(),
-    zValidator("param", z.object({ ref: z.string() })),
-    async (c) => {
-      const { ref } = c.req.valid("param");
-      const userId = c.get("userId");
-
-      try {
-        const project = await getProject({ reference: ref, userId });
-        if (!project) {
-          const errorResponse: ProjectError = {
-            error: "Project not found",
-            details: `No project found with reference ${ref}`,
-          };
-          return c.json(errorResponse, 404);
-        }
-        return c.json(project);
-      } catch (error) {
-        const errorResponse: ProjectError = {
-          error: "Failed to fetch project",
-          details: error instanceof Error ? error.message : String(error),
-        };
-        return c.json(errorResponse, 500);
-      }
-    },
-  )
   .post("/", auth(), zValidator("json", projectCreateSchema), async (c) => {
     const data = await c.req.valid("json");
 
