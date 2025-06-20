@@ -20,6 +20,7 @@ import { createRouteFromFile } from "../utils/path.js";
 import { uploadFormWithProgress } from "../utils/upload.js";
 import { bundleApiRoute, createDeploymentArchive } from "../utils/zip.js";
 import { getAccessToken } from "./auth.service.js";
+import { getProjectByRef } from "./project.service.js";
 
 interface ConfigJson {
   app: string[];
@@ -117,6 +118,9 @@ export async function deploy(branch = "main"): Promise<void> {
       }
       throw error;
     }
+
+    // Check if project exists. Error is already handled by the function.
+    await getProjectByRef(config.projectRef);
 
     // Create required directories
     const artifactsDir = join(process.cwd(), ".origan", "artifacts");

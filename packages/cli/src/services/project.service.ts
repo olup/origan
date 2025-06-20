@@ -7,7 +7,11 @@ interface ErrorResponse {
   details?: string;
 }
 
-function handleApiError(error: ErrorResponse, status: number): never {
+function handleApiError(
+  error: ErrorResponse,
+  status: number,
+  resourceName?: string | undefined,
+): never {
   // Handle common status codes
   if (status === 401) {
     log.error("Authentication required. Please login first.");
@@ -18,7 +22,7 @@ function handleApiError(error: ErrorResponse, status: number): never {
     process.exit(1);
   }
   if (status === 404) {
-    log.error("Resource not found.");
+    log.error(`${resourceName ?? "Resource"} not found.`);
     process.exit(1);
   }
 
@@ -61,7 +65,7 @@ export async function getProjectByRef(projectRef: string) {
     const data = await response.json();
 
     if ("error" in data) {
-      handleApiError(data, response.status as number);
+      handleApiError(data, response.status as number, "Project");
     }
 
     return data;
