@@ -11,7 +11,7 @@ const productionConfig: Config = {
 };
 const developmentConfig: Config = {
   appEnv: "development",
-  apiUrl: "http://localhost:3000",
+  apiUrl: "http://localhost:9999",
   ghAppName: "OriganEu-local",
 };
 

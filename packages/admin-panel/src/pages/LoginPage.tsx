@@ -1,6 +1,6 @@
 import { Button, Container, Flex } from "@mantine/core";
 import { GithubIcon } from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../contexts/AuthContext";
 
 export function LoginPage() {
   const { doLogin } = useAuth();

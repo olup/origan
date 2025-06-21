@@ -6,6 +6,7 @@ import "@fontsource/fira-code/400.css";
 import "./index.css";
 import "@mantine/core/styles.css";
 import App from "./App";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 const rootElement = document.getElementById("root");
@@ -31,9 +32,11 @@ const mantineTheme = createTheme({
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <MantineProvider theme={mantineTheme}>
-        <App />
-      </MantineProvider>
+      <AuthProvider>
+        <MantineProvider theme={mantineTheme}>
+          <App />
+        </MantineProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 );

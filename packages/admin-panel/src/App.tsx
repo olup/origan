@@ -11,7 +11,7 @@ import {
 import { LogOut, User } from "lucide-react";
 import { Sprout } from "lucide-react";
 import { Route, Router, Switch, useLocation } from "wouter";
-import { useAuth } from "./hooks/useAuth";
+import { useAuth } from "./contexts/AuthContext";
 import { BuildDetailsPage } from "./pages/BuildDetailsPage";
 import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -19,7 +19,7 @@ import { ProjectPage } from "./pages/ProjectPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 
 function App() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, doLogout } = useAuth();
   const [, setLocation] = useLocation();
 
   if (isLoading) return null;
@@ -60,7 +60,7 @@ function App() {
                 <Menu.Item
                   color="red"
                   leftSection={<LogOut size={14} />}
-                  onClick={() => useAuth().doLogout()}
+                  onClick={doLogout}
                 >
                   Logout
                 </Menu.Item>

@@ -17,7 +17,7 @@ import { Link2Icon, RefreshCw, RefreshCwIcon, Settings2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { z } from "zod";
 import { getConfig } from "../config";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../contexts/AuthContext";
 import { useCreateProjectWithGithubConfiguration } from "../hooks/useCreateProjectWithGithubConfiguration";
 import { client } from "../libs/client";
 import { createQueryHelper } from "../utils/honoQuery";
