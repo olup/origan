@@ -4,7 +4,6 @@ import {
   jsonb,
   pgEnum,
   pgTable,
-  serial,
   text,
   timestamp,
   uniqueIndex, // Import uniqueIndex
@@ -59,7 +58,7 @@ export const deploymentSchema = pgTable(
 export const deploymentRelations = relations(
   deploymentSchema,
   ({ many, one }) => ({
-    hosts: many(hostSchema),
+    domains: many(domainSchema),
     project: one(projectSchema, {
       fields: [deploymentSchema.projectId],
       references: [projectSchema.id],
@@ -72,19 +71,24 @@ export const deploymentRelations = relations(
   }),
 );
 
-export const hostSchema = pgTable("host", {
-  id: serial("id").primaryKey(),
+export const domainSchema = pgTable("domain", {
+  id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull().unique(),
-  deploymentId: uuid("deployment_id")
-    .references(() => deploymentSchema.id, { onDelete: "cascade" })
+  deploymentId: uuid("deployment_id").references(() => deploymentSchema.id),
+  projectId: uuid("project_id")
+    .references(() => projectSchema.id, { onDelete: "cascade" })
     .notNull(),
   ...timestamps,
 });
 
-export const hostRelations = relations(hostSchema, ({ one }) => ({
+export const domainRelations = relations(domainSchema, ({ one }) => ({
   deployment: one(deploymentSchema, {
-    fields: [hostSchema.deploymentId],
+    fields: [domainSchema.deploymentId],
     references: [deploymentSchema.id],
+  }),
+  project: one(projectSchema, {
+    fields: [domainSchema.projectId],
+    references: [projectSchema.id],
   }),
 }));
 

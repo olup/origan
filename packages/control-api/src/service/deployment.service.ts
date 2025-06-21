@@ -9,7 +9,7 @@ import { getLogger } from "../instrumentation.js";
 import { db } from "../libs/db/index.js";
 import {
   deploymentSchema,
-  hostSchema,
+  domainSchema,
   projectSchema,
 } from "../libs/db/schema.js";
 import { putObject } from "../libs/s3.js";
@@ -237,17 +237,18 @@ export async function deploy({
     throw error;
   }
 
-  // Create or update host record
+  // Create or update domain record
   const domain = `${deployment.reference}--${project.reference}.`;
 
   await db
-    .insert(hostSchema)
+    .insert(domainSchema)
     .values({
       name: domain,
       deploymentId: deployment.id,
+      projectId: project.id,
     })
     .onConflictDoUpdate({
-      target: hostSchema.name,
+      target: domainSchema.name,
       set: {
         deploymentId: deployment.id,
       },

@@ -40,7 +40,7 @@ export async function getProject(filter: {
     with: {
       deployments: {
         with: {
-          hosts: true,
+          domains: true,
         },
       },
       githubConfig: true,
@@ -56,7 +56,7 @@ export async function getProjects(userId: string) {
     with: {
       deployments: {
         with: {
-          hosts: true,
+          domains: true,
         },
       },
       githubConfig: true,
@@ -88,7 +88,7 @@ export async function updateProject(
 }
 
 export async function deleteProject(id: string, userId: string) {
-  // The cascade delete will handle removing associated deployments and hosts
+  // The cascade delete will handle removing associated deployments and domains
   const [project] = await db
     .delete(schema.projectSchema)
     .where(

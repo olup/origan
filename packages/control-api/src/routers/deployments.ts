@@ -120,15 +120,15 @@ export const deploymentsRouter = new Hono<Env>()
     async (c) => {
       const { domain } = c.req.valid("json");
 
-      // Look up host record by domain
-      const host = await db.query.hostSchema.findFirst({
-        where: eq(schema.hostSchema.name, domain),
+      // Look up domain record by domain
+      const domainRecord = await db.query.domainSchema.findFirst({
+        where: eq(schema.domainSchema.name, domain),
         with: {
           deployment: true,
         },
       });
 
-      if (!host || !host.deployment) {
+      if (!domainRecord || !domainRecord.deployment) {
         const errorResponse = {
           error: "Domain not found",
           details: "The requested domain was not found in the system",
@@ -137,9 +137,9 @@ export const deploymentsRouter = new Hono<Env>()
       }
 
       const response = {
-        config: host.deployment.config,
-        deploymentId: host.deployment.id,
-        projectId: host.deployment.projectId,
+        config: domainRecord.deployment.config,
+        deploymentId: domainRecord.deployment.id,
+        projectId: domainRecord.deployment.projectId,
       };
       return c.json(response);
     },

@@ -3,7 +3,10 @@ import { env } from "../../config.js";
 import { getLogger } from "../../instrumentation.js";
 import { db } from "../../libs/db/index.js";
 import { buildSchema, projectSchema } from "../../libs/db/schema.js";
-import { generateReference } from "../../utils/reference.js";
+import {
+  REFERENCE_PREFIXES,
+  generateReference,
+} from "../../utils/reference.js";
 import type { ResourceLimits } from "../../utils/task.js";
 import { triggerTask } from "../../utils/task.js";
 import { generateDeployToken, hashToken } from "../../utils/token.js";
@@ -61,7 +64,7 @@ export async function triggerBuildTask(
     throw new Error("Failed to generate GitHub token for project user");
   }
 
-  const buildReference = `bld-${generateReference()}`;
+  const buildReference = generateReference(10, REFERENCE_PREFIXES.BUILD);
 
   const deployToken = generateDeployToken();
   const [build] = await db
@@ -192,7 +195,7 @@ export async function getProjectBuilds(reference: string, userId: string) {
         },
         deployment: {
           with: {
-            hosts: {
+            domains: {
               columns: {
                 name: true,
               },
@@ -209,9 +212,9 @@ export async function getProjectBuilds(reference: string, userId: string) {
 
     return builds.map((build) => {
       const protocol = env.APP_ENV === "production" ? "https" : "http";
-      const buildDeploymentHost = build.deployment?.hosts[0]?.name;
-      const buildUrl = buildDeploymentHost
-        ? `${protocol}://${buildDeploymentHost}${env.ORIGAN_DEPLOY_DOMAIN}`
+      const buildDeploymentDomain = build.deployment?.domains[0]?.name;
+      const buildUrl = buildDeploymentDomain
+        ? `${protocol}://${buildDeploymentDomain}${env.ORIGAN_DEPLOY_DOMAIN}`
         : null;
 
       return {

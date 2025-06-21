@@ -121,13 +121,13 @@ class DeploymentsCommand extends Command {
       deployments.map((d) =>
         R.pipe(
           d,
-          R.omit(["hosts"]),
+          R.omit(["domains"]),
           R.merge({
-            hosts: d.hosts.map((h) => h.name).join(", "),
+            domains: d.domains.map((h) => h.name).join(", "),
           }),
         ),
       ),
-      ["reference", "id", "hosts", "createdAt", "updatedAt"],
+      ["reference", "id", "domains", "createdAt", "updatedAt"],
     );
   }
 }

@@ -140,7 +140,7 @@ export const projectsRouter = new Hono<Env>()
     async (_c) => {
       // TODO - Implementation pending
       // Delete each remaining deployment (which involves cleaning the directory in s3)
-      // Delete any remaining host object (which involves cleaning any certificates we might have)
+      // Delete any remaining domain object (which involves cleaning any certificates we might have)
     },
   )
   // GitHub Configuration Endpoints
