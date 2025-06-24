@@ -1,5 +1,5 @@
 {
-  "name": "scaleway-typescript",
+  "name": "@origan/infra",
   "main": "index.ts",
   "devDependencies": {
     "@types/mime-types": "^2.1.4",

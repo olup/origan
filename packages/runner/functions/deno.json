@@ -1,9 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [
-      "deno.ns",
-      "dom"
-    ],
+    "lib": ["deno.ns", "dom"],
     "types": [
       "https://raw.githubusercontent.com/supabase/edge-runtime/refs/heads/develop/types/global.d.ts",
       "./global.d.ts"

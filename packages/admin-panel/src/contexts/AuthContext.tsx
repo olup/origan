@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, createContext, useCallback, useContext } from "react";
+import { createContext, type ReactNode, useCallback, useContext } from "react";
 import { client } from "../libs/client";
 
 interface User {

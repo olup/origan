@@ -3,8 +3,8 @@ import { getConfig } from "./config.js";
 import { executeBuild } from "./utils/build.js";
 import { createDeployment } from "./utils/deploy.js";
 import { execWithLogs } from "./utils/exec.js";
-import { createBuildLogger } from "./utils/logger.js";
 import type { Logger } from "./utils/logger.js";
+import { createBuildLogger } from "./utils/logger.js";
 import { detectPackageManager } from "./utils/package-manager.js";
 
 const config = getConfig();

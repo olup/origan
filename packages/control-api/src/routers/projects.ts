@@ -3,11 +3,11 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { Env } from "../instrumentation.js";
 import { auth } from "../middleware/auth.js";
+import type { ProjectError } from "../schemas/project.js";
 import {
   projectCreateSchema,
   projectUpdateSchema,
 } from "../schemas/project.js";
-import type { ProjectError } from "../schemas/project.js";
 import {
   createProject,
   getProject,

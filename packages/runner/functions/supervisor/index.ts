@@ -1,7 +1,7 @@
-import { GetObjectCommand, S3Client } from "npm:@aws-sdk/client-s3";
-import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
-import { startCleanupInterval } from "./cleanup.ts";
 import { resolve } from "https://deno.land/std/path/mod.ts";
+import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
+import { GetObjectCommand, S3Client } from "npm:@aws-sdk/client-s3";
+import { startCleanupInterval } from "./cleanup.ts";
 
 const envVarsObj = Deno.env.toObject();
 
@@ -76,7 +76,9 @@ serve(async (req: Request) => {
 
   // sha1 of path
   const queryHash = await sha1(functionPath);
-  const workerPath = resolve(`${WORKERS_PATH}/${projectId}/${deploymentId}/${queryHash}`);
+  const workerPath = resolve(
+    `${WORKERS_PATH}/${projectId}/${deploymentId}/${queryHash}`,
+  );
 
   const memoryLimitMb = 150;
   const workerTimeoutMs = 1 * 60 * 1000;

@@ -8,8 +8,7 @@ import {
   Menu,
   Text,
 } from "@mantine/core";
-import { LogOut, User } from "lucide-react";
-import { Sprout } from "lucide-react";
+import { LogOut, Sprout, User } from "lucide-react";
 import { Route, Router, Switch, useLocation } from "wouter";
 import { useAuth } from "./contexts/AuthContext";
 import { BuildDetailsPage } from "./pages/BuildDetailsPage";

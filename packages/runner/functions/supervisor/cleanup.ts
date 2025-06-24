@@ -34,8 +34,8 @@ export async function cleanupStaleWorkers(
             fileFound = true;
 
             // Check if file is stale
-            const lastAccessed = stat.atime?.getTime() ??
-              stat.mtime?.getTime() ?? now;
+            const lastAccessed =
+              stat.atime?.getTime() ?? stat.mtime?.getTime() ?? now;
             const fileAge = now - lastAccessed;
 
             if (fileAge > maxAgeMs) {

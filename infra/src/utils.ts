@@ -11,8 +11,9 @@ export const adminNamespace = (name: string) => `admin-${name}-${stack}`;
 export function objectWithoutUndefined<O extends Record<string, unknown>>(
   obj: O,
 ): { [K in keyof O as undefined extends O[K] ? never : K]: O[K] } {
-  // biome-ignore lint/complexity/noForEach:
-  Object.keys(obj).forEach((key) => obj[key] === undefined && delete obj[key]);
+  Object.keys(obj).forEach((key) => {
+    obj[key] === undefined && delete obj[key];
+  });
   return obj;
 }
 

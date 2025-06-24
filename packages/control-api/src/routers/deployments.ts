@@ -7,17 +7,17 @@ import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
 import { auth } from "../middleware/auth.js";
 import {
-  deployRequestSchema,
   deploymentConfigSchema,
+  deployRequestSchema,
   getConfigRequestSchema,
 } from "../schemas/deploy.js";
 import {
   BundleProcessingError,
+  deploy,
+  getDeployment,
   InvalidConfigError,
   ProjectNotFoundError,
   S3UploadError,
-  deploy,
-  getDeployment,
 } from "../service/deployment.service.js";
 
 export const deploymentsRouter = new Hono<Env>()

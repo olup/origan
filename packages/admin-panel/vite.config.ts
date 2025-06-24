@@ -1,8 +1,8 @@
 import react from "@vitejs/plugin-react-swc";
-import { type ServerOptions, defineConfig } from "vite";
+import { defineConfig, type ServerOptions } from "vite";
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
   const server: ServerOptions = {
     port: 5199,
   };

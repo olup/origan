@@ -1,7 +1,7 @@
 import {
+  createServer,
   type IncomingMessage,
   type ServerResponse,
-  createServer,
 } from "node:http";
 import { envConfig } from "./config/index.js";
 import { handleAcmeChallenge } from "./handlers/acme.js";

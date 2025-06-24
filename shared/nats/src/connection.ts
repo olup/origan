@@ -1,10 +1,13 @@
-import { DiscardPolicy, StorageType } from "@nats-io/jetstream";
-import { jetstreamManager } from "@nats-io/jetstream";
 import type { JetStreamClient } from "@nats-io/jetstream";
 import {
+  DiscardPolicy,
+  jetstreamManager,
+  StorageType,
+} from "@nats-io/jetstream";
+import {
   type ConnectionOptions,
-  type NatsConnection,
   credsAuthenticator,
+  type NatsConnection,
 } from "@nats-io/nats-core";
 import { connect as natsConnect } from "@nats-io/transport-node";
 import { STREAM_NAMES, subjects } from "./subjects";

@@ -1,4 +1,4 @@
-import { type ServerSentEvent, fetchEventData } from "fetch-sse";
+import { fetchEventData, type ServerSentEvent } from "fetch-sse";
 import { z } from "zod";
 import { baseClient } from "../libs/client.js";
 import { getAccessToken } from "./auth.service.js";
