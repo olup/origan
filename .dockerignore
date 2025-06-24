@@ -27,3 +27,5 @@ scripts
 Session.vim
 .aider*
 docker-compose.yml
+
+**/.turbo
