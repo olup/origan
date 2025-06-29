@@ -26,15 +26,6 @@ docker_build(
     dockerfile="build/docker/dev.runner.Dockerfile",
     live_update=[
         sync(".", "/app"),
-        run(
-            "cd /app && pnpm install",
-            trigger=[
-                "package.json",
-                "pnpm-lock.yaml",
-                "packages/*/package.json",
-                "shared/*/package.json",
-            ],
-        ),
     ],
 )
 

@@ -7,6 +7,4 @@ RUN apt-get update && apt-get install -y curl ca-certificates --no-install-recom
         apt-get update && apt-get install -y --no-install-recommends watchexec-cli && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY ./packages/runner .
-
 ENTRYPOINT [ "/usr/bin/watchexec" ]

@@ -29,3 +29,7 @@ Session.vim
 docker-compose.yml
 
 **/.turbo
+
+**/.ruff_cache
+
+**/.origan

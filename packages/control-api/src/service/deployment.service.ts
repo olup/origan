@@ -1,7 +1,8 @@
-import { mkdir, readdir, readFile, rm, stat } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { and, desc, eq, type SQLWrapper } from "drizzle-orm";
+import * as tmp from "tmp-promise";
 import * as unzipper from "unzipper";
 import { env } from "../config.js";
 import { getLogger } from "../instrumentation.js";
@@ -48,7 +49,6 @@ export class ProjectNotFoundError extends Error {
 export interface DeploymentResult {
   projectRef: string;
   deploymentId: string;
-  path: string;
   urls: string[];
 }
 
@@ -76,7 +76,7 @@ function getContentType(filename: string): string {
 /**
  * Save and extract the deployment bundle
  */
-async function processBundle(bundle: File): Promise<string> {
+async function processBundle(tmpDir: string, bundle: File) {
   const log = getLogger();
 
   try {
@@ -85,14 +85,10 @@ async function processBundle(bundle: File): Promise<string> {
     const arrayBuffer = await bundle.arrayBuffer();
     log.info(`Array buffer size: ${arrayBuffer.byteLength} bytes`);
 
-    log.info("Setting up streams...");
-    const extractedPath = join(process.cwd(), "tmp", "extract");
-    log.info(`Creating extraction directory: ${extractedPath}`);
-    await mkdir(extractedPath, { recursive: true });
-
     log.info("Starting zip extraction...");
-    const extractStream = unzipper.Extract({ path: extractedPath });
+    const extractStream = unzipper.Extract({ path: tmpDir });
 
+    log.info("Setting up streams...");
     // Add event listeners to debug extraction
     extractStream.on("entry", (entry) => {
       log.info(`Extracting: ${entry.path}`);
@@ -111,8 +107,6 @@ async function processBundle(bundle: File): Promise<string> {
       bufferStream.pipe(extractStream).on("close", resolve).on("error", reject);
     });
     log.info("Zip extraction completed");
-
-    return extractedPath;
   } catch (error) {
     log.withError(error).error("Error processing bundle");
     throw new BundleProcessingError(
@@ -133,36 +127,31 @@ async function uploadToS3(
 ): Promise<void> {
   const log = getLogger();
 
-  try {
-    // List all entries in the extracted directory
-    const entries = await readdir(extractedPath, { recursive: true });
+  // List all entries in the extracted directory
+  const entries = await readdir(extractedPath, { recursive: true });
 
-    // Upload each file (skip directories)
-    for (const entry of entries) {
-      const entryPath = join(extractedPath, entry);
+  // Upload each file (skip directories)
+  for (const entry of entries) {
+    const entryPath = join(extractedPath, entry);
 
-      // Check if entry is a file
-      const stats = await stat(entryPath);
-      if (!stats.isFile()) continue;
+    // Check if entry is a file
+    const stats = await stat(entryPath);
+    if (!stats.isFile()) continue;
 
-      // Read and upload file
-      const fileContent = await readFile(entryPath);
-      const key = `deployments/${deploymentId}/${entry}`;
+    // Read and upload file
+    const fileContent = await readFile(entryPath);
+    const key = `deployments/${deploymentId}/${entry}`;
 
-      try {
-        await putObject(bucketName, key, fileContent, getContentType(entry));
-        log.info(`Uploaded: ${entry}`);
-      } catch (error) {
-        throw new S3UploadError(
-          `Failed to upload ${entry}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
-      }
+    try {
+      await putObject(bucketName, key, fileContent, getContentType(entry));
+      log.info(`Uploaded: ${entry}`);
+    } catch (error) {
+      throw new S3UploadError(
+        `Failed to upload ${entry}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
-  } finally {
-    // Clean up temp directory
-    await rm(extractedPath, { recursive: true, force: true });
   }
 }
 
@@ -251,17 +240,6 @@ export async function operateDeployment({
     );
   }
 
-  // Update deployment with config and status
-  await db
-    .update(deploymentSchema)
-    .set({ config: result.data, status: "deploying" })
-    .where(eq(deploymentSchema.id, deploymentId));
-
-  const deployment = await getDeployment({ id: deploymentId });
-  if (!deployment) {
-    throw new Error("Deployment not found");
-  }
-
   const project = await db.query.projectSchema.findFirst({
     where: and(eq(projectSchema.reference, projectRef)),
   });
@@ -270,22 +248,36 @@ export async function operateDeployment({
     throw new ProjectNotFoundError(`Project ${projectRef} not found`);
   }
 
-  let extractedPath: string | undefined;
+  const deployment = await getDeployment({ id: deploymentId });
+  if (!deployment) {
+    throw new Error("Deployment not found");
+  }
+
+  // Update deployment with config and status
+  await db
+    .update(deploymentSchema)
+    .set({ config: result.data, status: "deploying" })
+    .where(eq(deploymentSchema.id, deploymentId));
+
+  log.info("Processing bundle...");
+
   try {
-    log.info("Processing bundle...");
-
     // Process bundle and upload to S3
-    extractedPath = await processBundle(bundle);
+    await tmp.withDir(
+      async (tmpDir) => {
+        log.withContext({ tmpDir }).info("Using tmp path");
+        await processBundle(tmpDir.path, bundle);
+        log.info("Bundle processed");
+        log.info("Uploading files to bucket...");
 
-    log.info("Bundle processed");
-    log.info("Uploading files to bucket...");
-
-    await uploadToS3(extractedPath, deploymentId, bucketName);
-
-    // update track domains if track was provided
-    if (deployment.trackId) {
-      await updateTrackDomains(deployment.trackId);
-    }
+        await uploadToS3(tmpDir.path, deployment.id, bucketName);
+        // update track domains if track was provided
+        if (deployment.trackId) {
+          await updateTrackDomains(deployment.trackId);
+        }
+      },
+      { unsafeCleanup: true },
+    );
 
     log.info("Files uploaded");
 
@@ -294,48 +286,39 @@ export async function operateDeployment({
       .update(deploymentSchema)
       .set({ status: "success" })
       .where(eq(deploymentSchema.id, deploymentId));
-  } catch (error) {
+
+    // Create or update domain record
+    const domain = `${deployment.reference}--${project.reference}.`;
+
+    await db
+      .insert(domainSchema)
+      .values({
+        name: domain,
+        deploymentId: deployment.id,
+        projectId: project.id,
+      })
+      .onConflictDoUpdate({
+        target: domainSchema.name,
+        set: {
+          deploymentId: deployment.id,
+        },
+      });
+
+    log.info("Database records created");
+    return {
+      projectRef,
+      deploymentId: deployment.id,
+      urls: [`https://${domain}${env.ORIGAN_DEPLOY_DOMAIN}`],
+    };
+  } catch (err) {
     // Set deployment status to error
     await db
       .update(deploymentSchema)
       .set({ status: "error" })
       .where(eq(deploymentSchema.id, deploymentId));
-    // Clean up extracted files if they exist
-    if (extractedPath) {
-      try {
-        await rm(extractedPath, { recursive: true, force: true });
-        log.info("Cleaned up temporary files after error");
-      } catch (cleanupError) {
-        log.withError(cleanupError).error("Failed to clean up after error");
-      }
-    }
-    throw error;
+    log.withError(err).error("woops");
+    throw err;
   }
-
-  // Create or update domain record
-  const domain = `${deployment.reference}--${project.reference}.`;
-
-  await db
-    .insert(domainSchema)
-    .values({
-      name: domain,
-      deploymentId,
-      projectId: project.id,
-    })
-    .onConflictDoUpdate({
-      target: domainSchema.name,
-      set: {
-        deploymentId,
-      },
-    });
-
-  log.info("Database records created");
-
-  return {
-    projectRef,
-    deploymentId,
-    path: extractedPath,
-  };
 }
 
 export async function getDeployment(filter: {

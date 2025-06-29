@@ -3,6 +3,7 @@ packages:
   - packages/**
   - shared/**
   - infra
+  - "!examples"
 
 overrides:
   '@origan/cli': link:packages/cli

@@ -343,6 +343,9 @@ importers:
       pino-pretty:
         specifier: ^13.0.0
         version: 13.0.0
+      tmp-promise:
+        specifier: ^3.0.3
+        version: 3.0.3
       unzipper:
         specifier: ^0.12.3
         version: 0.12.3
@@ -5617,6 +5620,9 @@ packages:
   tinyspy@2.2.1:
     resolution: {integrity: sha512-KYad6Vy5VDWV4GH3fjpseMQ/XU2BhIYP7Vzd0LG44qRWm/Yt2WCOTicFdvmgo6gWaqooMQCawTtILVQJupKu7A==}
     engines: {node: '>=14.0.0'}
+
+  tmp-promise@3.0.3:
+    resolution: {integrity: sha512-RwM7MoPojPxsOBYnyd2hy0bxtIlVrihNs9pj5SUvY8Zz1sQcQG2tG1hSr8PDxfgEB8RNKDhqbIlroIarSNDNsQ==}
 
   tmp@0.2.3:
     resolution: {integrity: sha512-nZD7m9iCPC5g0pYmcaxogYKggSfLsdxl8of3Q/oIbqCqLLIO9IAF0GWjX1z9NZRHPiXv8Wex4yDCaZsgEw0Y8w==}
@@ -11949,6 +11955,10 @@ snapshots:
   tinypool@0.8.4: {}
 
   tinyspy@2.2.1: {}
+
+  tmp-promise@3.0.3:
+    dependencies:
+      tmp: 0.2.3
 
   tmp@0.2.3: {}
 
