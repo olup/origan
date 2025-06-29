@@ -1,3 +1,5 @@
+import * as figlet from 'figlet'
+
 export default {
   async fetch() {
     console.log("Hello from Workers!");
@@ -5,7 +7,9 @@ export default {
     // Not handled by the edge runtime, debug is info and warn is error
     // console.warn("Warning from Workers!");
     // console.debug("Debug from Workers!");
-
-    return new Response(`{"message": "Hello from Workers!"}`);
+    
+    return new Response(JSON.stringify({
+      message: await figlet.text("Ok !")
+    }));
   },
 };
