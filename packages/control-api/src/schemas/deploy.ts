@@ -16,6 +16,7 @@ export const deployParamsSchema = z.object({
   bundle: z.instanceof(File),
   config: deploymentConfigSchema,
   bucketName: z.string().optional(),
+  track: z.string().optional(),
 });
 
 export const getConfigRequestSchema = z.object({
@@ -28,4 +29,5 @@ export const deployRequestSchema = z.object({
   branchRef: z.string().default("main"),
   bundle: z.instanceof(File, { message: "Bundle file is required" }),
   config: z.string().min(1, "Config is required"),
+  track: z.string().optional(),
 });

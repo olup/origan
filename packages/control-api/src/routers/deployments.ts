@@ -31,6 +31,7 @@ export const deploymentsRouter = new Hono<Env>()
         branchRef,
         bundle,
         config: configString,
+        track,
       } = c.req.valid("form");
 
       // Parse and validate config
@@ -61,6 +62,7 @@ export const deploymentsRouter = new Hono<Env>()
           branchRef,
           bundle,
           config: configResult.data,
+          track,
         });
 
         const response = {

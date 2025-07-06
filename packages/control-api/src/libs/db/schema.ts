@@ -30,6 +30,33 @@ export const projectRelations = relations(projectSchema, ({ many, one }) => ({
   githubConfig: one(githubConfigSchema),
 }));
 
+export const trackSchema = pgTable(
+  "track",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    projectId: uuid("project_id")
+      .references(() => projectSchema.id, { onDelete: "cascade" })
+      .notNull(),
+    ...timestamps,
+  },
+  (table) => ({
+    projectTrackNameIdx: uniqueIndex("project_track_name_idx").on(
+      table.projectId,
+      table.name,
+    ),
+  }),
+);
+
+export const trackRelations = relations(trackSchema, ({ one, many }) => ({
+  project: one(projectSchema, {
+    fields: [trackSchema.projectId],
+    references: [projectSchema.id],
+  }),
+  deployments: many(deploymentSchema),
+  domains: many(domainSchema),
+}));
+
 export const deploymentSchema = pgTable(
   "deployment",
   {
@@ -39,6 +66,9 @@ export const deploymentSchema = pgTable(
     projectId: uuid("project_id")
       .references(() => projectSchema.id, { onDelete: "cascade" })
       .notNull(),
+    trackId: uuid("track_id").references(() => trackSchema.id, {
+      onDelete: "set null",
+    }),
 
     ...timestamps,
   },
@@ -63,6 +93,10 @@ export const deploymentRelations = relations(
       fields: [deploymentSchema.projectId],
       references: [projectSchema.id],
     }),
+    track: one(trackSchema, {
+      fields: [deploymentSchema.trackId],
+      references: [trackSchema.id],
+    }),
     build: one(buildSchema, {
       fields: [deploymentSchema.id],
       references: [buildSchema.deploymentId],
@@ -78,6 +112,7 @@ export const domainSchema = pgTable("domain", {
   projectId: uuid("project_id")
     .references(() => projectSchema.id, { onDelete: "cascade" })
     .notNull(),
+  trackId: uuid("track_id").references(() => trackSchema.id),
   ...timestamps,
 });
 
@@ -89,6 +124,10 @@ export const domainRelations = relations(domainSchema, ({ one }) => ({
   project: one(projectSchema, {
     fields: [domainSchema.projectId],
     references: [projectSchema.id],
+  }),
+  track: one(trackSchema, {
+    fields: [domainSchema.trackId],
+    references: [trackSchema.id],
   }),
 }));
 

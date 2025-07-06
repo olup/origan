@@ -17,6 +17,7 @@ import {
   deploymentConfigSchema,
 } from "../schemas/deploy.js";
 import { generateReference } from "../utils/reference.js";
+import { getOrCreateTrack, updateTrackDomains } from "./track.service.js";
 
 // Custom Error Types
 export class BundleProcessingError extends Error {
@@ -177,6 +178,7 @@ export async function deploy({
   bundle,
   config,
   bucketName = process.env.BUCKET_NAME || "deployment-bucket",
+  track,
 }: DeployParams): Promise<DeploymentResult> {
   const log = getLogger();
 
@@ -199,11 +201,22 @@ export async function deploy({
     throw new ProjectNotFoundError(`Project ${projectRef} not found`);
   }
 
+  const trackObject = track
+    ? await getOrCreateTrack(project.id, track)
+    : undefined;
+
+  if (!trackObject && track) {
+    throw new InvalidConfigError(
+      `Track ${track} not found or could not be created`,
+    );
+  }
+
   log.info("Creating deployment record...");
 
   const deployment = await createDeployment({
     projectId: project.id,
     config: result.data,
+    ...(track ? { trackId: trackObject?.id } : {}),
   });
 
   if (!deployment) {
@@ -221,6 +234,11 @@ export async function deploy({
     log.info("Uploading files to bucket...");
 
     await uploadToS3(extractedPath, deployment.id, bucketName);
+
+    // update track domains if track was provided
+    if (trackObject) {
+      await updateTrackDomains(trackObject.id);
+    }
 
     log.info("Files uploaded");
   } catch (error) {

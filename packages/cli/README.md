@@ -61,6 +61,7 @@ origan deploy [options]
 
 Options:
   -b, --branch <name>  Branch name to deploy (default: "main")
+  -t, --track <name>   Track name for the deployment (optional)
 ```
 
 ### `origan dev`

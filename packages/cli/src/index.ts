@@ -51,8 +51,12 @@ class DeployCommand extends Command {
     description: "Branch name",
   });
 
+  track = Option.String("-t,--track", "", {
+    description: "Track name",
+  });
+
   async execute() {
-    await deploy(this.branch);
+    await deploy(this.branch, this.track || undefined);
   }
 }
 

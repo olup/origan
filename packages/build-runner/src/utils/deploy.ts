@@ -106,6 +106,7 @@ export async function createDeployment(
   buildId: string,
   buildDir: string,
   logger: Logger,
+  track?: string,
 ) {
   // Ensure artifacts directory exists
   const artifactsDir = join("/app", ".origan", "artifacts");
@@ -143,6 +144,8 @@ export async function createDeployment(
     type: "application/zip",
   });
 
+  // Note : maybe this would be better architected by uploading to s3
+  // And signaling to control that a build is ready to deploy (through NATS)
   const response = await controlApiClient.builds[":buildId"].deploy.$post(
     {
       param: {
@@ -151,6 +154,7 @@ export async function createDeployment(
       form: {
         config: JSON.stringify(config),
         artifact: bundleFile,
+        ...(track ? { track } : {}),
       },
     },
     {

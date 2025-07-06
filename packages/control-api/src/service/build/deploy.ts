@@ -58,6 +58,7 @@ export async function deployBuild(
     branchRef: build.branch,
     bundle: artifact,
     config,
+    track: build.branch, // deploy to a track with the branch name
   });
 
   await db

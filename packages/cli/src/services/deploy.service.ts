@@ -58,6 +58,7 @@ async function uploadArchive(
   projectRef: string,
   branch: string,
   origanConfig: ConfigJson,
+  track?: string,
 ): Promise<DeploymentResponse> {
   log.info("Uploading deployment package...");
   const stats = await stat(archivePath);
@@ -73,16 +74,19 @@ async function uploadArchive(
 
   const progressBar = new ProgressBar();
 
+  const formFields = [
+    { fieldName: "projectRef", value: projectRef },
+    { fieldName: "branchRef", value: branch },
+    { fieldName: "config", value: JSON.stringify(origanConfig) },
+    ...(track ? [{ fieldName: "track", value: track }] : []),
+  ];
+
   const response = await uploadFormWithProgress(
     deployUrl,
     {
       Authorization: `Bearer ${token}`,
     },
-    [
-      { fieldName: "projectRef", value: projectRef },
-      { fieldName: "branchRef", value: branch },
-      { fieldName: "config", value: JSON.stringify(origanConfig) },
-    ],
+    formFields,
     [
       {
         fieldName: "bundle",
@@ -99,7 +103,7 @@ async function uploadArchive(
   return JSON.parse(response) as DeploymentResponse;
 }
 
-export async function deploy(branch = "main"): Promise<void> {
+export async function deploy(branch = "main", track?: string): Promise<void> {
   try {
     log.info("Starting deployment process...");
 
@@ -222,6 +226,7 @@ export async function deploy(branch = "main"): Promise<void> {
       config.projectRef,
       branch,
       deployConfig,
+      track,
     );
     log.success("Deployment uploaded successfully! ✨");
 
