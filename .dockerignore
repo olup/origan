@@ -19,6 +19,7 @@ example-deployment
 packages/cli
 **/.workers-data
 scripts
+landing
 
 # TS incremental build
 **/tsconfig.tsbuildinfo
