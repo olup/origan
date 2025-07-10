@@ -11,8 +11,8 @@ import {
 import { LogOut, Sprout, User } from "lucide-react";
 import { Route, Router, Switch, useLocation } from "wouter";
 import { useAuth } from "./contexts/AuthContext";
-import { BuildDetailsPage } from "./pages/BuildDetailsPage";
 import { CreateProjectPage } from "./pages/CreateProjectPage";
+import { DeploymentDetailsPage } from "./pages/DeploymentDetailsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
@@ -88,8 +88,8 @@ function App() {
               <Route path="/projects/:reference/settings">
                 <ProjectPage />
               </Route>
-              <Route path="/builds/:reference">
-                <BuildDetailsPage />
+              <Route path="/deployments/:reference">
+                <DeploymentDetailsPage />
               </Route>
             </Switch>
           </Router>

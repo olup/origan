@@ -47,16 +47,12 @@ class LogoutCommand extends Command {
 class DeployCommand extends Command {
   static paths = [["deploy"]];
 
-  branch = Option.String("-b,--branch", "main", {
-    description: "Branch name",
-  });
-
-  track = Option.String("-t,--track", "", {
+  trackName = Option.String("-t,--track", "", {
     description: "Track name",
   });
 
   async execute() {
-    await deploy(this.branch, this.track || undefined);
+    await deploy(this.trackName || undefined);
   }
 }
 

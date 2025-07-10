@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../../libs/db/index.js";
-import { buildSchema } from "../../libs/db/schema.js";
+import { buildSchema, deploymentSchema } from "../../libs/db/schema.js";
 import { verifyToken } from "../../utils/token.js";
-import { deploy } from "../deployment.service.js";
+import { operateDeployment } from "../deployment.service.js";
 
 export async function deployBuild(
   buildId: string,
@@ -47,24 +47,31 @@ export async function deployBuild(
     throw new HTTPException(401, { message: "Invalid deploy token" });
   }
 
+  const deployment = await db.query.deploymentSchema.findFirst({
+    where: eq(deploymentSchema.buildId, build.id),
+    columns: {
+      id: true,
+    },
+  });
+
+  if (!deployment) {
+    throw new HTTPException(404, {
+      message: `Deployment for build ${buildId} not found`,
+    });
+  }
+
   // Remove the token after successful verification
   await db
     .update(buildSchema)
     .set({ deployToken: null })
     .where(eq(buildSchema.id, buildId));
 
-  const deployResult = await deploy({
+  const deployResult = await operateDeployment({
     projectRef: build.project.reference,
-    branchRef: build.branch,
     bundle: artifact,
     config,
-    track: build.branch, // deploy to a track with the branch name
+    deploymentId: deployment.id,
   });
-
-  await db
-    .update(buildSchema)
-    .set({ deploymentId: deployResult.deploymentId })
-    .where(eq(buildSchema.id, buildId));
 
   return deployResult;
 }

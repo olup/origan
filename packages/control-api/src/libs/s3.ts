@@ -3,15 +3,16 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { env } from "../config.js";
 import { getLogger } from "../instrumentation.js";
 
 const s3Client = new S3Client({
-  endpoint: process.env.BUCKET_URL,
-  region: process.env.BUCKET_REGION || "us-east-1", // Use configured region or default to MinIO's default
-  forcePathStyle: process.env.BUCKET_URL?.includes("minio") || false, // Required for MinIO
+  endpoint: env.BUCKET_URL,
+  region: env.BUCKET_REGION || "us-east-1", // Use configured region or default to MinIO's default
+  forcePathStyle: env.BUCKET_URL?.includes("minio") || false, // Required for MinIO
   credentials: {
-    accessKeyId: process.env.BUCKET_ACCESS_KEY || "",
-    secretAccessKey: process.env.BUCKET_SECRET_KEY || "",
+    accessKeyId: env.BUCKET_ACCESS_KEY || "",
+    secretAccessKey: env.BUCKET_SECRET_KEY || "",
   },
 });
 

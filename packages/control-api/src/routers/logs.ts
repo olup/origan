@@ -21,7 +21,6 @@ export const logsRouter = new Hono().get(
     const { deploymentId } = c.req.valid("param");
 
     const deployment = await getDeployment({
-      userId: c.get("userId"),
       id: deploymentId,
     });
     if (!deployment) {

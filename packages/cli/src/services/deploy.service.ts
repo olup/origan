@@ -1,6 +1,7 @@
 import { stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { getAuthenticatedClient } from "../libs/client.js";
+import type { InferResponseType } from "hono/client";
+import { type baseClient, getAuthenticatedClient } from "../libs/client.js";
 import type { OriganConfig } from "../types.js";
 import { ProgressBar } from "../utils/cli.js";
 import {
@@ -45,21 +46,12 @@ function generateUUID(): string {
   return crypto.randomUUID();
 }
 
-interface DeploymentResponse {
-  status: string;
-  message: string;
-  projectRef: string;
-  deploymentId: string;
-  urls: string[];
-}
-
 async function uploadArchive(
   archivePath: string,
   projectRef: string,
-  branch: string,
   origanConfig: ConfigJson,
-  track?: string,
-): Promise<DeploymentResponse> {
+  trackName?: string,
+) {
   log.info("Uploading deployment package...");
   const stats = await stat(archivePath);
   log.info(`Total size: ${(stats.size / 1024).toFixed(2)} KB`);
@@ -76,9 +68,8 @@ async function uploadArchive(
 
   const formFields = [
     { fieldName: "projectRef", value: projectRef },
-    { fieldName: "branchRef", value: branch },
     { fieldName: "config", value: JSON.stringify(origanConfig) },
-    ...(track ? [{ fieldName: "track", value: track }] : []),
+    ...(trackName ? [{ fieldName: "trackName", value: trackName }] : []),
   ];
 
   const response = await uploadFormWithProgress(
@@ -99,11 +90,19 @@ async function uploadArchive(
       progressBar.update(percentage);
     },
   );
+
   progressBar.finish();
-  return JSON.parse(response) as DeploymentResponse;
+  const parsedResponse = JSON.parse(response) as InferResponseType<
+    typeof baseClient.deployments.create.$post
+  >;
+  if ("error" in parsedResponse) {
+    throw new Error(`Failed to upload deployment: ${parsedResponse.error}`);
+  }
+
+  return parsedResponse;
 }
 
-export async function deploy(branch = "main", track?: string): Promise<void> {
+export async function deploy(trackName?: string): Promise<void> {
   try {
     log.info("Starting deployment process...");
 
@@ -224,16 +223,21 @@ export async function deploy(branch = "main", track?: string): Promise<void> {
     const deploymentResult = await uploadArchive(
       bundle.path,
       config.projectRef,
-      branch,
       deployConfig,
-      track,
+      trackName,
     );
+
     log.success("Deployment uploaded successfully! ✨");
+
+    // Fetch deployment details
+    const deploymentDetails = await getDeploymentByRef(
+      deploymentResult.deploymentReference,
+    );
 
     log.info("\nDeployment URLs:");
 
-    for (const url of deploymentResult.urls) {
-      log.success(`  ${url}`);
+    for (const domain of deploymentDetails.domains) {
+      log.success(`- ${domain.url}`);
     }
 
     // Clean up deployment directories

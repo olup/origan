@@ -113,6 +113,13 @@
       "when": 1750493912198,
       "tag": "0015_free_gravity",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1750710817371,
+      "tag": "0016_hot_longshot",
+      "breakpoints": true
     }
   ]
 }

@@ -5,7 +5,7 @@ import { startBuildEventsConsumer } from "./service/build/index.js";
 
 const log = getLogger();
 
-const port = Number.parseInt(process.env.PORT ?? "9999", 10);
+const port = Number.parseInt("9999", 10);
 log.info(`Starting API server on port ${port}`);
 
 // Start listening to build events

@@ -1,7 +1,7 @@
 import { mkdir, readdir, readFile, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { Readable } from "node:stream";
-import { and, eq, type SQLWrapper } from "drizzle-orm";
+import { and, desc, eq, type SQLWrapper } from "drizzle-orm";
 import * as unzipper from "unzipper";
 import { env } from "../config.js";
 import { getLogger } from "../instrumentation.js";
@@ -12,11 +12,8 @@ import {
   projectSchema,
 } from "../libs/db/schema.js";
 import { putObject } from "../libs/s3.js";
-import {
-  type DeployParams,
-  deploymentConfigSchema,
-} from "../schemas/deploy.js";
-import { generateReference } from "../utils/reference.js";
+import { deploymentConfigSchema } from "../schemas/deploy.js";
+import { generateReference, REFERENCE_PREFIXES } from "../utils/reference.js";
 import { getOrCreateTrack, updateTrackDomains } from "./track.service.js";
 
 // Custom Error Types
@@ -173,16 +170,78 @@ async function uploadToS3(
  * Process a deployment request
  */
 
-export async function deploy({
+/**
+ * Initiate a deployment: creates the deployment record (and track if needed)
+ */
+export async function initiateDeployment({
   projectRef,
-  bundle,
-  config,
-  bucketName = process.env.BUCKET_NAME || "deployment-bucket",
-  track,
-}: DeployParams): Promise<DeploymentResult> {
+  buildId,
+  trackName,
+}: {
+  projectRef: string;
+  buildId?: string;
+  trackName?: string;
+}) {
   const log = getLogger();
 
-  log.info("Starting deployment...");
+  log.info(
+    `Initiating deployment for project ${projectRef} with track ${trackName}`,
+  );
+
+  // TODO: this should belong to a service
+  const project = await db.query.projectSchema.findFirst({
+    where: and(eq(projectSchema.reference, projectRef)),
+  });
+
+  if (!project) {
+    throw new ProjectNotFoundError(`Project ${projectRef} not found`);
+  }
+
+  const trackObject = trackName
+    ? await getOrCreateTrack(project.id, trackName)
+    : undefined;
+
+  if (!trackObject && trackName) {
+    throw new InvalidConfigError(
+      `Track ${trackName} not found or could not be created`,
+    );
+  }
+
+  const [deployment] = await db
+    .insert(deploymentSchema)
+    .values({
+      reference: generateReference(10, REFERENCE_PREFIXES.DEPLOYMENT),
+      projectId: project.id,
+      status: "pending",
+      buildId,
+      ...(trackName ? { trackId: trackObject?.id } : {}),
+    })
+    .returning();
+
+  if (!deployment) {
+    throw new Error("Failed to create deployment record");
+  }
+
+  return { project, deployment, trackObject };
+}
+
+/**
+ * Operate a deployment: validates config, processes the bundle, uploads files, updates status and domains
+ */
+export async function operateDeployment({
+  deploymentId,
+  projectRef,
+  config,
+  bundle,
+  bucketName = env.BUCKET_NAME || "deployment-bucket",
+}: {
+  deploymentId: string;
+  projectRef: string;
+  config: unknown;
+  bundle: File;
+  bucketName?: string;
+}) {
+  const log = getLogger();
 
   // Validate config
   const result = deploymentConfigSchema.safeParse(config);
@@ -192,35 +251,23 @@ export async function deploy({
     );
   }
 
-  // Get or create project
+  // Update deployment with config and status
+  await db
+    .update(deploymentSchema)
+    .set({ config: result.data, status: "deploying" })
+    .where(eq(deploymentSchema.id, deploymentId));
+
+  const deployment = await getDeployment({ id: deploymentId });
+  if (!deployment) {
+    throw new Error("Deployment not found");
+  }
+
   const project = await db.query.projectSchema.findFirst({
     where: and(eq(projectSchema.reference, projectRef)),
   });
 
   if (!project) {
     throw new ProjectNotFoundError(`Project ${projectRef} not found`);
-  }
-
-  const trackObject = track
-    ? await getOrCreateTrack(project.id, track)
-    : undefined;
-
-  if (!trackObject && track) {
-    throw new InvalidConfigError(
-      `Track ${track} not found or could not be created`,
-    );
-  }
-
-  log.info("Creating deployment record...");
-
-  const deployment = await createDeployment({
-    projectId: project.id,
-    config: result.data,
-    ...(track ? { trackId: trackObject?.id } : {}),
-  });
-
-  if (!deployment) {
-    throw new Error("Failed to create deployment record");
   }
 
   let extractedPath: string | undefined;
@@ -233,15 +280,26 @@ export async function deploy({
     log.info("Bundle processed");
     log.info("Uploading files to bucket...");
 
-    await uploadToS3(extractedPath, deployment.id, bucketName);
+    await uploadToS3(extractedPath, deploymentId, bucketName);
 
     // update track domains if track was provided
-    if (trackObject) {
-      await updateTrackDomains(trackObject.id);
+    if (deployment.trackId) {
+      await updateTrackDomains(deployment.trackId);
     }
 
     log.info("Files uploaded");
+
+    // Set deployment status to success
+    await db
+      .update(deploymentSchema)
+      .set({ status: "success" })
+      .where(eq(deploymentSchema.id, deploymentId));
   } catch (error) {
+    // Set deployment status to error
+    await db
+      .update(deploymentSchema)
+      .set({ status: "error" })
+      .where(eq(deploymentSchema.id, deploymentId));
     // Clean up extracted files if they exist
     if (extractedPath) {
       try {
@@ -261,13 +319,13 @@ export async function deploy({
     .insert(domainSchema)
     .values({
       name: domain,
-      deploymentId: deployment.id,
+      deploymentId,
       projectId: project.id,
     })
     .onConflictDoUpdate({
       target: domainSchema.name,
       set: {
-        deploymentId: deployment.id,
+        deploymentId,
       },
     });
 
@@ -275,27 +333,12 @@ export async function deploy({
 
   return {
     projectRef,
-    deploymentId: deployment.id,
+    deploymentId,
     path: extractedPath,
-    urls: [`https://${domain}${env.ORIGAN_DEPLOY_DOMAIN}`],
   };
 }
 
-export const createDeployment = async (
-  data: Omit<typeof deploymentSchema.$inferInsert, "reference">,
-) => {
-  const [deployment] = await db
-    .insert(deploymentSchema)
-    .values({
-      reference: generateReference(),
-      ...data,
-    })
-    .returning();
-  return deployment;
-};
-
 export async function getDeployment(filter: {
-  userId: string;
   id?: string;
   reference?: string;
 }) {
@@ -313,13 +356,27 @@ export async function getDeployment(filter: {
   const deployment = await db.query.deploymentSchema.findFirst({
     where: and(...clauses),
     with: {
-      project: {
-        columns: {
-          id: true,
-        },
-      },
+      project: true,
+      track: true,
+      build: true,
+      domains: true,
     },
   });
 
   return deployment;
+}
+
+export async function getDeploymentsByProject(projectId: string) {
+  const deployments = await db.query.deploymentSchema.findMany({
+    where: eq(deploymentSchema.projectId, projectId),
+    with: {
+      project: true,
+      track: true,
+      build: true,
+      domains: true,
+    },
+    orderBy: [desc(deploymentSchema.createdAt)],
+  });
+
+  return deployments;
 }

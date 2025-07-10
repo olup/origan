@@ -16,78 +16,107 @@ import { createQueryHelper } from "../utils/honoQuery.js";
 
 function getStatusColor(status: string) {
   switch (status) {
-    case "completed":
+    case "success":
       return "green";
-    case "failed":
+    case "error":
       return "red";
-    case "in_progress":
-      return "blue";
+    case "building":
+    case "deploying":
+      return "teal";
     default:
       return "gray";
   }
 }
 
-const BuildsList = ({
+const DeploymentsList = ({
   projectReference,
 }: {
   projectReference: string;
-  project: { reference: string };
 }) => {
   const [, navigate] = useLocation();
-  const { data: builds } = useQuery(
-    createQueryHelper(client.builds["by-project"][":projectReference"].$get, {
-      param: { projectReference },
-    }),
+  const { data: deploymentsResponse } = useQuery(
+    createQueryHelper(
+      client.deployments["by-project-ref"][":projectReference"].$get,
+      {
+        param: { projectReference },
+      },
+    ),
   );
 
-  if (!builds?.length) {
-    return <Text c="dimmed">No builds yet</Text>;
+  if (deploymentsResponse && "error" in deploymentsResponse) {
+    return (
+      <Text c="red">
+        Failed to load deployments: {deploymentsResponse.error}
+      </Text>
+    );
   }
 
-  const truncatedBuilds = builds.slice(0, 5);
+  const deployments = deploymentsResponse?.deployments || [];
+
+  if (!deployments.length) {
+    return <Text c="dimmed">No deployments yet</Text>;
+  }
+
+  const truncatedDeployments = deployments.slice(0, 20);
 
   return (
     <Table>
       <Table.Thead>
         <Table.Tr>
           <Table.Th>Status</Table.Th>
-          <Table.Th>Branch</Table.Th>
+          <Table.Th>Track</Table.Th>
           <Table.Th>Commit</Table.Th>
           <Table.Th>Deployment</Table.Th>
           <Table.Th>Created At</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {truncatedBuilds.map((build) => (
-          <Table.Tr
-            key={build.id}
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate(`/builds/${build.reference}`)}
-          >
-            <Table.Td>
-              <Badge color={getStatusColor(build.status)}>{build.status}</Badge>
-            </Table.Td>
-            <Table.Td>{build.branch}</Table.Td>
-            <Table.Td>{build.commitSha.substring(0, 7)}</Table.Td>
-            <Table.Td>
-              {build.buildUrl && (
-                <Group gap="xs">
-                  <Text
-                    component="a"
-                    href={build.buildUrl}
-                    target="_blank"
-                    c="blue"
-                    size="sm"
-                    style={{ textDecoration: "underline" }}
-                  >
-                    Open
-                  </Text>
-                </Group>
-              )}
-            </Table.Td>
-            <Table.Td>{new Date(build.createdAt).toLocaleString()}</Table.Td>
-          </Table.Tr>
-        ))}
+        {truncatedDeployments.map((deployment) => {
+          const deploymentTrackName = deployment.track?.name || "";
+          const deploymentIsTrackLive = deployment.domains?.some(
+            (domain) => domain.trackId === deployment.track?.id,
+          );
+          return (
+            <Table.Tr
+              key={deployment.reference}
+              style={{ cursor: "pointer" }}
+              onClick={() => navigate(`/deployments/${deployment.reference}`)}
+            >
+              <Table.Td>
+                <Badge color={getStatusColor(deployment.status)}>
+                  {deployment.status}
+                </Badge>
+              </Table.Td>
+              <Table.Td>
+                {deploymentTrackName && (
+                  <Badge variant={deploymentIsTrackLive ? "filled" : "light"}>
+                    {deploymentTrackName}
+                  </Badge>
+                )}
+              </Table.Td>
+              <Table.Td>{deployment.build?.commitSha.substring(0, 7)}</Table.Td>
+              <Table.Td>
+                {deployment.domains.map((domain) => (
+                  <Group gap="xs" key={domain.name}>
+                    <Text
+                      component="a"
+                      href={domain.url}
+                      target="_blank"
+                      c="blue"
+                      size="sm"
+                      style={{ textDecoration: "underline" }}
+                    >
+                      Open
+                    </Text>
+                  </Group>
+                ))}
+              </Table.Td>
+              <Table.Td>
+                {new Date(deployment.createdAt).toLocaleString()}
+              </Table.Td>
+            </Table.Tr>
+          );
+        })}
       </Table.Tbody>
     </Table>
   );
@@ -140,8 +169,8 @@ export const ProjectPage = () => {
 
         <Card withBorder padding="xl">
           <Stack>
-            <Title order={3}>Builds</Title>
-            <BuildsList projectReference={projectReference} project={project} />
+            <Title order={3}>Deployments</Title>
+            <DeploymentsList projectReference={projectReference} />
           </Stack>
         </Card>
       </Stack>

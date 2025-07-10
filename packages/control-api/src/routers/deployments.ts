@@ -2,6 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
+import { env } from "../config.js";
 import type { Env } from "../instrumentation.js";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
@@ -13,9 +14,11 @@ import {
 } from "../schemas/deploy.js";
 import {
   BundleProcessingError,
-  deploy,
   getDeployment,
+  getDeploymentsByProject,
   InvalidConfigError,
+  initiateDeployment,
+  operateDeployment,
   ProjectNotFoundError,
   S3UploadError,
 } from "../service/deployment.service.js";
@@ -28,10 +31,9 @@ export const deploymentsRouter = new Hono<Env>()
     async (c) => {
       const {
         projectRef,
-        branchRef,
         bundle,
         config: configString,
-        track,
+        trackName,
       } = c.req.valid("form");
 
       // Parse and validate config
@@ -56,22 +58,29 @@ export const deploymentsRouter = new Hono<Env>()
       }
 
       // TODO - check user permissions
+
       try {
-        const result = await deploy({
+        const initiateDeploymentResult = await initiateDeployment({
           projectRef,
-          branchRef,
-          bundle,
+          trackName,
+        });
+
+        // Operate the deployment
+        await operateDeployment({
+          deploymentId: initiateDeploymentResult.deployment.id,
+          projectRef,
           config: configResult.data,
-          track,
+          bundle,
+          bucketName: env.BUCKET_NAME || "deployment-bucket",
         });
 
         const response = {
           status: "success",
           message: "Deployment uploaded successfully",
-          projectRef: result.projectRef,
-          deploymentId: result.deploymentId,
-          urls: result.urls,
+          projectRef,
+          deploymentReference: initiateDeploymentResult.deployment.reference,
         };
+
         return c.json(response);
       } catch (error) {
         c.var.log.withError(error).error("Deployment error");
@@ -114,7 +123,7 @@ export const deploymentsRouter = new Hono<Env>()
       }
     },
   )
-  // Get deployment config by domain
+  // Get deployment config by domain (internal route)
   // this route is not protected yet (we will need to add an internal token to the request, or remove it entirely for a more decoupled architecture)
   .post(
     "/get-config",
@@ -130,7 +139,11 @@ export const deploymentsRouter = new Hono<Env>()
         },
       });
 
-      if (!domainRecord || !domainRecord.deployment) {
+      if (
+        !domainRecord ||
+        !domainRecord.deployment ||
+        domainRecord.deployment.status !== "success"
+      ) {
         const errorResponse = {
           error: "Domain not found",
           details: "The requested domain was not found in the system",
@@ -152,10 +165,9 @@ export const deploymentsRouter = new Hono<Env>()
     zValidator("param", z.object({ ref: z.string() })),
     async (c) => {
       const { ref } = c.req.valid("param");
-      const userId = c.get("userId");
 
       try {
-        const deployment = await getDeployment({ userId, reference: ref });
+        const deployment = await getDeployment({ reference: ref });
         if (!deployment) {
           const errorResponse = {
             error: "Deployment not found",
@@ -166,12 +178,125 @@ export const deploymentsRouter = new Hono<Env>()
         return c.json({
           id: deployment.id,
           reference: deployment.reference,
+          status: deployment.status,
           createdAt: deployment.createdAt,
-          projectId: deployment.projectId,
+          updatedAt: deployment.updatedAt,
+          project: {
+            reference: deployment.project.reference,
+          },
+          track: deployment.track
+            ? {
+                name: deployment.track.name,
+                id: deployment.track.id,
+              }
+            : null,
+          build: deployment.build
+            ? {
+                id: deployment.build.id,
+                reference: deployment.build.reference,
+                commitSha: deployment.build.commitSha,
+                createdAt: deployment.build.createdAt,
+                updatedAt: deployment.build.updatedAt,
+                buildStartedAt: deployment.build.buildStartedAt,
+                buildEndedAt: deployment.build.buildEndedAt,
+                logs: deployment.build.logs,
+                status: deployment.build.status,
+              }
+            : null,
+          domains: deployment.domains.map((domain) => ({
+            id: domain.id,
+            name: domain.name,
+            // computing real URL based on environment
+            url: `${env.DEPLOY_DOMAIN_PROTOCOL}${domain.name}${env.ORIGAN_DEPLOY_DOMAIN}`,
+            createdAt: domain.createdAt,
+            updatedAt: domain.updatedAt,
+            trackId: domain.trackId,
+          })),
         });
       } catch (error) {
         const errorResponse = {
           error: "Failed to fetch deployment",
+          details: error instanceof Error ? error.message : String(error),
+        };
+        return c.json(errorResponse, 500);
+      }
+    },
+  )
+  .get(
+    "/by-project-ref/:projectReference",
+    auth(),
+    zValidator("param", z.object({ projectReference: z.string() })),
+    async (c) => {
+      const { projectReference } = c.req.valid("param");
+      const userId = c.get("userId");
+      try {
+        const project = await db.query.projectSchema.findFirst({
+          where: eq(schema.projectSchema.reference, projectReference),
+        });
+
+        if (!project) {
+          return c.json(
+            {
+              error: "Project not found",
+              details: `No project with reference ${projectReference}`,
+            },
+            404,
+          );
+        }
+
+        if (project.userId !== userId) {
+          return c.json(
+            {
+              error: "Unauthorized",
+              details: "You do not have access to this project",
+            },
+            403,
+          );
+        }
+
+        const deployments = await getDeploymentsByProject(project.id);
+
+        // transforming response
+        return c.json(
+          {
+            deployments: deployments.map((deployment) => ({
+              id: deployment.id,
+              reference: deployment.reference,
+              status: deployment.status,
+              createdAt: deployment.createdAt,
+              updatedAt: deployment.updatedAt,
+              project: {
+                reference: deployment.project.reference,
+              },
+              track: deployment.track
+                ? {
+                    name: deployment.track.name,
+                    id: deployment.track.id,
+                  }
+                : null,
+              build: deployment.build
+                ? {
+                    id: deployment.build.id,
+                    reference: deployment.build.reference,
+                    commitSha: deployment.build.commitSha,
+                  }
+                : null,
+              domains: deployment.domains.map((domain) => ({
+                id: domain.id,
+                name: domain.name,
+                // computing real URL based on environment
+                url: `${env.DEPLOY_DOMAIN_PROTOCOL}${domain.name}${env.ORIGAN_DEPLOY_DOMAIN}`,
+                createdAt: domain.createdAt,
+                updatedAt: domain.updatedAt,
+                trackId: domain.trackId,
+              })),
+            })),
+          },
+          200,
+        );
+      } catch (error) {
+        const errorResponse = {
+          error: "Failed to fetch deployments",
           details: error instanceof Error ? error.message : String(error),
         };
         return c.json(errorResponse, 500);

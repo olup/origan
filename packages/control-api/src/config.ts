@@ -34,6 +34,13 @@ export const config = z
     AXIOM_TOKEN: z.string().optional(),
     AXIOM_DATASET: z.string().optional(),
   })
+  // derived values
+  .transform((env) => ({
+    ...env,
+    DEPLOY_DOMAIN_PROTOCOL:
+      env.APP_ENV === "production" ? "https://" : "http://",
+  }))
+  // custom validation rules
   .superRefine(({ APP_ENV, AXIOM_TOKEN, AXIOM_DATASET }, refinementContext) => {
     if (APP_ENV === "production") {
       if (AXIOM_TOKEN == null) {

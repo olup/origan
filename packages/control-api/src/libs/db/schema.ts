@@ -57,16 +57,29 @@ export const trackRelations = relations(trackSchema, ({ one, many }) => ({
   domains: many(domainSchema),
 }));
 
+export const deploymentStatusEnum = pgEnum("deployment_status", [
+  "pending",
+  "building",
+  "deploying",
+  "success",
+  "error",
+  "canceled",
+]);
+
 export const deploymentSchema = pgTable(
   "deployment",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     reference: text("reference").notNull(),
-    config: jsonb("config").notNull(),
+    config: jsonb("config"),
+    status: deploymentStatusEnum("status").notNull().default("pending"),
     projectId: uuid("project_id")
       .references(() => projectSchema.id, { onDelete: "cascade" })
       .notNull(),
     trackId: uuid("track_id").references(() => trackSchema.id, {
+      onDelete: "set null",
+    }),
+    buildId: uuid("build_id").references(() => buildSchema.id, {
       onDelete: "set null",
     }),
 
@@ -98,9 +111,9 @@ export const deploymentRelations = relations(
       references: [trackSchema.id],
     }),
     build: one(buildSchema, {
-      fields: [deploymentSchema.id],
-      references: [buildSchema.deploymentId],
-      relationName: "build_deployment",
+      fields: [deploymentSchema.buildId],
+      references: [buildSchema.id],
+      relationName: "deployment_build",
     }),
   }),
 );
@@ -209,7 +222,6 @@ export const buildSchema = pgTable("build", {
   projectId: uuid("project_id")
     .references(() => projectSchema.id, { onDelete: "cascade" })
     .notNull(),
-  deploymentId: uuid("deployment_id").references(() => deploymentSchema.id),
   status: buildStatusEnum("status").notNull().default("pending"),
   commitSha: text("commit_sha").notNull(),
   branch: text("branch").notNull(),
@@ -233,8 +245,8 @@ export const buildRelations = relations(buildSchema, ({ one }) => ({
     references: [projectSchema.id],
   }),
   deployment: one(deploymentSchema, {
-    fields: [buildSchema.deploymentId],
-    references: [deploymentSchema.id],
-    relationName: "build_deployment",
+    fields: [buildSchema.id],
+    references: [deploymentSchema.buildId],
+    relationName: "deployment_build",
   }),
 }));

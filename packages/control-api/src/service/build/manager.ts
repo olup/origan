@@ -2,7 +2,11 @@ import { eq, sql } from "drizzle-orm";
 import { env } from "../../config.js";
 import { getLogger } from "../../instrumentation.js";
 import { db } from "../../libs/db/index.js";
-import { buildSchema, projectSchema } from "../../libs/db/schema.js";
+import {
+  buildSchema,
+  deploymentSchema,
+  projectSchema,
+} from "../../libs/db/schema.js";
 import {
   generateReference,
   REFERENCE_PREFIXES,
@@ -10,17 +14,18 @@ import {
 import type { ResourceLimits } from "../../utils/task.js";
 import { triggerTask } from "../../utils/task.js";
 import { generateDeployToken, hashToken } from "../../utils/token.js";
+import { initiateDeployment } from "../deployment.service.js";
 import { generateGitHubInstallationToken } from "../github.service.js";
 import type { BuildLogEntry } from "./types.js";
 
 export async function triggerBuildTask(
   projectId: string,
-  branch: string,
+  branchName: string,
   commitSha: string,
 ) {
   const log = getLogger();
   log.info(
-    `Attempting to trigger build task for project ${projectId}, branch ${branch}, commit ${commitSha}`,
+    `Attempting to trigger build task for project ${projectId}, branch ${branchName}, commit ${commitSha}`,
   );
 
   const project = await db.query.projectSchema.findFirst({
@@ -71,7 +76,7 @@ export async function triggerBuildTask(
     .insert(buildSchema)
     .values({
       projectId,
-      branch,
+      branch: branchName,
       commitSha,
       reference: buildReference,
       status: "pending",
@@ -84,6 +89,13 @@ export async function triggerBuildTask(
     log.error("Failed to create build record");
     throw new Error("Failed to create build record");
   }
+
+  // Create deployment for this build
+  const initiateDeploymentResult = await initiateDeployment({
+    projectRef: project.reference,
+    buildId: build.id,
+    trackName: branchName,
+  });
 
   try {
     const buildResourceLimits: ResourceLimits = {
@@ -131,7 +143,6 @@ export async function triggerBuildTask(
       .update(buildSchema)
       .set({
         status: "failed",
-        updatedAt: new Date().toISOString(),
         logs: sql`jsonb_build_array(${JSON.stringify({
           timestamp: new Date().toISOString(),
           level: "error",
@@ -140,8 +151,16 @@ export async function triggerBuildTask(
       })
       .where(eq(buildSchema.id, build.id));
 
+    await db
+      .update(deploymentSchema)
+      .set({
+        status: "error",
+      })
+      .where(eq(deploymentSchema.id, initiateDeploymentResult.deployment.id));
+
     return {
       buildId: build.id,
+      deploymentId: initiateDeploymentResult.deployment.id,
       buildReference,
       error: errorMessage,
     };
@@ -150,82 +169,6 @@ export async function triggerBuildTask(
   return {
     buildId: build.id,
     buildReference,
+    deploymentId: initiateDeploymentResult.deployment.id,
   };
-}
-
-export async function getBuildByReference(reference: string) {
-  const log = getLogger();
-  try {
-    const build = await db.query.buildSchema.findFirst({
-      where: eq(buildSchema.reference, reference),
-      with: {
-        project: {
-          with: {
-            user: true,
-          },
-        },
-      },
-    });
-
-    return build;
-  } catch (error) {
-    log.withError(error).error(`Error fetching build ${reference}`);
-    throw error;
-  }
-}
-
-export async function getProjectBuilds(reference: string, userId: string) {
-  const log = getLogger();
-  try {
-    const project = await db.query.projectSchema.findFirst({
-      where: eq(projectSchema.reference, reference),
-    });
-
-    if (!project) {
-      throw new Error(`Project ${reference} not found`);
-    }
-
-    const builds = await db.query.buildSchema.findMany({
-      where: eq(buildSchema.projectId, project.id),
-      with: {
-        project: {
-          with: {
-            user: true,
-          },
-        },
-        deployment: {
-          with: {
-            domains: {
-              columns: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: (builds) => [sql`${builds.createdAt} DESC`],
-    });
-
-    if (!builds.length || builds[0].project.userId !== userId) {
-      return [];
-    }
-
-    return builds.map((build) => {
-      const protocol = env.APP_ENV === "production" ? "https" : "http";
-      const buildDeploymentDomain = build.deployment?.domains[0]?.name;
-      const buildUrl = buildDeploymentDomain
-        ? `${protocol}://${buildDeploymentDomain}${env.ORIGAN_DEPLOY_DOMAIN}`
-        : null;
-
-      return {
-        ...build,
-        buildUrl,
-      };
-    });
-  } catch (error) {
-    log
-      .withError(error)
-      .error(`Error fetching builds for project ${reference}`);
-    throw error;
-  }
 }

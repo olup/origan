@@ -145,6 +145,8 @@ export async function listInstallationRepositories(installationId: number) {
   }
 }
 
+// TODO: this is triggered by a webhook from github
+// Duplicated calls may happen - it should be made idempotent
 export async function handlePushEvent(payload: {
   ref: string;
   head_commit: {
