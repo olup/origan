@@ -20,8 +20,8 @@ export function deployRunner({
   k8sProvider: k8s.Provider;
   bucketConfig: BucketConfig;
   nats: {
-    account: scaleway.mnq.NatsAccount;
-    creds: scaleway.mnq.NatsCredentials;
+    endpoint: pulumi.Output<string>;
+    creds: pulumi.Output<string>;
   };
 }): DeployRunnerOutputs {
   const image = dockerImageWithTag(rn("runner-image"), {
@@ -108,11 +108,11 @@ export function deployRunner({
                   },
                   {
                     name: "EVENTS_NATS_SERVER",
-                    value: nats.account.endpoint,
+                    value: nats.endpoint,
                   },
                   {
                     name: "EVENTS_NATS_NKEY_CREDS",
-                    value: nats.creds.file,
+                    value: nats.creds,
                   },
                 ],
               },

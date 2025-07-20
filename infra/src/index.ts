@@ -1,17 +1,19 @@
+import * as k8s from "@pulumi/kubernetes";
+import * as pulumi from "@pulumi/pulumi";
 import { deployAdminPanel } from "./components/admin-panel";
 import { deployBucket } from "./components/bucket";
 import { deployBuildRunnerImage } from "./components/build-runner";
 import { deployControl } from "./components/control";
 import { deployDatabase } from "./components/database";
 import { deployGateway } from "./components/gateway";
-import { deployGlobal } from "./components/global";
+import { deployGlobal, deployGlobalToKubernetes } from "./components/global";
 import { deploySharedIngress } from "./components/ingress";
 import { deployKubernetes } from "./components/kubernetes";
 import { deployRegistry } from "./components/registry";
 import { deployRunner } from "./components/runner";
 import { config } from "./config";
 
-export function deployAll() {
+export function deployToScaleway() {
   const globals = deployGlobal();
 
   // Deploy database
@@ -96,5 +98,26 @@ export function deployAll() {
     bucketSecretKey: bucketDeployment.config.bucketSecretKey,
     nats: globals.nats,
     database: db,
+  };
+}
+
+export function deployToK3s() {
+  const k8sProvider = new k8s.Provider("k3s-provider", {
+    context: "origan-k3s",
+  });
+  const globals = deployGlobalToKubernetes(k8sProvider);
+
+  return {
+    apiUrl: pulumi.Output.create("todo"),
+    adminPanelUrl: pulumi.Output.create("todo"),
+    bucketUrl: pulumi.Output.create("todo"),
+    bucketName: pulumi.Output.create("todo"),
+    bucketRegion: pulumi.Output.create("todo"),
+    bucketAccessKey: pulumi.Output.create("todo"),
+    bucketSecretKey: pulumi.Output.create("todo"),
+    nats: globals.nats,
+    database: {
+      connectionString: pulumi.Output.create("todo"),
+    },
   };
 }

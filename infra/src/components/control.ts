@@ -6,7 +6,7 @@ import { config } from "../config";
 import { cn, dockerImageWithTag } from "../utils";
 import type { BucketConfig } from "./bucket";
 import type { DatabaseOutputs } from "./database";
-import type { Global } from "./global";
+import type { GlobalResourcesOutput } from "./global";
 
 export function deployControl({
   registry,
@@ -24,7 +24,7 @@ export function deployControl({
   db: DatabaseOutputs;
   bucketConfig: BucketConfig;
   buildRunnerImage: pulumi.Output<string>;
-  nats: Global["nats"];
+  nats: GlobalResourcesOutput["nats"];
   buildRunnerServiceAccount?: k8s.rbac.v1.RoleBinding;
 }) {
   // Generate a secure JWT secret
@@ -181,11 +181,11 @@ export function deployControl({
                   // NATS Configuration
                   {
                     name: "EVENTS_NATS_SERVER",
-                    value: nats.account.endpoint,
+                    value: nats.endpoint,
                   },
                   {
                     name: "EVENTS_NATS_NKEY_CREDS",
-                    value: nats.creds.file,
+                    value: nats.creds,
                   },
                 ],
               },

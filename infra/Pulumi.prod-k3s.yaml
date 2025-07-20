@@ -1,0 +1,5 @@
+environment:
+  - infra/prod
+config:
+  origan:
+    testValue: foo

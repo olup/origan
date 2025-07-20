@@ -6,8 +6,8 @@ import { gn } from "../utils";
 
 const scalewayConfig = new pulumi.Config("scaleway");
 
-const k = (name: string) => gn(`k8s-${name}`);
-const ks = (name: string) => `g-k8s-${name}`;
+export const k = (name: string) => gn(`k8s-${name}`);
+export const ks = (name: string) => `g-k8s-${name}`;
 
 interface AxiomConfig {
   dataset: string;
