@@ -4,7 +4,10 @@ import { deployAdminPanel } from "./components/admin-panel";
 import { deployBucket } from "./components/bucket";
 import { deployBuildRunnerImage } from "./components/build-runner";
 import { deployControl } from "./components/control";
-import { deployDatabase } from "./components/database";
+import {
+  deployDatabase,
+  deployDatabaseToKubernetes,
+} from "./components/database";
 import { deployGateway } from "./components/gateway";
 import { deployGlobal, deployGlobalToKubernetes } from "./components/global";
 import { deploySharedIngress } from "./components/ingress";
@@ -109,6 +112,7 @@ export function deployToK3s() {
     throw new Error("Missing nats config");
   }
   deployGlobalToKubernetes(k8sProvider, config.nats.userPublicKey);
+  const database = deployDatabaseToKubernetes(k8sProvider);
 
   // FIXME: don't output the same stuff as for the normal stack
   return {
@@ -124,7 +128,7 @@ export function deployToK3s() {
       creds: pulumi.Output.create("see-pulumi-resource"),
     },
     database: {
-      connectionString: pulumi.Output.create("todo"),
+      connectionString: database,
     },
   };
 }

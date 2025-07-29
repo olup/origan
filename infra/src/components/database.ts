@@ -1,7 +1,9 @@
+import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 import * as scaleway from "@pulumiverse/scaleway";
 import { gn } from "../utils";
+import { k } from "./kubernetes";
 
 export interface DatabaseOutputs {
   host: pulumi.Output<string>;
@@ -70,4 +72,79 @@ export function deployDatabase(): DatabaseOutputs {
     database: sharedMainDatabase.name,
     connectionString,
   };
+}
+
+export function deployDatabaseToKubernetes(provider: k8s.Provider) {
+  const ns = new k8s.core.v1.Namespace(
+    k("postgres-ns"),
+    {
+      metadata: {
+        name: "postgres",
+      },
+    },
+    { provider },
+  );
+
+  const postgresOp = new k8s.helm.v4.Chart(
+    k("postgres-operator"),
+    {
+      chart: "postgres-operator",
+      name: "postgres",
+      repositoryOpts: {
+        repo: "https://raw.githubusercontent.com/zalando/postgres-operator/master/charts/postgres-operator",
+      },
+      namespace: ns.metadata.name,
+    },
+    { provider },
+  );
+  const postgresOpUi = new k8s.helm.v4.Chart(
+    k("postgres-operator-ui"),
+    {
+      chart: "postgres-operator-ui",
+      name: "postgres-ui",
+      repositoryOpts: {
+        repo: "https://raw.githubusercontent.com/zalando/postgres-operator/master/charts/postgres-operator-ui",
+      },
+      namespace: ns.metadata.name,
+    },
+    { provider },
+  );
+
+  const database = new k8s.apiextensions.CustomResource(
+    k("postgres-db"),
+    {
+      apiVersion: "acid.zalan.do/v1",
+      kind: "postgresql",
+      metadata: {
+        name: "postgres",
+        namespace: ns.metadata.name,
+      },
+      spec: {
+        teamId: "origan",
+        volume: {
+          size: "50Gi",
+        },
+        numberOfInstances: 1,
+        enableConnectionPooler: true,
+        users: {
+          postgres: ["superuser", "createdb"],
+          origan: [],
+        },
+        databases: {
+          origan: "origan",
+        },
+        postgresql: {
+          version: "17",
+        },
+      },
+    },
+    { dependsOn: postgresOp },
+  );
+
+  const userPassword = k8s.core.v1.Secret.get(
+    "postgres-origan-password",
+    pulumi.interpolate`${ns.metadata.name}/origan.${database.metadata.name}.credentials.postgresql.acid.zalan.do`,
+  ).data.apply((v) => Buffer.from(v.password, "base64").toString("utf8"));
+
+  return pulumi.interpolate`postgresql://origan:${userPassword}@localhost:5432/origan`;
 }

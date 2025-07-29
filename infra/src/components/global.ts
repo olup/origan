@@ -1,6 +1,6 @@
 import { createUser, fromSeed } from "@nats-io/nkeys";
 import * as k8s from "@pulumi/kubernetes";
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
 
 import { gn } from "../utils";
