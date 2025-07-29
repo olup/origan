@@ -1,4 +1,4 @@
-import { createUser } from "@nats-io/nkeys";
+import { createUser, fromSeed } from "@nats-io/nkeys";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as scaleway from "@pulumiverse/scaleway";
@@ -32,40 +32,10 @@ export function deployGlobal(): GlobalResourcesOutput {
   };
 }
 
-const NatsUserProvider: pulumi.dynamic.ResourceProvider = {
-  async create(_inputs) {
-    const user = createUser();
-    const privateKey = new TextDecoder().decode(user.getPrivateKey());
-    const seed = new TextDecoder().decode(user.getSeed());
-    return {
-      id: crypto.randomUUID(),
-      outs: {
-        publicKey: user.getPublicKey(),
-        privateKey: privateKey,
-        seed: seed,
-      },
-    };
-  },
-};
-
-class NatsUser extends pulumi.dynamic.Resource {
-  public readonly publicKey!: pulumi.Output<string>;
-  public readonly privateKey!: pulumi.Output<string>;
-  public readonly seed!: pulumi.Output<string>;
-
-  constructor(name: string, opts?: pulumi.CustomResourceOptions) {
-    super(
-      NatsUserProvider,
-      name,
-      { publicKey: undefined, privateKey: undefined, seed: undefined },
-      opts,
-    );
-  }
-}
-
 export function deployGlobalToKubernetes(
   provider: k8s.Provider,
-): GlobalResourcesOutput {
+  natsPublicKey: string,
+) {
   const ns = new k8s.core.v1.Namespace(
     k("nats-ns"),
     {
@@ -75,8 +45,6 @@ export function deployGlobalToKubernetes(
     },
     { provider },
   );
-
-  const user = new NatsUser(k("nats-user"));
 
   const nats = new k8s.helm.v4.Chart(
     k("nats"),
@@ -97,9 +65,11 @@ export function deployGlobalToKubernetes(
               },
             },
           },
-          accounts: {
-            origan: {
-              users: [{ user: "origan", nkey: user.publicKey }],
+          merge: {
+            accounts: {
+              origan: {
+                users: [{ nkey: natsPublicKey }],
+              },
             },
           },
         },
@@ -131,11 +101,4 @@ export function deployGlobalToKubernetes(
     },
     { provider },
   );
-
-  return {
-    nats: {
-      endpoint: pulumi.Output.create("tbd"),
-      creds: pulumi.interpolate`${user.seed}\n${user.publicKey}`,
-    },
-  };
 }

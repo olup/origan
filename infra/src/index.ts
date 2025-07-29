@@ -105,8 +105,12 @@ export function deployToK3s() {
   const k8sProvider = new k8s.Provider("k3s-provider", {
     context: "origan-k3s",
   });
-  const globals = deployGlobalToKubernetes(k8sProvider);
+  if (!config.nats) {
+    throw new Error("Missing nats config");
+  }
+  deployGlobalToKubernetes(k8sProvider, config.nats.userPublicKey);
 
+  // FIXME: don't output the same stuff as for the normal stack
   return {
     apiUrl: pulumi.Output.create("todo"),
     adminPanelUrl: pulumi.Output.create("todo"),
@@ -115,7 +119,10 @@ export function deployToK3s() {
     bucketRegion: pulumi.Output.create("todo"),
     bucketAccessKey: pulumi.Output.create("todo"),
     bucketSecretKey: pulumi.Output.create("todo"),
-    nats: globals.nats,
+    nats: {
+      endpoint: pulumi.Output.create("none"),
+      creds: pulumi.Output.create("see-pulumi-resource"),
+    },
     database: {
       connectionString: pulumi.Output.create("todo"),
     },

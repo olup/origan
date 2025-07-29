@@ -14,9 +14,14 @@ const AxiomConfig = z.object({
   dataset: z.string(),
 });
 
+const NatsConfig = z.object({
+  userPublicKey: z.string(),
+});
+
 const Config = z.object({
   github: GithubConfig,
   axiom: AxiomConfig,
+  nats: NatsConfig.optional(),
 });
 
 type Config = z.infer<typeof Config>;
