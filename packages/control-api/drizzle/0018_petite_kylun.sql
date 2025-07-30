@@ -1,0 +1,1 @@
+ALTER TABLE "github_config" ADD COLUMN "production_branch_name" text DEFAULT 'main' NOT NULL;

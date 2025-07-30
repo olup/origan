@@ -126,9 +126,7 @@ export const projectsRouter = new Hono<Env>()
       z.object({
         githubRepositoryId: z.number(),
         githubRepositoryFullName: z.string(),
-        // TODO: this parameter will stay unused until we implement
-        // relations between projects and branches
-        productionBranch: z.string(),
+        productionBranchName: z.string(),
       }),
     ),
     async (c) => {

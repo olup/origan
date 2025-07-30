@@ -187,7 +187,11 @@ export async function initiateDeployment({
   }
 
   const trackObject = trackName
-    ? await getOrCreateTrack(project.id, trackName)
+    ? await getOrCreateTrack({
+        projectId: project.id,
+        name: trackName,
+        isSystem: false,
+      })
     : undefined;
 
   if (!trackObject && trackName) {

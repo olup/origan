@@ -47,6 +47,7 @@ export async function deployBuild(
     throw new HTTPException(401, { message: "Invalid deploy token" });
   }
 
+  // TODO move to its service
   const deployment = await db.query.deploymentSchema.findFirst({
     where: eq(deploymentSchema.buildId, build.id),
     columns: {

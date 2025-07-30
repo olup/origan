@@ -119,10 +119,6 @@ export const CreateProjectPage = () => {
     getConfig().ghAppName
   }/installations/new`;
 
-  const projectUrl = form.values.name
-    ? `${form.values.name}.origan.app`
-    : "project-name.origan.app";
-
   console.log(form.values);
 
   if (!user?.githubAppInstallationId) {
@@ -226,9 +222,6 @@ export const CreateProjectPage = () => {
                   required
                   {...form.getInputProps("name")}
                 />
-                <Text size="xs" c="dimmed">
-                  Your project will be available at {projectUrl}
-                </Text>
               </Stack>
 
               <Stack gap="xs">

@@ -2,6 +2,7 @@ import { and, eq, type SQLWrapper } from "drizzle-orm";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
 import { generateReference } from "../utils/reference.js";
+import { createTrack } from "./track.service.js";
 
 export async function createProject(
   data: Omit<typeof schema.projectSchema.$inferInsert, "id" | "reference">,
@@ -16,6 +17,37 @@ export async function createProject(
     .returning();
 
   return project;
+}
+
+export async function createProjectWithProdTrack(
+  data: Omit<typeof schema.projectSchema.$inferInsert, "id" | "reference">,
+) {
+  // create the project
+  const project = await createProject(data);
+
+  // create the prod track
+  const track = await createTrack({
+    projectId: project.id,
+    name: "prod",
+    isSystem: true,
+  });
+
+  // Associate the default domain to the prod track
+  // TODO move to domains service
+  const [prodDomain] = await db
+    .insert(schema.domainSchema)
+    .values({
+      name: `${project.reference}.origan.app`,
+      projectId: project.id,
+      trackId: track.id,
+    })
+    .returning();
+
+  return {
+    project,
+    track,
+    domain: prodDomain,
+  };
 }
 
 export async function getProject(filter: {
@@ -125,12 +157,14 @@ export async function setProjectGithubConfig(
       projectId: project.id,
       githubRepositoryId: githubData.githubRepositoryId,
       githubRepositoryFullName: githubData.githubRepositoryFullName,
+      productionBranchName: githubData.productionBranchName,
     })
     .onConflictDoUpdate({
       target: schema.githubConfigSchema.projectId,
       set: {
         githubRepositoryId: githubData.githubRepositoryId,
         githubRepositoryFullName: githubData.githubRepositoryFullName,
+        productionBranchName: githubData.productionBranchName,
       },
     })
     .returning();

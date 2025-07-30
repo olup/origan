@@ -120,6 +120,20 @@
       "when": 1750710817371,
       "tag": "0016_hot_longshot",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1751918619081,
+      "tag": "0017_chunky_tarantula",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1751919723958,
+      "tag": "0018_petite_kylun",
+      "breakpoints": true
     }
   ]
 }

@@ -91,12 +91,20 @@ export async function triggerBuildTask(
   }
 
   // Create deployment for this build
+  // on the right track
+
+  let trackName = branchName;
+  if (branchName === project.githubConfig.productionBranchName) {
+    trackName = "prod";
+  }
+
   const initiateDeploymentResult = await initiateDeployment({
     projectRef: project.reference,
     buildId: build.id,
-    trackName: branchName,
+    trackName,
   });
 
+  // Build task
   try {
     const buildResourceLimits: ResourceLimits = {
       cpu: "1",

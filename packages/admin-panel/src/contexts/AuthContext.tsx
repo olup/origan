@@ -5,6 +5,7 @@ import { client } from "../libs/client";
 interface User {
   username: string;
   contactEmail: string;
+  githubAppInstallationId: number | null;
 }
 
 interface AuthContextType {

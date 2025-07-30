@@ -10,12 +10,20 @@ import {
 /**
  * Create a new track and its default domain.
  */
-export async function createTrack(projectId: string, name: string) {
+export async function createTrack({
+  projectId,
+  name,
+  isSystem = false,
+}: {
+  projectId: string;
+  name: string;
+  isSystem: boolean;
+}) {
   return await db.transaction(async (tx) => {
     // Create the track
     const [track] = await tx
       .insert(trackSchema)
-      .values({ projectId, name })
+      .values({ projectId, name, isSystem })
       .returning();
 
     // Get project reference for domain name
@@ -82,7 +90,15 @@ export async function updateTrackDomains(trackId: string) {
 /**
  * Get or create a track by name and projectId.
  */
-export async function getOrCreateTrack(projectId: string, name: string) {
+export async function getOrCreateTrack({
+  projectId,
+  name,
+  isSystem,
+}: {
+  projectId: string;
+  name: string;
+  isSystem: boolean;
+}) {
   let track = await db.query.trackSchema.findFirst({
     where: and(
       eq(trackSchema.projectId, projectId),
@@ -90,7 +106,7 @@ export async function getOrCreateTrack(projectId: string, name: string) {
     ),
   });
   if (!track) {
-    track = await createTrack(projectId, name);
+    track = await createTrack({ projectId, name, isSystem });
   }
   return track;
 }

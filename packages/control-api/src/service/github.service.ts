@@ -188,8 +188,8 @@ export async function handlePushEvent(payload: {
       return;
     }
 
-    // TODO this will soon become a configurable option
-    if (branchName !== "main") {
+    // TODO : for now, only the main production branch is auto deployed
+    if (branchName !== githubConfigWithProject.productionBranchName) {
       log.info(
         `Push to non-production branch "${branchName}" for project ${githubConfigWithProject.project.name}. No build triggered.`,
       );

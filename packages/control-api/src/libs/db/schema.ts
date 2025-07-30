@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   integer, // Add integer type
   jsonb,
   pgEnum,
@@ -35,6 +36,7 @@ export const trackSchema = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
+    isSystem: boolean("is_system").notNull().default(false), // Indicates if this is a system track (e.g., prod)
     projectId: uuid("project_id")
       .references(() => projectSchema.id, { onDelete: "cascade" })
       .notNull(),
@@ -195,6 +197,10 @@ export const githubConfigSchema = pgTable("github_config", {
     .unique(), // One GitHub config per project
   githubRepositoryId: integer("github_repository_id").notNull(),
   githubRepositoryFullName: text("github_repository_full_name").notNull(),
+
+  productionBranchName: text("production_branch_name")
+    .notNull()
+    .default("main"),
   ...timestamps,
 });
 
