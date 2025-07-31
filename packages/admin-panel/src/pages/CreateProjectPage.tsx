@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Button,
   Card,
+  Collapse,
   Container,
   Group,
   Select,
@@ -10,10 +11,19 @@ import {
   TextInput,
   Title,
   Tooltip,
+  UnstyledButton,
 } from "@mantine/core";
 import { useForm, zodResolver } from "@mantine/form";
 import { useQuery } from "@tanstack/react-query";
-import { Link2Icon, RefreshCw, RefreshCwIcon, Settings2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Link2Icon,
+  RefreshCw,
+  RefreshCwIcon,
+  Settings2,
+} from "lucide-react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { z } from "zod";
 import { getConfig } from "../config";
@@ -37,11 +47,18 @@ const formSchema = z.object({
   mainBranchName: z.string().refine((val) => val !== null, {
     message: "Please select a production branch",
   }),
+  projectRootPath: z
+    .string()
+    .regex(/^[a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9._-]+)*$/, {
+      message: "Invalid path format",
+    })
+    .optional(),
 });
 
 export const CreateProjectPage = () => {
   const { user, refetchUser, isLoading: isLoadingUser } = useAuth();
   const [, navigate] = useLocation();
+  const [isMonorepoSectionOpen, setIsMonorepoSectionOpen] = useState(false);
 
   // form
   const form = useForm({
@@ -49,6 +66,7 @@ export const CreateProjectPage = () => {
       repoId: null as number | null,
       name: "" as string,
       mainBranchName: null as string | null,
+      projectRootPath: "",
     },
     validate: zodResolver(formSchema),
   });
@@ -104,6 +122,7 @@ export const CreateProjectPage = () => {
       repoId: input.repoId,
       repoName: repository.fullName,
       branch: input.mainBranchName,
+      projectRootPath: input.projectRootPath,
     });
 
     navigate(`/projects/${project.reference}`);
@@ -255,6 +274,34 @@ export const CreateProjectPage = () => {
                 <Text size="xs" c="dimmed">
                   Select the branch to deploy in production
                 </Text>
+              </Stack>
+
+              <Stack gap="xs">
+                <UnstyledButton
+                  onClick={() =>
+                    setIsMonorepoSectionOpen(!isMonorepoSectionOpen)
+                  }
+                  style={{ width: "fit-content" }}
+                >
+                  <Group gap="xs">
+                    {isMonorepoSectionOpen ? (
+                      <ChevronDown size={16} />
+                    ) : (
+                      <ChevronRight size={16} />
+                    )}
+                    <Text size="sm" fw={500}>
+                      Monorepo Options
+                    </Text>
+                  </Group>
+                </UnstyledButton>
+                <Collapse in={isMonorepoSectionOpen}>
+                  <TextInput
+                    label="Project Root Path"
+                    placeholder="e.g., apps/web-app"
+                    description="Relative path from repository root to your project's directory. Leave empty for repository root."
+                    {...form.getInputProps("projectRootPath")}
+                  />
+                </Collapse>
               </Stack>
 
               <Button type="submit" loading={isLoadingCreateProject} fullWidth>

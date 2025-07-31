@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { type BuildEvent, type BuildStatus, NatsClient } from "@origan/nats";
 import { getConfig } from "./config.js";
 import { executeBuild } from "./utils/build.js";
@@ -56,6 +57,13 @@ async function runBuild() {
       logger,
     );
     process.chdir("/app");
+
+    const projectRootPath = config.PROJECT_ROOT_PATH?.trim() || "";
+    if (projectRootPath) {
+      const targetDir = join("/app", projectRootPath);
+      await logger.info(`Switching to project root path: ${targetDir}`);
+      process.chdir(targetDir);
+    }
     await execWithLogs(
       `git fetch origin ${config.COMMIT_SHA} --depth 1`,
       logger,

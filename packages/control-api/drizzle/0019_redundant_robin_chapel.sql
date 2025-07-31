@@ -1,0 +1,1 @@
+ALTER TABLE "github_config" ADD COLUMN "project_root_path" text DEFAULT '' NOT NULL;

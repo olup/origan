@@ -120,6 +120,7 @@ export async function triggerBuildTask(
       REPO_FULL_NAME: project.githubConfig.githubRepositoryFullName,
       COMMIT_SHA: build.commitSha,
       BRANCH: build.branch,
+      PROJECT_ROOT_PATH: project.githubConfig.projectRootPath,
       EVENTS_NATS_SERVER: env.EVENTS_NATS_SERVER,
       EVENTS_NATS_NKEY_CREDS: env.EVENTS_NATS_NKEY_CREDS || "",
       DEPLOY_TOKEN: deployToken,

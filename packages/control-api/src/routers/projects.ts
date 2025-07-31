@@ -127,6 +127,7 @@ export const projectsRouter = new Hono<Env>()
         githubRepositoryId: z.number(),
         githubRepositoryFullName: z.string(),
         productionBranchName: z.string(),
+        projectRootPath: z.string().optional(),
       }),
     ),
     async (c) => {

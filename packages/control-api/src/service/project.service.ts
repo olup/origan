@@ -158,6 +158,7 @@ export async function setProjectGithubConfig(
       githubRepositoryId: githubData.githubRepositoryId,
       githubRepositoryFullName: githubData.githubRepositoryFullName,
       productionBranchName: githubData.productionBranchName,
+      projectRootPath: githubData.projectRootPath,
     })
     .onConflictDoUpdate({
       target: schema.githubConfigSchema.projectId,
@@ -165,6 +166,7 @@ export async function setProjectGithubConfig(
         githubRepositoryId: githubData.githubRepositoryId,
         githubRepositoryFullName: githubData.githubRepositoryFullName,
         productionBranchName: githubData.productionBranchName,
+        projectRootPath: githubData.projectRootPath,
       },
     })
     .returning();

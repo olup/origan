@@ -20,6 +20,9 @@ export const BuildRunnerEnvSchema = z.object({
 
   // Deploy token for authentication
   DEPLOY_TOKEN: z.string(),
+
+  // Monorepo configuration
+  PROJECT_ROOT_PATH: z.string(),
 });
 
 // Parse and validate the environment variables

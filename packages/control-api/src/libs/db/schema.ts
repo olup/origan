@@ -201,6 +201,7 @@ export const githubConfigSchema = pgTable("github_config", {
   productionBranchName: text("production_branch_name")
     .notNull()
     .default("main"),
+  projectRootPath: text("project_root_path").notNull().default(""),
   ...timestamps,
 });
 

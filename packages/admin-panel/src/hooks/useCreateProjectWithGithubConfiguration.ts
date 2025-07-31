@@ -9,8 +9,9 @@ export const useCreateProjectWithGithubConfiguration = () =>
       repoId: number;
       repoName: string;
       branch: string;
+      projectRootPath?: string;
     }) => {
-      const { projectName, repoId, repoName, branch } = input;
+      const { projectName, repoId, repoName, branch, projectRootPath } = input;
 
       const project = await safeQuery(
         client.projects.$post({
@@ -26,7 +27,8 @@ export const useCreateProjectWithGithubConfiguration = () =>
           json: {
             githubRepositoryId: repoId,
             githubRepositoryFullName: repoName,
-            productionBranch: branch,
+            productionBranchName: branch,
+            projectRootPath,
           },
         }),
       );
