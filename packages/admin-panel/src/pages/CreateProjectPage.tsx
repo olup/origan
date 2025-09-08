@@ -28,6 +28,7 @@ import { useLocation } from "wouter";
 import { z } from "zod";
 import { getConfig } from "../config";
 import { useAuth } from "../contexts/AuthContext";
+import { useOrganization } from "../contexts/OrganizationContext";
 import { useCreateProjectWithGithubConfiguration } from "../hooks/useCreateProjectWithGithubConfiguration";
 import { client } from "../libs/client";
 import { createQueryHelper } from "../utils/honoQuery";
@@ -57,6 +58,7 @@ const formSchema = z.object({
 
 export const CreateProjectPage = () => {
   const { user, refetchUser, isLoading: isLoadingUser } = useAuth();
+  const { selectedOrganization } = useOrganization();
   const [, navigate] = useLocation();
   const [isMonorepoSectionOpen, setIsMonorepoSectionOpen] = useState(false);
 
@@ -72,9 +74,15 @@ export const CreateProjectPage = () => {
   });
 
   // query hooks
-  const { data: userRepositories, refetch: onRefreshRepos } = useQuery({
+  const {
+    data: userRepositories,
+    refetch: onRefreshRepos,
+    error: reposError,
+    isError: hasReposError,
+  } = useQuery({
     ...createQueryHelper(client.github.repos.$get),
-    enabled: !!user?.githubAppInstallationId,
+    enabled: !!user,
+    retry: false,
   });
 
   const { data: branches, refetch: onRefreshBranches } = useQuery({
@@ -117,12 +125,17 @@ export const CreateProjectPage = () => {
       throw new Error("Repository not found");
     }
 
+    if (!selectedOrganization) {
+      throw new Error("No organization selected");
+    }
+
     const project = await createProject({
       projectName: projectSafeName,
       repoId: input.repoId,
       repoName: repository.fullName,
       branch: input.mainBranchName,
-      projectRootPath: input.projectRootPath,
+      projectRootPath: input.projectRootPath || "",
+      organizationReference: selectedOrganization.reference,
     });
 
     navigate(`/projects/${project.reference}`);
@@ -140,7 +153,13 @@ export const CreateProjectPage = () => {
 
   console.log(form.values);
 
-  if (!user?.githubAppInstallationId) {
+  // Check if we have a 404 error indicating GitHub app is not installed
+  const isGithubAppNotInstalled =
+    hasReposError &&
+    reposError &&
+    (reposError as Error & { status?: number })?.status === 404;
+
+  if (isGithubAppNotInstalled) {
     return (
       <Container size="sm">
         <Stack gap="xl">

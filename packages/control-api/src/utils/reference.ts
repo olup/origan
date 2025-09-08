@@ -4,6 +4,7 @@ import { customAlphabet } from "nanoid";
 export const REFERENCE_PREFIXES = {
   BUILD: "bld_",
   DEPLOYMENT: "dpl_",
+  ORGANIZATION: "org_",
 } as const;
 
 export const generateReference = (length = 10, prefix?: string) => {

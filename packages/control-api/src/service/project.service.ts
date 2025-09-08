@@ -12,7 +12,8 @@ export async function createProject(
     .values({
       reference: generateReference(),
       name: data.name,
-      userId: data.userId,
+      organizationId: data.organizationId,
+      creatorId: data.creatorId,
     })
     .returning();
 
@@ -53,13 +54,13 @@ export async function createProjectWithProdTrack(
 export async function getProject(filter: {
   id?: string;
   reference?: string;
-  userId: string;
+  organizationId: string;
 }) {
   if (filter.id == null && filter.reference == null) {
     throw new Error("Either id or reference must be provided");
   }
   const clauses: SQLWrapper[] = [
-    eq(schema.projectSchema.userId, filter.userId),
+    eq(schema.projectSchema.organizationId, filter.organizationId),
   ];
   if (filter.id) {
     clauses.push(eq(schema.projectSchema.id, filter.id));
@@ -82,9 +83,9 @@ export async function getProject(filter: {
   return project;
 }
 
-export async function getProjects(userId: string) {
+export async function getProjects(organizationId: string) {
   const projects = await db.query.projectSchema.findMany({
-    where: eq(schema.projectSchema.userId, userId),
+    where: eq(schema.projectSchema.organizationId, organizationId),
     with: {
       deployments: {
         with: {
@@ -100,7 +101,7 @@ export async function getProjects(userId: string) {
 
 export async function updateProject(
   id: string,
-  userId: string,
+  organizationId: string,
   data: Partial<typeof schema.projectSchema.$inferInsert>,
 ) {
   const [project] = await db
@@ -111,7 +112,7 @@ export async function updateProject(
     .where(
       and(
         eq(schema.projectSchema.id, id),
-        eq(schema.projectSchema.userId, userId),
+        eq(schema.projectSchema.organizationId, organizationId),
       ),
     )
     .returning();
@@ -119,14 +120,14 @@ export async function updateProject(
   return project;
 }
 
-export async function deleteProject(id: string, userId: string) {
+export async function deleteProject(id: string, organizationId: string) {
   // The cascade delete will handle removing associated deployments and domains
   const [project] = await db
     .delete(schema.projectSchema)
     .where(
       and(
         eq(schema.projectSchema.id, id),
-        eq(schema.projectSchema.userId, userId),
+        eq(schema.projectSchema.organizationId, organizationId),
       ),
     )
     .returning();
@@ -139,14 +140,29 @@ export async function deleteProject(id: string, userId: string) {
 // Create or update GitHub config for a project
 export async function setProjectGithubConfig(
   reference: string,
-  userId: string,
-  githubData: Omit<typeof schema.githubConfigSchema.$inferInsert, "projectId">,
+  organizationId: string,
+  userId: string, // Still need userId for GitHub installation lookup
+  githubData: Omit<
+    typeof schema.githubConfigSchema.$inferInsert,
+    "projectId" | "githubAppInstallationId"
+  >,
 ) {
-  // Verify project exists and belongs to user
-  const project = await getProject({ reference: reference, userId });
+  // Verify project exists and belongs to organization
+  const project = await getProject({ reference: reference, organizationId });
   if (project == null) {
     throw new Error(
-      `Project not found with reference: ${reference} (userId: ${userId})`,
+      `Project not found with reference: ${reference} (organizationId: ${organizationId})`,
+    );
+  }
+
+  // Find the user's GitHub app installation
+  const installation = await db.query.githubAppInstallationSchema.findFirst({
+    where: eq(schema.githubAppInstallationSchema.userId, userId),
+  });
+
+  if (!installation) {
+    throw new Error(
+      `No GitHub App installation found for user ID: ${userId}. Please install the GitHub App first.`,
     );
   }
 
@@ -157,6 +173,7 @@ export async function setProjectGithubConfig(
       projectId: project.id,
       githubRepositoryId: githubData.githubRepositoryId,
       githubRepositoryFullName: githubData.githubRepositoryFullName,
+      githubAppInstallationId: installation.id,
       productionBranchName: githubData.productionBranchName,
       projectRootPath: githubData.projectRootPath,
     })
@@ -165,6 +182,7 @@ export async function setProjectGithubConfig(
       set: {
         githubRepositoryId: githubData.githubRepositoryId,
         githubRepositoryFullName: githubData.githubRepositoryFullName,
+        githubAppInstallationId: installation.id,
         productionBranchName: githubData.productionBranchName,
         projectRootPath: githubData.projectRootPath,
       },
@@ -177,10 +195,10 @@ export async function setProjectGithubConfig(
 // Remove GitHub config for a project
 export async function removeProjectGithubConfig(
   projectId: string,
-  userId: string,
+  organizationId: string,
 ): Promise<void> {
-  // Verify project exists and belongs to user
-  const project = await getProject({ id: projectId, userId });
+  // Verify project exists and belongs to organization
+  const project = await getProject({ id: projectId, organizationId });
   if (!project) {
     throw new Error(`Project not found with ID: ${projectId}`);
   }
@@ -194,10 +212,10 @@ export async function removeProjectGithubConfig(
 // Get GitHub config for a project
 export async function getProjectGithubConfig(
   projectId: string,
-  userId: string,
+  organizationId: string,
 ) {
-  // Verify project exists and belongs to user
-  const project = await getProject({ id: projectId, userId });
+  // Verify project exists and belongs to organization
+  const project = await getProject({ id: projectId, organizationId });
   if (!project) {
     throw new Error(`Project not found with ID: ${projectId}`);
   }

@@ -1,8 +1,14 @@
 #!/usr/bin/env node
+// TODO: Split each command into its own file for better organization
 import { Cli, Command, Option } from "clipanion";
 import pc from "picocolors";
 import * as R from "remeda";
-import { login, logout, whoami } from "./services/auth.service.js";
+import {
+  checkAuthStatus,
+  login,
+  logout,
+  whoami,
+} from "./services/auth.service.js";
 import {
   deploy,
   getDeploymentByRef,
@@ -11,6 +17,11 @@ import {
 import { startDev } from "./services/dev.service.js";
 import { init } from "./services/init.service.js";
 import { streamLogs } from "./services/logs.service.js";
+import {
+  getCurrentOrganization,
+  getUserOrganizations,
+  setCurrentOrganization,
+} from "./services/organization.service.js";
 import { getProjects } from "./services/project.service.js";
 import { table } from "./utils/console-ui.js";
 import { log } from "./utils/logger.js";
@@ -217,6 +228,135 @@ class InitCommand extends Command {
   }
 }
 
+class OrgsCommand extends Command {
+  static paths = [["orgs"]];
+
+  static usage = Command.Usage({
+    description: "List all organizations you have access to",
+  });
+
+  async execute() {
+    // Check if user is authenticated
+    const isAuthenticated = await checkAuthStatus();
+    if (!isAuthenticated) {
+      log.error("You need to be logged in to view organizations.");
+      log.info("Run 'origan login' to authenticate.");
+      return 1;
+    }
+
+    try {
+      // Get all organizations
+      const organizations = await getUserOrganizations();
+
+      if (organizations.length === 0) {
+        log.warn("You don't have access to any organizations.");
+        return 0;
+      }
+
+      // Get current organization
+      const currentOrg = await getCurrentOrganization();
+
+      // Prepare data for table
+      const tableData = organizations.map((org) => {
+        const isCurrent = org.reference === currentOrg?.reference;
+        return {
+          "Org Name": org.name,
+          "Org Ref": org.reference,
+          Selected: isCurrent ? "true" : "",
+        };
+      });
+
+      // Display table
+      table(tableData);
+    } catch (error) {
+      log.error(
+        "Failed to fetch organizations:",
+        error instanceof Error ? error.message : "Unknown error",
+      );
+      return 1;
+    }
+
+    return 0;
+  }
+}
+
+class OrgSwitchCommand extends Command {
+  static paths = [["switch"]];
+
+  static usage = Command.Usage({
+    description: "Switch between organizations",
+    details: "Switch to a different organization by providing its reference.",
+    examples: [["Switch to specific org", "$0 switch my-org-ref"]],
+  });
+
+  organizationReference = Option.String({ required: true });
+
+  async execute() {
+    // Check if user is authenticated
+    const isAuthenticated = await checkAuthStatus();
+    if (!isAuthenticated) {
+      log.error("You need to be logged in to switch organizations.");
+      log.info("Run 'origan login' to authenticate.");
+      return 1;
+    }
+
+    try {
+      // Get all organizations
+      const organizations = await getUserOrganizations();
+
+      if (organizations.length === 0) {
+        log.warn("You don't have access to any organizations.");
+        return 0;
+      }
+
+      if (organizations.length === 1) {
+        log.info(
+          `You only have access to one organization: ${organizations[0].name}`,
+        );
+        return 0;
+      }
+
+      // Get current organization
+      const currentOrg = await getCurrentOrganization();
+
+      // Find organization by reference
+      const selectedOrg = organizations.find(
+        (org) => org.reference === this.organizationReference,
+      );
+
+      if (!selectedOrg) {
+        log.error(
+          `Organization with reference '${this.organizationReference}' not found.`,
+        );
+        log.info("Run 'origan orgs' to see available organizations.");
+        return 1;
+      }
+
+      if (selectedOrg.reference === currentOrg?.reference) {
+        log.info(`Already on organization '${selectedOrg.name}'.`);
+        return 0;
+      }
+
+      // Switch to the new organization
+      await setCurrentOrganization({
+        reference: selectedOrg.reference,
+      });
+
+      log.success(
+        `Switched to organization '${selectedOrg.name}' (${selectedOrg.reference})`,
+      );
+    } catch (error) {
+      log.error(
+        "Failed to switch organization:",
+        error instanceof Error ? error.message : "Unknown error",
+      );
+      return 1;
+    }
+
+    return 0;
+  }
+}
+
 const cli = new Cli({
   binaryName: "origan",
   binaryVersion: "0.1.0",
@@ -231,5 +371,7 @@ cli.register(InitCommand);
 cli.register(ProjectsCommand);
 cli.register(DeploymentsCommand);
 cli.register(LogsCommand);
+cli.register(OrgsCommand);
+cli.register(OrgSwitchCommand);
 
 cli.runExit(process.argv.slice(2));

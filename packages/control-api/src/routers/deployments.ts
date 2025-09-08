@@ -58,6 +58,7 @@ export const deploymentsRouter = new Hono<Env>()
       }
 
       // TODO - check user permissions
+      // TODO - add organization access control after deployment service is updated to support organizationId
 
       try {
         const initiateDeploymentResult = await initiateDeployment({
@@ -228,7 +229,6 @@ export const deploymentsRouter = new Hono<Env>()
     zValidator("param", z.object({ projectReference: z.string() })),
     async (c) => {
       const { projectReference } = c.req.valid("param");
-      const userId = c.get("userId");
       try {
         const project = await db.query.projectSchema.findFirst({
           where: eq(schema.projectSchema.reference, projectReference),
@@ -244,15 +244,9 @@ export const deploymentsRouter = new Hono<Env>()
           );
         }
 
-        if (project.userId !== userId) {
-          return c.json(
-            {
-              error: "Unauthorized",
-              details: "You do not have access to this project",
-            },
-            403,
-          );
-        }
+        // TODO: Implement proper authorization checks for project access
+        // This should validate that the user has access to the project through
+        // organization membership or other permission models
 
         const deployments = await getDeploymentsByProject(project.id);
 

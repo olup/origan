@@ -5,6 +5,7 @@ import path from "node:path";
 interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+  currentOrganizationRef?: string;
 }
 
 // Path to auth file in user's home directory

@@ -8,8 +8,9 @@ import {
   Menu,
   Text,
 } from "@mantine/core";
-import { LogOut, Sprout, User } from "lucide-react";
+import { ChevronDown, LogOut, Sprout, User } from "lucide-react";
 import { Route, Router, Switch, useLocation } from "wouter";
+import { OrganizationSwitcher } from "./components/OrganizationSwitcher";
 import { useAuth } from "./contexts/AuthContext";
 import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { DeploymentDetailsPage } from "./pages/DeploymentDetailsPage";
@@ -29,7 +30,7 @@ function App() {
     <AppShell header={{ height: 60 }} bg="rgb(249, 250, 251)">
       <AppShell.Header>
         <Container size="xl" h="100%">
-          <Group h="100%" align="center" justify="space-between">
+          <Group h="100%" align="center">
             <Flex
               align="center"
               style={{ cursor: "pointer" }}
@@ -40,31 +41,34 @@ function App() {
                 Origan
               </Text>
             </Flex>
+            <OrganizationSwitcher />
+            <Box flex={1} />
 
-            <Menu shadow="md" width={200} position="bottom-end">
-              <Menu.Target>
-                <Button
-                  variant="subtle"
-                  size="sm"
-                  rightSection={<User size={14} />}
-                >
-                  {user.username}
-                </Button>
-              </Menu.Target>
+            <Group gap="sm">
+              <Menu shadow="md" width={200} position="bottom-end">
+                <Menu.Target>
+                  <Button
+                    variant="subtle"
+                    size="sm"
+                    leftSection={<User size={14} />}
+                    rightSection={<ChevronDown size={14} />}
+                  >
+                    {user.username}
+                  </Button>
+                </Menu.Target>
 
-              <Menu.Dropdown>
-                <Menu.Label>Account</Menu.Label>
-                <Menu.Item>{user.contactEmail}</Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  color="red"
-                  leftSection={<LogOut size={14} />}
-                  onClick={doLogout}
-                >
-                  Logout
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+                <Menu.Dropdown>
+                  <Menu.Label>{user.contactEmail}</Menu.Label>
+                  <Menu.Item
+                    color="red"
+                    leftSection={<LogOut size={14} />}
+                    onClick={doLogout}
+                  >
+                    Logout
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
           </Group>
         </Container>
       </AppShell.Header>

@@ -7,6 +7,7 @@ import "./index.css";
 import "@mantine/core/styles.css";
 import App from "./App";
 import { AuthProvider } from "./contexts/AuthContext";
+import { OrganizationProvider } from "./contexts/OrganizationContext";
 
 const queryClient = new QueryClient();
 const rootElement = document.getElementById("root");
@@ -33,9 +34,11 @@ ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <MantineProvider theme={mantineTheme}>
-          <App />
-        </MantineProvider>
+        <OrganizationProvider>
+          <MantineProvider theme={mantineTheme}>
+            <App />
+          </MantineProvider>
+        </OrganizationProvider>
       </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>,

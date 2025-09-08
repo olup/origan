@@ -12,19 +12,30 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { FolderIcon, RocketIcon } from "lucide-react";
 import { useLocation } from "wouter";
+import { useOrganization } from "../contexts/OrganizationContext";
 import { client } from "../libs/client";
 
 export const ProjectsPage = () => {
   const [, navigate] = useLocation();
+  const { selectedOrganization } = useOrganization();
+
   const projects = useQuery({
-    queryKey: [client.projects.$url().toString()],
-    queryFn: () =>
-      client.projects.$get().then((res) => {
-        if (!res.ok) {
-          return null;
-        }
-        return res.json();
-      }),
+    queryKey: ["projects", selectedOrganization?.reference],
+    queryFn: () => {
+      if (!selectedOrganization) return null;
+
+      return client.projects
+        .$get({
+          query: { organizationReference: selectedOrganization.reference },
+        })
+        .then((res) => {
+          if (!res.ok) {
+            return null;
+          }
+          return res.json();
+        });
+    },
+    enabled: !!selectedOrganization,
   });
 
   return (

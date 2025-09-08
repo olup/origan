@@ -3,7 +3,11 @@ import type { RestEndpointMethodTypes } from "@octokit/rest";
 import { eq } from "drizzle-orm";
 import { getLogger } from "../instrumentation.js";
 import { db } from "../libs/db/index.js";
-import { githubConfigSchema, userSchema } from "../libs/db/schema.js";
+import {
+  githubAppInstallationSchema,
+  githubConfigSchema,
+  userSchema,
+} from "../libs/db/schema.js";
 import { githubAppInstance } from "../libs/github.js";
 import { triggerBuildTask } from "./build/index.js";
 
@@ -25,18 +29,43 @@ export async function handleInstallationCreated({
   const log = getLogger();
 
   try {
+    // Find the user by GitHub provider reference
+    const user = await db.query.userSchema.findFirst({
+      where: eq(userSchema.githubProviderReference, githubAccountId),
+    });
+
+    if (!user) {
+      log.error(
+        `No user found with GitHub provider reference: ${githubAccountId}`,
+      );
+      throw new Error(
+        `User not found for GitHub account ID: ${githubAccountId}`,
+      );
+    }
+
+    // Create or update the GitHub app installation record
     await db
-      .update(userSchema)
-      .set({ githubAppInstallationId: installationId })
-      .where(eq(userSchema.githubProviderReference, githubAccountId));
+      .insert(githubAppInstallationSchema)
+      .values({
+        githubInstallationId: installationId,
+        githubAccountId,
+        userId: user.id,
+      })
+      .onConflictDoUpdate({
+        target: githubAppInstallationSchema.githubInstallationId,
+        set: {
+          githubAccountId,
+          userId: user.id,
+        },
+      });
 
     log.info(
-      `GitHub App installed: ${installationId} for account ${githubAccountId}`,
+      `GitHub App installed: ${installationId} for account ${githubAccountId}, linked to user ${user.id}`,
     );
   } catch (dbError) {
     log
       .withError(dbError)
-      .error("Database error updating user installation ID");
+      .error("Database error creating/updating installation record");
     throw dbError;
   }
 }
@@ -47,22 +76,23 @@ type HandleInstallationDeletedProps = {
 };
 
 export async function handleInstallationDeleted({
+  installationId,
   githubAccountId,
 }: HandleInstallationDeletedProps) {
   const log = getLogger();
 
   try {
     await db
-      .update(userSchema)
-      .set({ githubAppInstallationId: null })
-      .where(eq(userSchema.githubProviderReference, githubAccountId));
+      .delete(githubAppInstallationSchema)
+      .where(
+        eq(githubAppInstallationSchema.githubInstallationId, installationId),
+      );
+
     log.info(
-      `Removed installation ID for user with GitHub account ID ${githubAccountId}`,
+      `Removed installation ${installationId} for GitHub account ID ${githubAccountId}`,
     );
   } catch (dbError) {
-    log
-      .withError(dbError)
-      .error("Database error removing user installation ID");
+    log.withError(dbError).error("Database error removing installation record");
     throw dbError;
   }
 }
@@ -172,11 +202,8 @@ export async function handlePushEvent(payload: {
       {
         where: eq(githubConfigSchema.githubRepositoryId, githubRepositoryId),
         with: {
-          project: {
-            with: {
-              user: true,
-            },
-          },
+          project: true,
+          githubAppInstallation: true,
         },
       },
     );
@@ -184,6 +211,13 @@ export async function handlePushEvent(payload: {
     if (!githubConfigWithProject || !githubConfigWithProject.project) {
       log.info(
         `No project or GitHub configuration found for repository ID ${githubRepositoryId}.`,
+      );
+      return;
+    }
+
+    if (!githubConfigWithProject.githubAppInstallation) {
+      log.error(
+        `No GitHub App installation found for project ${githubConfigWithProject.project.name}`,
       );
       return;
     }

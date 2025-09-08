@@ -31,8 +31,11 @@ export async function triggerBuildTask(
   const project = await db.query.projectSchema.findFirst({
     where: eq(projectSchema.id, projectId),
     with: {
-      githubConfig: true,
-      user: true,
+      githubConfig: {
+        with: {
+          githubAppInstallation: true,
+        },
+      },
     },
   });
 
@@ -46,18 +49,18 @@ export async function triggerBuildTask(
     return { error: "GitHub configuration not found for project" };
   }
 
-  if (!project.user?.githubAppInstallationId) {
-    log.error(
-      `GitHub App Installation ID not found for user associated with project ${projectId}.`,
-    );
-    return { error: "GitHub App Installation ID not found for project user" };
+  const githubConfig = project.githubConfig;
+
+  if (!githubConfig?.githubAppInstallation?.githubInstallationId) {
+    log.error(`GitHub App Installation not found for project ${projectId}.`);
+    return { error: "GitHub App Installation not found for project" };
   }
 
   let githubToken: string;
   try {
     githubToken = await generateGitHubInstallationToken(
-      project.user.githubAppInstallationId,
-      project.githubConfig.githubRepositoryId,
+      githubConfig.githubAppInstallation.githubInstallationId,
+      githubConfig.githubRepositoryId,
     );
     if (!githubToken) {
       throw new Error("Failed to generate GitHub token, received undefined.");
@@ -94,7 +97,7 @@ export async function triggerBuildTask(
   // on the right track
 
   let trackName = branchName;
-  if (branchName === project.githubConfig.productionBranchName) {
+  if (branchName === githubConfig.productionBranchName) {
     trackName = "prod";
   }
 
@@ -117,10 +120,10 @@ export async function triggerBuildTask(
     const buildRunnerEnv = {
       BUILD_ID: build.id,
       GITHUB_TOKEN: githubToken,
-      REPO_FULL_NAME: project.githubConfig.githubRepositoryFullName,
+      REPO_FULL_NAME: githubConfig.githubRepositoryFullName,
       COMMIT_SHA: build.commitSha,
       BRANCH: build.branch,
-      PROJECT_ROOT_PATH: project.githubConfig.projectRootPath,
+      PROJECT_ROOT_PATH: githubConfig.projectRootPath,
       EVENTS_NATS_SERVER: env.EVENTS_NATS_SERVER,
       EVENTS_NATS_NKEY_CREDS: env.EVENTS_NATS_NKEY_CREDS || "",
       DEPLOY_TOKEN: deployToken,

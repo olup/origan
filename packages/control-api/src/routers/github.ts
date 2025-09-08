@@ -7,7 +7,7 @@ import { z } from "zod";
 import { env } from "../config.js";
 import type { Env } from "../instrumentation.js";
 import { db } from "../libs/db/index.js";
-import { userSchema } from "../libs/db/schema.js";
+import { githubAppInstallationSchema } from "../libs/db/schema.js";
 import { auth } from "../middleware/auth.js";
 import {
   getRepoBranches,
@@ -133,14 +133,14 @@ export const githubRouter = new Hono<Env>()
   .get("/repos", auth(), async (c) => {
     const userId = c.get("userId");
     try {
-      const dbUser = await db.query.userSchema.findFirst({
-        where: eq(userSchema.id, userId),
-        columns: {
-          githubAppInstallationId: true,
+      // Find GitHub app installation for this user
+      const installation = await db.query.githubAppInstallationSchema.findFirst(
+        {
+          where: eq(githubAppInstallationSchema.userId, userId),
         },
-      });
+      );
 
-      if (!dbUser || !dbUser.githubAppInstallationId) {
+      if (!installation) {
         c.var.log.error(
           `No GitHub App installation found for user ID: ${userId}`,
         );
@@ -150,7 +150,7 @@ export const githubRouter = new Hono<Env>()
       }
 
       const githubRepositories = await listInstallationRepositories(
-        dbUser.githubAppInstallationId,
+        installation.githubInstallationId,
       );
 
       const repositories = githubRepositories.map((repo) => ({
@@ -184,21 +184,21 @@ export const githubRouter = new Hono<Env>()
     const githubRepositoryId = Number.parseInt(githubRepositoryIdString, 10);
 
     try {
-      const dbUser = await db.query.userSchema.findFirst({
-        where: eq(userSchema.id, userId),
-        columns: {
-          githubAppInstallationId: true,
+      // Find GitHub app installation for this user
+      const installation = await db.query.githubAppInstallationSchema.findFirst(
+        {
+          where: eq(githubAppInstallationSchema.userId, userId),
         },
-      });
+      );
 
-      if (!dbUser || !dbUser.githubAppInstallationId) {
+      if (!installation) {
         throw new HTTPException(404, {
           message: "GitHub App not installed or installation ID not valid.",
         });
       }
 
       const githubBRanched = await getRepoBranches(
-        dbUser.githubAppInstallationId,
+        installation.githubInstallationId,
         githubRepositoryId,
       );
 

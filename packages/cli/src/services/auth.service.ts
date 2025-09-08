@@ -2,6 +2,10 @@ import { z } from "zod";
 import { baseClient, getAuthenticatedClient } from "../libs/client.js";
 import { log } from "../utils/logger.js";
 import { clearTokens, readTokens, saveTokens } from "../utils/token.js";
+import {
+  getUserOrganizations,
+  setCurrentOrganization,
+} from "./organization.service.js";
 
 // Polling interval for checking auth status (3 seconds)
 const POLLING_INTERVAL = 3000;
@@ -81,6 +85,21 @@ export async function login(): Promise<void> {
 
     // Save tokens
     await saveTokens(tokens);
+
+    // Fetch user's organizations and set the first one as current
+    try {
+      const orgs = await getUserOrganizations();
+      if (orgs.length > 0) {
+        await setCurrentOrganization({
+          reference: orgs[0].reference,
+        });
+      }
+    } catch (error) {
+      log.error(
+        "Failed to fetch organizations:",
+        error instanceof Error ? error.message : "Unknown error",
+      );
+    }
 
     log.success("Successfully logged in!");
   } catch (error) {
@@ -170,8 +189,12 @@ export async function getAccessToken(): Promise<string | null> {
     // Token is expired, attempt to refresh
     const newTokens = await refreshTokens(tokens.refreshToken);
     if (newTokens) {
-      // Save both new tokens
-      await saveTokens(newTokens);
+      // Preserve organization info when refreshing tokens
+      const currentTokens = await readTokens();
+      await saveTokens({
+        ...newTokens,
+        currentOrganizationRef: currentTokens?.currentOrganizationRef,
+      });
       return newTokens.accessToken;
     }
 

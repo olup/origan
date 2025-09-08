@@ -16,6 +16,9 @@ export const log = {
   info(...messages: string[]) {
     console.log(pc.green(messages.join(" ")));
   },
+  warn(...messages: string[]) {
+    console.warn(pc.yellow(messages.join(" ")));
+  },
   debug(...messages: string[]) {
     console.log(pc.dim(messages.join(" ")));
   },

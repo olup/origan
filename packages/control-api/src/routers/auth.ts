@@ -15,6 +15,7 @@ import {
 } from "../libs/db/schema.js";
 import { auth } from "../middleware/auth.js";
 import { type jwtPayloadSchema, oauthStateSchema } from "../schemas/auth.js";
+import { createDefaultOrganization } from "../service/organization.service.js";
 import type { GitHubTokenResponse, GitHubUser } from "../types/github.js";
 
 // Token expiry times
@@ -184,6 +185,9 @@ export const authRouter = new Hono<Env>()
           })
           .returning();
         user = results[0];
+
+        // Create default organization for new user
+        await createDefaultOrganization(user.id, user.username);
       }
 
       const { accessToken, refreshToken } = await generateTokens(user.id, {
@@ -379,7 +383,6 @@ export const authRouter = new Hono<Env>()
         username: true,
         createdAt: true,
         updatedAt: true,
-        githubAppInstallationId: true,
       },
     });
     if (!user) {

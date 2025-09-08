@@ -37,7 +37,23 @@ export function createQueryHelper<THandler extends (args: any) => Promise<any>>(
 } {
   const queryKey = [key ?? handler.name ?? "anonymous", inputArgs] as const;
 
-  const queryFn = () => handler({ ...inputArgs }).then((r) => r.json());
+  const queryFn = async () => {
+    const response = await handler({ ...inputArgs });
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      throw Object.assign(
+        new Error(error.error || "Network response was not ok"),
+        {
+          status: response.status,
+          statusText: response.statusText,
+          data: error,
+        },
+      );
+    }
+    return response.json();
+  };
 
   return {
     queryKey,

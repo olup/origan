@@ -9,6 +9,7 @@ import { buildsRouter } from "./builds.js";
 import { deploymentsRouter } from "./deployments.js";
 import { githubRouter } from "./github.js"; // Import the new GitHub router
 import { logsRouter } from "./logs.js";
+import { organizationRouter } from "./organization.js";
 import { projectsRouter } from "./projects.js";
 
 // Create main router with middleware
@@ -28,7 +29,8 @@ const api = new Hono<Env>()
   .route("/deployments", deploymentsRouter)
   .route("/github", githubRouter)
   .route("/logs", logsRouter)
-  .route("/builds", buildsRouter);
+  .route("/builds", buildsRouter)
+  .route("/organization", organizationRouter);
 
 export default api;
 

@@ -5,6 +5,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex, // Import uniqueIndex
@@ -12,20 +13,74 @@ import {
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./columns.helpers.js";
 
+// Organization schema
+export const organizationSchema = pgTable("organization", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  reference: text("reference").notNull().unique(),
+  name: text("name").notNull(),
+  ...timestamps,
+});
+
+// Organization membership schema
+export const organizationMembershipSchema = pgTable(
+  "organization_membership",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => userSchema.id),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizationSchema.id),
+    ...timestamps,
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.organizationId] }),
+  }),
+);
+
+// Organization relations
+export const organizationRelations = relations(
+  organizationSchema,
+  ({ many }) => ({
+    memberships: many(organizationMembershipSchema),
+    projects: many(projectSchema),
+  }),
+);
+
+// Organization membership relations
+export const organizationMembershipRelations = relations(
+  organizationMembershipSchema,
+  ({ one }) => ({
+    user: one(userSchema, {
+      fields: [organizationMembershipSchema.userId],
+      references: [userSchema.id],
+    }),
+    organization: one(organizationSchema, {
+      fields: [organizationMembershipSchema.organizationId],
+      references: [organizationSchema.id],
+    }),
+  }),
+);
+
 export const projectSchema = pgTable("project", {
   id: uuid("id").primaryKey().defaultRandom(),
   reference: text("reference").notNull().unique(),
   name: text("name").notNull(),
-  userId: uuid("user_id")
-    .references(() => userSchema.id)
+  organizationId: uuid("organization_id")
+    .references(() => organizationSchema.id)
     .notNull(),
+  creatorId: uuid("creator_id").references(() => userSchema.id),
   ...timestamps,
 });
 
 export const projectRelations = relations(projectSchema, ({ many, one }) => ({
   deployments: many(deploymentSchema),
-  user: one(userSchema, {
-    fields: [projectSchema.userId],
+  organization: one(organizationSchema, {
+    fields: [projectSchema.organizationId],
+    references: [organizationSchema.id],
+  }),
+  creator: one(userSchema, {
+    fields: [projectSchema.creatorId],
     references: [userSchema.id],
   }),
   githubConfig: one(githubConfigSchema),
@@ -152,9 +207,15 @@ export const userSchema = pgTable("users", {
   githubProviderReference: text("github_provider_reference").unique(),
   username: text("username").notNull(),
   contactEmail: text("contact_email").notNull(),
-  githubAppInstallationId: integer("github_app_installation_id"),
   ...timestamps,
 });
+
+export const userRelations = relations(userSchema, ({ many, one }) => ({
+  createdProjects: many(projectSchema),
+  organizationMemberships: many(organizationMembershipSchema),
+  refreshTokens: many(refreshTokenSchema),
+  githubAppInstallation: one(githubAppInstallationSchema),
+}));
 
 // TODO: handle failed sessions
 export const authSessionStatusEnum = pgEnum("auth_session_status", [
@@ -188,6 +249,30 @@ export const refreshTokenSchema = pgTable("refresh_tokens", {
   rotatedAt: timestamp("rotated_at", { withTimezone: true }),
 });
 
+// GitHub App Installation schema
+export const githubAppInstallationSchema = pgTable("github_app_installation", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  githubInstallationId: integer("github_installation_id").notNull().unique(),
+  githubAccountId: text("github_account_id").notNull(),
+  userId: uuid("user_id")
+    .references(() => userSchema.id)
+    .notNull()
+    .unique(),
+  ...timestamps,
+});
+
+// GitHub App Installation relations
+export const githubAppInstallationRelations = relations(
+  githubAppInstallationSchema,
+  ({ one, many }) => ({
+    user: one(userSchema, {
+      fields: [githubAppInstallationSchema.userId],
+      references: [userSchema.id],
+    }),
+    githubConfigs: many(githubConfigSchema),
+  }),
+);
+
 // GitHub configuration schema
 export const githubConfigSchema = pgTable("github_config", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -197,7 +282,9 @@ export const githubConfigSchema = pgTable("github_config", {
     .unique(), // One GitHub config per project
   githubRepositoryId: integer("github_repository_id").notNull(),
   githubRepositoryFullName: text("github_repository_full_name").notNull(),
-
+  githubAppInstallationId: uuid("github_app_installation_id")
+    .references(() => githubAppInstallationSchema.id)
+    .notNull(),
   productionBranchName: text("production_branch_name")
     .notNull()
     .default("main"),
@@ -212,6 +299,10 @@ export const githubConfigRelations = relations(
     project: one(projectSchema, {
       fields: [githubConfigSchema.projectId],
       references: [projectSchema.id],
+    }),
+    githubAppInstallation: one(githubAppInstallationSchema, {
+      fields: [githubConfigSchema.githubAppInstallationId],
+      references: [githubAppInstallationSchema.id],
     }),
   }),
 );

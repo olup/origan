@@ -1,5 +1,6 @@
 import { getAuthenticatedClient } from "../libs/client.js";
 import { log } from "../utils/logger.js";
+import { getCurrentOrganization } from "./organization.service.js";
 
 // TODO : Move this to a common place and use it in all services
 interface ErrorResponse {
@@ -35,8 +36,19 @@ function handleApiError(
  */
 export async function getProjects() {
   try {
+    // Get current organization
+    const currentOrg = await getCurrentOrganization();
+    if (!currentOrg) {
+      log.error("No organization selected. Please select one first.");
+      process.exit(1);
+    }
+
     const client = await getAuthenticatedClient();
-    const response = await client.projects.$get();
+    const response = await client.projects.$get({
+      query: {
+        organizationReference: currentOrg.reference,
+      },
+    });
     const data = await response.json();
 
     if ("error" in data) {
@@ -55,23 +67,18 @@ export async function getProjects() {
 
 export async function getProjectByRef(projectRef: string) {
   try {
-    const client = await getAuthenticatedClient();
-    const response = await client.projects[":reference"].$get({
-      param: {
-        reference: projectRef,
-      },
-    });
+    const projects = await getProjects();
+    const project = projects.find((p) => p.reference === projectRef);
 
-    const data = await response.json();
-
-    if ("error" in data) {
-      handleApiError(data, response.status as number, "Project");
+    if (!project) {
+      log.error(`Project ${projectRef} not found.`);
+      process.exit(1);
     }
 
-    return data;
+    return project;
   } catch (error) {
     log.error(
-      "Failed to fetch projects:",
+      "Failed to fetch project:",
       error instanceof Error ? error.message : "Unknown error",
     );
     throw error;
@@ -83,10 +90,18 @@ export async function getProjectByRef(projectRef: string) {
  */
 export async function createProject(name: string) {
   try {
+    // Get current organization
+    const currentOrg = await getCurrentOrganization();
+    if (!currentOrg) {
+      log.error("No organization selected. Please select one first.");
+      process.exit(1);
+    }
+
     const client = await getAuthenticatedClient();
     const response = await client.projects.$post({
       json: {
         name,
+        organizationReference: currentOrg.reference,
       },
     });
 
