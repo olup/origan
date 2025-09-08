@@ -7,6 +7,7 @@ import { type Env, loggerMiddleware } from "../instrumentation.js";
 import { authRouter } from "./auth.js";
 import { buildsRouter } from "./builds.js";
 import { deploymentsRouter } from "./deployments.js";
+import { environmentsRouter } from "./environments.js";
 import { githubRouter } from "./github.js"; // Import the new GitHub router
 import { logsRouter } from "./logs.js";
 import { organizationRouter } from "./organization.js";
@@ -27,6 +28,7 @@ const api = new Hono<Env>()
   .route("/auth", authRouter)
   .route("/projects", projectsRouter)
   .route("/deployments", deploymentsRouter)
+  .route("/environments", environmentsRouter)
   .route("/github", githubRouter)
   .route("/logs", logsRouter)
   .route("/builds", buildsRouter)

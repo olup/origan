@@ -86,10 +86,7 @@ function App() {
               <Route path="/projects/:reference">
                 <ProjectPage />
               </Route>
-              <Route path="/projects/:reference/deployments">
-                <ProjectPage />
-              </Route>
-              <Route path="/projects/:reference/settings">
+              <Route path="/projects/:reference/*">
                 <ProjectPage />
               </Route>
               <Route path="/deployments/:reference">

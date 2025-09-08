@@ -84,6 +84,8 @@ export const projectRelations = relations(projectSchema, ({ many, one }) => ({
     references: [userSchema.id],
   }),
   githubConfig: one(githubConfigSchema),
+  environments: many(environmentsSchema),
+  tracks: many(trackSchema),
 }));
 
 export const trackSchema = pgTable(
@@ -95,6 +97,9 @@ export const trackSchema = pgTable(
     projectId: uuid("project_id")
       .references(() => projectSchema.id, { onDelete: "cascade" })
       .notNull(),
+    environmentId: uuid("environment_id").references(
+      () => environmentsSchema.id,
+    ),
     ...timestamps,
   },
   (table) => ({
@@ -112,7 +117,79 @@ export const trackRelations = relations(trackSchema, ({ one, many }) => ({
   }),
   deployments: many(deploymentSchema),
   domains: many(domainSchema),
+  environment: one(environmentsSchema, {
+    fields: [trackSchema.environmentId],
+    references: [environmentsSchema.id],
+  }),
 }));
+
+// Environment schemas
+export const environmentsSchema = pgTable(
+  "environments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projectSchema.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    isSystem: boolean("is_system").notNull().default(false),
+    isDefault: boolean("is_default").notNull().default(false),
+    ...timestamps,
+  },
+  (table) => ({
+    projectNameIdx: uniqueIndex("project_name_idx").on(
+      table.projectId,
+      table.name,
+    ),
+  }),
+);
+
+export const environmentRevisionsSchema = pgTable(
+  "environment_revisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    environmentId: uuid("environment_id")
+      .notNull()
+      .references(() => environmentsSchema.id, { onDelete: "cascade" }),
+    revisionNumber: integer("revision_number").notNull(),
+    variables: jsonb("variables").notNull().default({}),
+    createdBy: uuid("created_by").references(() => userSchema.id),
+    ...timestamps,
+  },
+  (table) => ({
+    envRevisionIdx: uniqueIndex("env_revision_idx").on(
+      table.environmentId,
+      table.revisionNumber,
+    ),
+  }),
+);
+
+export const environmentsRelations = relations(
+  environmentsSchema,
+  ({ one, many }) => ({
+    project: one(projectSchema, {
+      fields: [environmentsSchema.projectId],
+      references: [projectSchema.id],
+    }),
+    revisions: many(environmentRevisionsSchema),
+    tracks: many(trackSchema),
+  }),
+);
+
+export const environmentRevisionsRelations = relations(
+  environmentRevisionsSchema,
+  ({ one, many }) => ({
+    environment: one(environmentsSchema, {
+      fields: [environmentRevisionsSchema.environmentId],
+      references: [environmentsSchema.id],
+    }),
+    createdByUser: one(userSchema, {
+      fields: [environmentRevisionsSchema.createdBy],
+      references: [userSchema.id],
+    }),
+    deployments: many(deploymentSchema),
+  }),
+);
 
 export const deploymentStatusEnum = pgEnum("deployment_status", [
   "pending",
@@ -139,6 +216,9 @@ export const deploymentSchema = pgTable(
     buildId: uuid("build_id").references(() => buildSchema.id, {
       onDelete: "set null",
     }),
+    environmentRevisionId: uuid("environment_revision_id").references(
+      () => environmentRevisionsSchema.id,
+    ),
 
     ...timestamps,
   },
@@ -171,6 +251,10 @@ export const deploymentRelations = relations(
       fields: [deploymentSchema.buildId],
       references: [buildSchema.id],
       relationName: "deployment_build",
+    }),
+    environmentRevision: one(environmentRevisionsSchema, {
+      fields: [deploymentSchema.environmentRevisionId],
+      references: [environmentRevisionsSchema.id],
     }),
   }),
 );

@@ -15,6 +15,10 @@ import type { ResourceLimits } from "../../utils/task.js";
 import { triggerTask } from "../../utils/task.js";
 import { generateDeployToken, hashToken } from "../../utils/token.js";
 import { initiateDeployment } from "../deployment.service.js";
+import {
+  getEnvironmentByName,
+  getLatestRevision,
+} from "../environment.service.js";
 import { generateGitHubInstallationToken } from "../github.service.js";
 import type { BuildLogEntry } from "./types.js";
 
@@ -107,6 +111,27 @@ export async function triggerBuildTask(
     trackName,
   });
 
+  // Get environment variables for the build
+  let buildEnvVars: Record<string, string> = {};
+  try {
+    // Determine environment name based on track
+    const environmentName = trackName === "prod" ? "production" : "preview";
+    const environment = await getEnvironmentByName(projectId, environmentName);
+
+    if (environment) {
+      const latestRevision = await getLatestRevision(environment.id);
+      if (latestRevision?.variables) {
+        buildEnvVars = latestRevision.variables as Record<string, string>;
+        log.info(
+          `Found ${Object.keys(buildEnvVars).length} environment variables for ${environmentName}`,
+        );
+      }
+    }
+  } catch (error) {
+    log.warn(`Failed to fetch environment variables: ${error}`);
+    // Continue build without environment variables
+  }
+
   // Build task
   try {
     const buildResourceLimits: ResourceLimits = {
@@ -131,6 +156,9 @@ export async function triggerBuildTask(
         env.APP_ENV === "production"
           ? "http://control-api"
           : "http://control-api:9999",
+      ...(Object.keys(buildEnvVars).length > 0 && {
+        BUILD_ENV: JSON.stringify(buildEnvVars),
+      }),
     };
 
     const imageName = env.BUILD_RUNNER_IMAGE;

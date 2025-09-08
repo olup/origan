@@ -1,5 +1,6 @@
 import {
   Badge,
+  Box,
   Card,
   Container,
   Group,
@@ -10,7 +11,8 @@ import {
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { GithubIcon } from "lucide-react";
-import { useLocation, useParams } from "wouter";
+import { Link, Route, useLocation, useParams } from "wouter";
+import { EnvironmentManager } from "../components/EnvironmentManager";
 import { client } from "../libs/client";
 import { createQueryHelper } from "../utils/honoQuery.js";
 
@@ -122,10 +124,55 @@ const DeploymentsList = ({
   );
 };
 
+const TabLink = ({ href, children, isActive }: { href: string; children: React.ReactNode; isActive: boolean }) => {
+  return (
+    <Box
+      component={Link}
+      href={href}
+      style={{
+        padding: "8px 16px",
+        borderBottom: isActive ? "2px solid #228be6" : "2px solid transparent",
+        color: isActive ? "#228be6" : "#868e96",
+        textDecoration: "none",
+        fontWeight: isActive ? 600 : 400,
+        transition: "all 0.2s ease",
+        "&:hover": {
+          color: "#228be6",
+        },
+      }}
+    >
+      {children}
+    </Box>
+  );
+};
+
+const ProjectSettings = ({ projectReference }: { projectReference: string }) => {
+  return (
+    <Card withBorder padding="xl">
+      <Stack>
+        <Title order={3}>Environment Variables</Title>
+        <EnvironmentManager projectReference={projectReference} />
+      </Stack>
+    </Card>
+  );
+};
+
+const ProjectDeployments = ({ projectReference }: { projectReference: string }) => {
+  return (
+    <Card withBorder padding="xl">
+      <Stack>
+        <Title order={3}>Deployments</Title>
+        <DeploymentsList projectReference={projectReference} />
+      </Stack>
+    </Card>
+  );
+};
+
 export const ProjectPage = () => {
   const params = useParams();
+  const [location] = useLocation();
   const projectReference = params?.reference;
-
+  
   const { data: project } = useQuery({
     ...createQueryHelper(client.projects[":reference"].$get, {
       param: { reference: projectReference || "" },
@@ -135,6 +182,10 @@ export const ProjectPage = () => {
 
   if (!projectReference || !project) return null;
   if ("error" in project) return null;
+
+  // Determine active tab based on current route
+  const isSettingsTab = location.includes("/settings");
+  const activeTab = isSettingsTab ? "settings" : "deployments";
 
   return (
     <Container size="xl">
@@ -167,12 +218,31 @@ export const ProjectPage = () => {
           </Stack>
         </Card>
 
-        <Card withBorder padding="xl">
-          <Stack>
-            <Title order={3}>Deployments</Title>
-            <DeploymentsList projectReference={projectReference} />
-          </Stack>
-        </Card>
+        {/* Tab Navigation */}
+        <Box>
+          <Group gap={0} style={{ borderBottom: "1px solid #e9ecef" }}>
+            <TabLink 
+              href={`/projects/${projectReference}`} 
+              isActive={activeTab === "deployments"}
+            >
+              Deployments
+            </TabLink>
+            <TabLink 
+              href={`/projects/${projectReference}/settings`} 
+              isActive={activeTab === "settings"}
+            >
+              Settings
+            </TabLink>
+          </Group>
+        </Box>
+
+        {/* Tab Content - Using Switch and Route */}
+        <Route path="/projects/:reference">
+          {() => <ProjectDeployments projectReference={projectReference} />}
+        </Route>
+        <Route path="/projects/:reference/settings">
+          {() => <ProjectSettings projectReference={projectReference} />}
+        </Route>
       </Stack>
     </Container>
   );

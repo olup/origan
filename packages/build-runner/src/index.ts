@@ -71,6 +71,19 @@ async function runBuild() {
     await execWithLogs("git config advice.detachedHead false", logger);
     await execWithLogs(`git checkout ${config.COMMIT_SHA}`, logger);
 
+    // Inject environment variables if provided
+    if (config.BUILD_ENV) {
+      try {
+        const envVars = JSON.parse(config.BUILD_ENV);
+        Object.assign(process.env, envVars);
+        await logger.info(
+          `Injected ${Object.keys(envVars).length} environment variables`,
+        );
+      } catch (error) {
+        await logger.error(`Failed to parse BUILD_ENV: ${error}`);
+      }
+    }
+
     // Build
     await logger.info("Starting build...");
     const buildResult = await executeBuild(

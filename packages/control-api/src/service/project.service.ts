@@ -2,6 +2,7 @@ import { and, eq, type SQLWrapper } from "drizzle-orm";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
 import { generateReference } from "../utils/reference.js";
+import { createDefaultEnvironments } from "./environment.service.js";
 import { createTrack } from "./track.service.js";
 
 export async function createProject(
@@ -26,11 +27,15 @@ export async function createProjectWithProdTrack(
   // create the project
   const project = await createProject(data);
 
-  // create the prod track
+  // create default environments
+  const environments = await createDefaultEnvironments(project.id);
+
+  // create the prod track with production environment
   const track = await createTrack({
     projectId: project.id,
     name: "prod",
     isSystem: true,
+    environmentId: environments.production.environment.id,
   });
 
   // Associate the default domain to the prod track
@@ -48,6 +53,7 @@ export async function createProjectWithProdTrack(
     project,
     track,
     domain: prodDomain,
+    environments,
   };
 }
 

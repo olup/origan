@@ -14,16 +14,18 @@ export async function createTrack({
   projectId,
   name,
   isSystem = false,
+  environmentId,
 }: {
   projectId: string;
   name: string;
   isSystem: boolean;
+  environmentId?: string;
 }) {
   return await db.transaction(async (tx) => {
     // Create the track
     const [track] = await tx
       .insert(trackSchema)
-      .values({ projectId, name, isSystem })
+      .values({ projectId, name, isSystem, environmentId })
       .returning();
 
     // Get project reference for domain name
@@ -94,10 +96,12 @@ export async function getOrCreateTrack({
   projectId,
   name,
   isSystem,
+  environmentId,
 }: {
   projectId: string;
   name: string;
   isSystem: boolean;
+  environmentId?: string;
 }) {
   let track = await db.query.trackSchema.findFirst({
     where: and(
@@ -106,7 +110,7 @@ export async function getOrCreateTrack({
     ),
   });
   if (!track) {
-    track = await createTrack({ projectId, name, isSystem });
+    track = await createTrack({ projectId, name, isSystem, environmentId });
   }
   return track;
 }

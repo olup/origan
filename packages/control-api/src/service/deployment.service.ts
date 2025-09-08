@@ -11,10 +11,12 @@ import {
   deploymentSchema,
   domainSchema,
   projectSchema,
+  trackSchema,
 } from "../libs/db/schema.js";
 import { putObject } from "../libs/s3.js";
 import { deploymentConfigSchema } from "../schemas/deploy.js";
 import { generateReference, REFERENCE_PREFIXES } from "../utils/reference.js";
+import { getLatestRevision } from "./environment.service.js";
 import { getOrCreateTrack, updateTrackDomains } from "./track.service.js";
 
 // Custom Error Types
@@ -140,7 +142,7 @@ async function uploadToS3(
 
     // Read and upload file
     const fileContent = await readFile(entryPath);
-    const key = `deployments/${deploymentId}/${entry}`;
+    const key = `deployments/${deploymentId}/app/${entry}`;
 
     try {
       await putObject(bucketName, key, fileContent, getContentType(entry));
@@ -257,10 +259,38 @@ export async function operateDeployment({
     throw new Error("Deployment not found");
   }
 
-  // Update deployment with config and status
+  // Get environment variables for the deployment
+  let environmentVariables: Record<string, string> = {};
+  let environmentRevisionId: string | null = null;
+
+  if (deployment.trackId) {
+    const track = await db.query.trackSchema.findFirst({
+      where: eq(trackSchema.id, deployment.trackId),
+    });
+
+    if (track?.environmentId) {
+      const latestRevision = await getLatestRevision(track.environmentId);
+      if (latestRevision) {
+        environmentRevisionId = latestRevision.id;
+        environmentVariables = latestRevision.variables as Record<
+          string,
+          string
+        >;
+        log.info(
+          `Found ${Object.keys(environmentVariables).length} environment variables for deployment`,
+        );
+      }
+    }
+  }
+
+  // Update deployment with config, status, and environment revision
   await db
     .update(deploymentSchema)
-    .set({ config: result.data, status: "deploying" })
+    .set({
+      config: result.data,
+      status: "deploying",
+      environmentRevisionId,
+    })
     .where(eq(deploymentSchema.id, deploymentId));
 
   log.info("Processing bundle...");
@@ -275,6 +305,25 @@ export async function operateDeployment({
         log.info("Uploading files to bucket...");
 
         await uploadToS3(tmpDir.path, deployment.id, bucketName);
+
+        // Upload metadata.json with deployment info and environment variables
+        const metadata = {
+          deploymentId: deployment.id,
+          projectId: project.id,
+          environmentRevisionId,
+          createdAt: new Date().toISOString(),
+          environmentVariables,
+        };
+
+        const metadataKey = `deployments/${deployment.id}/metadata.json`;
+        await putObject(
+          bucketName,
+          metadataKey,
+          Buffer.from(JSON.stringify(metadata, null, 2)),
+          "application/json",
+        );
+        log.info("Uploaded deployment metadata");
+
         // update track domains if track was provided
         if (deployment.trackId) {
           await updateTrackDomains(deployment.trackId);

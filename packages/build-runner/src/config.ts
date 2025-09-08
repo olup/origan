@@ -23,6 +23,9 @@ export const BuildRunnerEnvSchema = z.object({
 
   // Monorepo configuration
   PROJECT_ROOT_PATH: z.string(),
+
+  // Environment variables for the build
+  BUILD_ENV: z.string().optional(), // JSON string of environment variables
 });
 
 // Parse and validate the environment variables

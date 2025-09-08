@@ -83,7 +83,7 @@ serve(async (req: Request) => {
   const memoryLimitMb = 150;
   const workerTimeoutMs = 1 * 60 * 1000;
   const noModuleCache = false;
-  const envVars = Object.entries(envVarsObj) as [string, string][];
+  let envVars = Object.entries(envVarsObj) as [string, string][];
 
   console.error(`serving the request for ${functionPath}`);
 
@@ -99,6 +99,42 @@ serve(async (req: Request) => {
     await Deno.writeTextFile(`${workerPath}/index.ts`, `${fileContent}`, {
       create: true,
     });
+
+    // Fetch deployment metadata including environment variables
+    if (deploymentId) {
+      try {
+        const metadataPath = `deployments/${deploymentId}/metadata.json`;
+        const metadataContent = await getObject(
+          envVarsObj.BUCKET_NAME,
+          metadataPath,
+        );
+
+        if (metadataContent) {
+          const metadata = JSON.parse(metadataContent);
+          if (metadata.environmentVariables) {
+            // Merge deployment environment variables with system env vars
+            // Deployment vars take precedence
+            const deploymentEnvVars = metadata.environmentVariables;
+            const mergedEnvVars = {
+              ...envVarsObj,
+              ...deploymentEnvVars,
+            };
+            envVars = Object.entries(mergedEnvVars) as [string, string][];
+            console.log(
+              `Loaded ${
+                Object.keys(deploymentEnvVars).length
+              } environment variables from metadata`,
+            );
+          }
+        }
+      } catch (error) {
+        console.warn(
+          `Failed to load metadata for deployment ${deploymentId}:`,
+          error,
+        );
+        // Continue with system env vars only
+      }
+    }
   } catch (error) {
     console.error("Error fetching from S3:", error);
     return new Response(
