@@ -94,7 +94,7 @@ const EnvironmentVariables = ({
 
   const environmentsQuery = createQueryHelper(
     client.environments.listByProjectReference.$post,
-    { json: { projectReference } }
+    { json: { projectReference } },
   );
 
   const setVariablesMutation = useMutation({
@@ -168,7 +168,7 @@ const EnvironmentVariables = ({
             <Table.Tr>
               <Table.Th>Key</Table.Th>
               <Table.Th>Value</Table.Th>
-              <Table.Th/>
+              <Table.Th />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

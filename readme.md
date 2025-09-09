@@ -70,7 +70,6 @@ This project uses [Turborepo](https://turbo.build/) to manage the monorepo build
 - Node.js 22+
 - pnpm
 - Docker and Docker Compose
-- [Tilt](https://github.com/tilt-dev/tilt?tab=readme-ov-file#install-tilt)
 
 ### Getting Started
 
@@ -87,9 +86,14 @@ cp .env.example .env
 # Edit .env with your GitHub App credentials
 ```
 
-3. Start development environment:
+3. Start infrastructure services:
 ```bash
-tilt up
+docker-compose up -d
+```
+
+4. Start local development:
+```bash
+pnpm dev
 ```
 
 ### GitHub Integration
@@ -108,7 +112,7 @@ To use the CLI locally while developing:
 cd packages/cli && pnpm link -g
 ```
 
-The CLI is automatically built as part of the Tilt environment. To remove the global link when done:
+To remove the global link when done:
 ```bash
 pnpm uninstall -g @origan/cli
 ```
@@ -139,12 +143,13 @@ pnpm uninstall -g @origan/cli
 
 ## Infrastructure
 
-The `infra/` directory contains Pulumi IaC for:
+The `infra/` directory contains infrastructure configurations for:
 - Kubernetes clusters
 - Databases
 - Object storage
 - Container registry
 - API Gateway configuration
+- Custom resources
 
 See [infra/README.md](infra/README.md) for details.
 

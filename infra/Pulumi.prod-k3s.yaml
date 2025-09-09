@@ -1,5 +1,0 @@
-environment:
-  - infra/prod-k3s
-config:
-  origan:
-    testValue: foo

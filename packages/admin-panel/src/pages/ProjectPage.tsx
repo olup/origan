@@ -124,7 +124,15 @@ const DeploymentsList = ({
   );
 };
 
-const TabLink = ({ href, children, isActive }: { href: string; children: React.ReactNode; isActive: boolean }) => {
+const TabLink = ({
+  href,
+  children,
+  isActive,
+}: {
+  href: string;
+  children: React.ReactNode;
+  isActive: boolean;
+}) => {
   return (
     <Box
       component={Link}
@@ -146,7 +154,11 @@ const TabLink = ({ href, children, isActive }: { href: string; children: React.R
   );
 };
 
-const ProjectSettings = ({ projectReference }: { projectReference: string }) => {
+const ProjectSettings = ({
+  projectReference,
+}: {
+  projectReference: string;
+}) => {
   return (
     <Card withBorder padding="xl">
       <Stack>
@@ -157,7 +169,11 @@ const ProjectSettings = ({ projectReference }: { projectReference: string }) => 
   );
 };
 
-const ProjectDeployments = ({ projectReference }: { projectReference: string }) => {
+const ProjectDeployments = ({
+  projectReference,
+}: {
+  projectReference: string;
+}) => {
   return (
     <Card withBorder padding="xl">
       <Stack>
@@ -172,7 +188,7 @@ export const ProjectPage = () => {
   const params = useParams();
   const [location] = useLocation();
   const projectReference = params?.reference;
-  
+
   const { data: project } = useQuery({
     ...createQueryHelper(client.projects[":reference"].$get, {
       param: { reference: projectReference || "" },
@@ -221,14 +237,14 @@ export const ProjectPage = () => {
         {/* Tab Navigation */}
         <Box>
           <Group gap={0} style={{ borderBottom: "1px solid #e9ecef" }}>
-            <TabLink 
-              href={`/projects/${projectReference}`} 
+            <TabLink
+              href={`/projects/${projectReference}`}
               isActive={activeTab === "deployments"}
             >
               Deployments
             </TabLink>
-            <TabLink 
-              href={`/projects/${projectReference}/settings`} 
+            <TabLink
+              href={`/projects/${projectReference}/settings`}
               isActive={activeTab === "settings"}
             >
               Settings

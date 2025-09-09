@@ -1,96 +1,63 @@
 # Infrastructure
 
-This directory contains the Pulumi infrastructure as code (IaC) for the Origan platform. It manages all cloud resources and configurations required to run the platform.
+This directory contains infrastructure configurations and custom resources for the Origan platform.
+
+## Structure
+
+```
+infra/
+├── custom-resources/    # Custom infrastructure resources and configurations
+└── README.md           # This file
+```
+
+## Custom Resources
+
+The `custom-resources/` directory contains custom infrastructure definitions, configurations, and resources that are specific to the Origan platform deployment.
 
 ## Components
 
-### Kubernetes Cluster (`components/kubernetes.ts`)
-- Manages the main Kubernetes cluster
-- Configures node pools and scaling
-- Sets up networking and security policies
+### Kubernetes Resources
+- Service definitions
+- Deployment configurations
+- Ingress rules
+- ConfigMaps and Secrets
 
-### Database (`components/database.ts`)
-- Manages PostgreSQL database instances
-- Configures backups and replication
-- Handles connection security
+### Database
+- PostgreSQL configurations
+- Migration scripts
+- Backup strategies
 
-### Object Storage (`components/bucket.ts`)
-- S3-compatible object storage
-- Static file hosting
+### Object Storage
+- S3-compatible storage configurations
+- Static file hosting setup
 - Build artifacts storage
 
-### Container Registry (`components/registry.ts`)
-- Private container registry
-- Image hosting and management
-- Access control and security
+### Container Registry
+- Registry configurations
+- Access control policies
 
-### API Gateway (`components/gateway.ts`)
-- Edge routing configuration
-- HTTPS/TLS certificate management
-- Request handling and proxying
+### API Gateway
+- Routing configurations
+- TLS certificate management
+- Load balancing rules
 
-### Build Runner (`components/build-runner.ts`)
-- Build service deployment
-- Auto-scaling configuration
+### Build Infrastructure
+- Build runner configurations
+- CI/CD pipeline definitions
 - Resource allocation
 
-### Control API (`components/control.ts`)
-- Backend API deployment
-- Service configuration
-- Database integration
-
-### Function Runtime (`components/runner.ts`)
-- Edge function runtime environment
-- Worker process management
-- Resource isolation
+### Function Runtime
+- Edge function configurations
+- Worker process settings
+- Resource limits
 
 ## Environment Configuration
 
-The infrastructure supports multiple environments through Pulumi stacks:
+The infrastructure supports multiple environments:
 
-- Development: Local development environment
-- Staging: Testing and QA environment
-- Production: Live environment
-
-Configure environments using stack-specific YAML files:
-```bash
-pulumi stack select <environment>
-pulumi config set <key> <value>
-```
-
-## Prerequisites
-
-- [Pulumi CLI](https://www.pulumi.com/docs/install/)
-- Node.js 22+
-- Cloud provider credentials properly configured
-- `pnpm` package manager
-
-## Development
-
-1. Install dependencies:
-```bash
-pnpm install
-```
-
-2. Select stack:
-```bash
-pulumi stack select dev
-```
-
-3. Configure variables:
-```bash
-pulumi config set aws:region eu-west-1
-```
-
-4. Preview changes:
-```bash
-pulumi preview
-```
-
-5. Deploy:
-```bash
-pulumi up
-```
+- **Development**: Local development environment
+- **Staging**: Testing and QA environment  
+- **Production**: Live environment
 
 ## Architecture
 
@@ -115,21 +82,14 @@ pulumi up
 └──────────────┘
 ```
 
-## Common Operations
+## Deployment
 
-### Adding New Resources
-1. Create new component in `src/components/`
-2. Define resource configuration
-3. Export resources for use in other components
-4. Import and use in `index.ts`
+Infrastructure resources can be deployed using your preferred infrastructure management tool (Terraform, CloudFormation, Kubernetes manifests, etc.).
 
-### Updating Configurations
-1. Modify relevant stack config
-2. Preview changes with `pulumi preview`
-3. Apply with `pulumi up`
+## Adding New Resources
 
-### Troubleshooting
-1. Check Pulumi logs: `pulumi logs`
-2. Verify cloud provider console
-3. Review component configurations
-4. Check network policies and security groups
+1. Create resource definition in `custom-resources/`
+2. Document the resource configuration
+3. Test in development environment
+4. Deploy to staging for validation
+5. Apply to production after approval

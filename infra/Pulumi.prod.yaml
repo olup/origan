@@ -1,9 +1,0 @@
-environment:
-  - infra/prod
-config:
-  scaleway:organization_id: 14844ee6-93f0-4e34-9da9-9dac28d08dce
-  scaleway:project_id: 48d12bec-327b-4e63-87dd-9f72b21cb4ae
-  scaleway:region: fr-par
-
-  origan:
-    testValue: foo

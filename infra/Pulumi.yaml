@@ -1,7 +1,0 @@
-name: infra
-description: Origan Scaleway's infra
-runtime: nodejs
-config:
-  pulumi:tags:
-    value:
-      pulumi:template: scaleway-typescript

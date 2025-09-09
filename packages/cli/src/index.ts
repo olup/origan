@@ -286,7 +286,6 @@ class OrgsCommand extends Command {
   }
 }
 
-
 class EnvListCommand extends Command {
   static paths = [["env", "list"]];
 
@@ -620,6 +619,5 @@ cli.register(EnvListCommand);
 cli.register(EnvGetVarsCommand);
 cli.register(EnvSetVarCommand);
 cli.register(EnvUnsetVarCommand);
-
 
 cli.runExit(process.argv.slice(2));

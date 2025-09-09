@@ -1,81 +1,4 @@
 services:
-  control-api:
-    image: origan-dev
-    working_dir: /app
-    command: sh -c "cd packages/control-api && pnpm run db:migrate && cd ../.. && pnpm turbo watch dev  --env-mode=loose --filter=@origan/control-api --continue=always"
-    ports:
-      - "9999:9999"
-    environment:
-      APP_ENV: development
-      ORIGAN_DEPLOY_DOMAIN: "localtest.me:7777"
-      ORIGAN_API_URL: "http://localhost:9999"
-      ORIGAN_ADMIN_PANEL_URL: http://localhost:5199
-
-      DATABASE_URL: postgresql://origan-root:origan@db:5432/origan
-      DATABASE_RUN_MIGRATIONS: true
-      BUCKET_URL: http://minio:9000
-      BUCKET_ACCESS_KEY: minioadmin
-      BUCKET_SECRET_KEY: minioadmin
-      BUCKET_NAME: origan
-      BUCKET_REGION: us-east-1
-      JWT_SECRET: secret
-
-      BUILD_RUNNER_IMAGE: origan-build-runner
-
-      GITHUB_CLIENT_ID: Iv23liNZm4MOMTaen21l
-      GITHUB_APP_ID: 1231709
-
-      EVENTS_NATS_SERVER: nats://nats:4222
-
-      # From .env file
-      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
-      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
-      GITHUB_APP_PRIVATE_KEY_BASE64: ${GITHUB_APP_PRIVATE_KEY_BASE64}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - origan-network
-
-  admin-panel:
-    image: origan-dev
-    command: sh -c "pnpm turbo watch dev  --env-mode=loose --filter=@origan/control-frontend -- --host 0.0.0.0"
-    working_dir: /app
-    ports:
-      - "5199:5199"
-    environment:
-      - VITE_APP_ENV=development
-      - VITE_API_URL=http://localhost:9999
-    depends_on:
-      - control-api
-    networks:
-      - origan-network
-
-  gateway:
-    image: origan-dev
-    command: sh -c "pnpm turbo watch dev  --env-mode=loose --filter=@origan/gateway"
-    working_dir: /app
-    environment:
-      - ORIGAN_DEPLOY_DOMAIN=localtest.me:7777
-      - CONTROL_API_URL=http://control-api:9999
-      - RUNNER_URL=http://runner:8000
-      - BUCKET_URL=http://minio:9000
-      - BUCKET_ACCESS_KEY=minioadmin
-      - BUCKET_SECRET_KEY=minioadmin
-      - BUCKET_NAME=origan
-      - BUCKET_REGION=us-east-1
-      - HAS_TLS_SERVER=false
-      - TLS_CERT_FILE=/app/certs/cert.pem
-      - TLS_KEY_FILE=/app/certs/key.pem
-      - CHOKIDAR_USEPOLLING=true
-      - CHOKIDAR_INTERVAL=1000
-      - WATCHPACK_POLLING=true
-    ports:
-      - "7777:7777"
-    networks:
-      - origan-network
-    depends_on:
-      - control-api
-
   runner:
     image: origan-runner
     working_dir: /app/packages/runner
@@ -138,13 +61,12 @@ services:
       - origan-network
 
   # This is used to catch the webhook from GitHub
+  # Note: Update target to http://host.docker.internal:9999/github/webhook when running control-api locally
   smee:
     image: deltaprojects/smee-client
-    command: smee --url https://smee.io/origaneulocal-8MVxlEzBDRVUKj --target http://control-api:9999/github/webhook
+    command: smee --url https://smee.io/origaneulocal-8MVxlEzBDRVUKj --target http://host.docker.internal:9999/github/webhook
     networks:
       - origan-network
-    depends_on:
-      - control-api
 
 networks:
   origan-network:
