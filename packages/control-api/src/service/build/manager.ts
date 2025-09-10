@@ -152,10 +152,7 @@ export async function triggerBuildTask(
       EVENTS_NATS_SERVER: env.EVENTS_NATS_SERVER,
       EVENTS_NATS_NKEY_CREDS: env.EVENTS_NATS_NKEY_CREDS || "",
       DEPLOY_TOKEN: deployToken,
-      CONTROL_API_URL:
-        env.APP_ENV === "production"
-          ? "http://control-api"
-          : "http://control-api:9999",
+      CONTROL_API_URL: "http://control-api:9999",
       ...(Object.keys(buildEnvVars).length > 0 && {
         BUILD_ENV: JSON.stringify(buildEnvVars),
       }),

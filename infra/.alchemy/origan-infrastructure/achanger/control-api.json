@@ -2,7 +2,7 @@
   "kind": "k3s::Deployment",
   "id": "control-api",
   "fqn": "origan-infrastructure/achanger/control-api",
-  "seq": 16,
+  "seq": 17,
   "data": {},
   "status": "updated",
   "output": {
@@ -12,10 +12,10 @@
     "Symbol(alchemy::ResourceScope)": {
       "@scope": null
     },
-    "Symbol(alchemy::ResourceSeq)": 16,
+    "Symbol(alchemy::ResourceSeq)": 17,
     "namespace": "origan",
     "serviceAccountName": "control-api-sa",
-    "image": "registry.platform.origan.dev/control-api:latest",
+    "image": "registry.platform.origan.dev/control-api:1757533172711",
     "replicas": 2,
     "ports": [
       {
@@ -24,7 +24,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757531580711"
+      "deploy-version": "1757533253524"
     },
     "env": [
       {
@@ -113,7 +113,7 @@
       },
       {
         "name": "BUILDER_IMAGE",
-        "value": "registry.platform.origan.dev/builder:latest"
+        "value": "registry.platform.origan.dev/builder:1757533172711"
       }
     ],
     "resources": {
@@ -144,12 +144,12 @@
     },
     "name": "control-api",
     "serviceEndpoint": "control-api.origan.svc.cluster.local",
-    "createdAt": 1757531589240
+    "createdAt": 1757533260373
   },
   "props": {
     "namespace": "origan",
     "serviceAccountName": "control-api-sa",
-    "image": "registry.platform.origan.dev/control-api:latest",
+    "image": "registry.platform.origan.dev/control-api:1757533172711",
     "replicas": 2,
     "ports": [
       {
@@ -158,7 +158,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757531580711"
+      "deploy-version": "1757533253524"
     },
     "env": [
       {
@@ -247,7 +247,7 @@
       },
       {
         "name": "BUILDER_IMAGE",
-        "value": "registry.platform.origan.dev/builder:latest"
+        "value": "registry.platform.origan.dev/builder:1757533172711"
       }
     ],
     "resources": {

@@ -52,12 +52,19 @@ async function main() {
   const adminPanel = await deployAdmin();
   const landingPage = await deployLandingPage();
 
-  // Deploy Backend Services
+  // Generate shared deployment tag for coordinated image updates
+  const deploymentTag = Date.now().toString();
+
+  // Deploy Builder first with the shared tag (builds user projects - image only, runs as K8s Jobs)
+  const builder = await deployBuilder(deploymentTag);
+
+  // Deploy Backend Services with coordinated builder image tag
   const controlApi = await deployControlApi({
     namespace: origanNamespace.name,
     databaseEndpoint: origanDb.endpoint,
     natsEndpoint: nats.endpoint,
     bucketName: deploymentBucket.name,
+    builderImageTag: deploymentTag, // Use same tag as builder for coordination
   });
 
   // Deploy Gateway (reverse proxy for user deployments)
@@ -78,9 +85,6 @@ async function main() {
     bucketSecretKey: deploymentBucket.secretAccessKey,
     natsEndpoint: nats.endpoint,
   });
-
-  // Deploy Builder (builds user projects - image only, runs as K8s Jobs)
-  const builder = await deployBuilder();
 
   await app.finalize();
 

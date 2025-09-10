@@ -194,8 +194,8 @@ export class KubernetesTaskRunner implements TaskRunner {
     kc.loadFromDefault();
     const k8sBatchV1Api = kc.makeApiClient(k8s.BatchV1Api);
 
-    // TODO: Currently using default namespace and service account - we could consider moving to a different namespace
-    const namespace = "default";
+    // Use origan namespace where all our resources are deployed
+    const namespace = "origan";
     const jobName = `${namePrefix}-${taskId.substring(0, 8)}-${Date.now()}`;
 
     const jobManifest: k8s.V1Job = {
@@ -219,7 +219,7 @@ export class KubernetesTaskRunner implements TaskRunner {
             },
           },
           spec: {
-            serviceAccountName: "builder-sa",
+            // No serviceAccount needed - builder doesn't interact with K8s API
             containers: [
               {
                 name: `${namePrefix}-container`,

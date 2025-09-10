@@ -17,6 +17,7 @@ export interface ControlApiDeploymentProps {
   databaseEndpoint: string;
   natsEndpoint: string;
   bucketName: string;
+  builderImageTag?: string; // Optional builder image tag to use
 }
 
 export interface ControlApiDeploymentResult {
@@ -88,18 +89,19 @@ export async function deployControlApi(
     },
   );
 
-  // Build and push Control API Docker image
+  // Build and push Control API Docker image with unique tag
+  const imageTag = props.builderImageTag || Date.now().toString();
   const image = await DockerImage("control-api-image", {
     registryUrl: "registry.platform.origan.dev",
     imageName: "control-api",
-    tag: "latest",
+    tag: imageTag, // Unique tag for each deployment
     context: "../", // Monorepo root (origan)
     dockerfile: "build/docker/prod.Dockerfile", // Dockerfile path relative to context
     target: "control-api", // Target the 'control-api' stage in multistage build
     platforms: ["linux/amd64"], // Build for x86_64 architecture
     buildArgs: {
       NODE_ENV: "production",
-      BUILD_VERSION: Date.now().toString(), // Force rebuild on each deployment
+      BUILD_VERSION: imageTag, // Use same timestamp for consistency
     },
     push: true,
   });
@@ -167,7 +169,7 @@ export async function deployControlApi(
       },
       {
         name: "BUILDER_IMAGE",
-        value: "registry.platform.origan.dev/builder:latest",
+        value: `registry.platform.origan.dev/builder:${imageTag}`, // Use same tag as builder image
       },
     ],
     resources: {

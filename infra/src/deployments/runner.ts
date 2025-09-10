@@ -21,17 +21,18 @@ export interface RunnerDeploymentResult {
 export async function deployRunner(
   props: RunnerDeploymentProps,
 ): Promise<RunnerDeploymentResult> {
-  // Build and push Runner Docker image
+  // Build and push Runner Docker image with unique tag
+  const imageTag = Date.now().toString();
   const image = await DockerImage("runner-image", {
     registryUrl: "registry.platform.origan.dev",
     imageName: "runner",
-    tag: "latest",
+    tag: imageTag, // Unique tag for each deployment
     context: "../", // Monorepo root
     dockerfile: "build/docker/prod.Dockerfile",
     target: "runner", // Target the 'runner' stage in multistage build
     platforms: ["linux/amd64"],
     buildArgs: {
-      BUILD_VERSION: Date.now().toString(),
+      BUILD_VERSION: imageTag, // Use same timestamp for consistency
     },
     push: true,
   });

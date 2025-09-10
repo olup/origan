@@ -22,18 +22,19 @@ export interface GatewayDeploymentResult {
 export async function deployGateway(
   props: GatewayDeploymentProps,
 ): Promise<GatewayDeploymentResult> {
-  // Build and push Gateway Docker image
+  // Build and push Gateway Docker image with unique tag
+  const imageTag = Date.now().toString();
   const image = await DockerImage("gateway-image", {
     registryUrl: "registry.platform.origan.dev",
     imageName: "gateway",
-    tag: "latest",
+    tag: imageTag, // Unique tag for each deployment
     context: "../", // Monorepo root
     dockerfile: "build/docker/prod.Dockerfile",
     target: "gateway", // Target the 'gateway' stage in multistage build
     platforms: ["linux/amd64"],
     buildArgs: {
       NODE_ENV: "production",
-      BUILD_VERSION: Date.now().toString(),
+      BUILD_VERSION: imageTag, // Use same timestamp for consistency
     },
     push: true,
   });
