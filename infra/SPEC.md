@@ -134,7 +134,7 @@ infra/
 │       ├── infrastructure.ts  # Base infrastructure
 │       ├── control-api.ts
 │       ├── gateway.ts
-│       ├── admin-panel.ts
+│       ├── admin.ts
 │       ├── runner.ts
 │       ├── postgres.ts
 │       └── nats.ts
@@ -483,7 +483,7 @@ import { deployPostgres } from './deployments/postgres';
 import { deployNats } from './deployments/nats';
 import { deployControlApi } from './deployments/control-api';
 import { deployGateway } from './deployments/gateway';
-import { deployAdminPanel } from './deployments/admin-panel';
+import { deployAdmin } from './deployments/admin';
 import { deployRunner } from './deployments/runner';
 import { loadConfig } from './config';
 

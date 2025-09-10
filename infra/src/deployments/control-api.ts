@@ -1,6 +1,11 @@
 import { DockerImage } from "../resources/docker/image.js";
 import { Deployment } from "../resources/k3s/deployment.js";
 import { Ingress } from "../resources/k3s/ingress.js";
+import {
+  K3sClusterRole,
+  K3sClusterRoleBinding,
+} from "../resources/k3s/rbac.js";
+import type ServiceAccount from "../resources/k3s/service-account.js";
 
 export interface ControlApiDeploymentProps {
   namespace: string;
@@ -10,6 +15,9 @@ export interface ControlApiDeploymentProps {
 }
 
 export interface ControlApiDeploymentResult {
+  serviceAccount: ServiceAccount;
+  clusterRole: any;
+  clusterRoleBinding: any;
   image: DockerImage;
   deployment: Deployment;
   ingress: Ingress;
@@ -21,6 +29,60 @@ export interface ControlApiDeploymentResult {
 export async function deployControlApi(
   props: ControlApiDeploymentProps,
 ): Promise<ControlApiDeploymentResult> {
+  // Create ServiceAccount for control-api
+  const serviceAccount = await ServiceAccount("control-api-sa", {
+    namespace: props.namespace,
+    labels: {
+      app: "control-api",
+    },
+  });
+
+  // Create ClusterRole for control-api to manage jobs
+  const clusterRole = await K3sClusterRole("control-api-job-manager", {
+    rules: [
+      {
+        apiGroups: ["batch"],
+        resources: ["jobs"],
+        verbs: ["create", "get", "list", "watch", "delete", "update", "patch"],
+      },
+      {
+        apiGroups: [""],
+        resources: ["pods"],
+        verbs: ["get", "list", "watch"],
+      },
+      {
+        apiGroups: [""],
+        resources: ["pods/log"],
+        verbs: ["get"],
+      },
+    ],
+    labels: {
+      app: "control-api",
+    },
+  });
+
+  // Create ClusterRoleBinding
+  const clusterRoleBinding = await K3sClusterRoleBinding(
+    "control-api-job-manager-binding",
+    {
+      roleRef: {
+        apiGroup: "rbac.authorization.k8s.io",
+        kind: "ClusterRole",
+        name: "control-api-job-manager",
+      },
+      subjects: [
+        {
+          kind: "ServiceAccount",
+          name: "control-api-sa",
+          namespace: props.namespace,
+        },
+      ],
+      labels: {
+        app: "control-api",
+      },
+    },
+  );
+
   // Build and push Control API Docker image
   const image = await DockerImage("control-api-image", {
     registryUrl: "registry.platform.origan.dev",
@@ -40,6 +102,7 @@ export async function deployControlApi(
   // Deploy Control API
   const deployment = await Deployment("control-api", {
     namespace: props.namespace,
+    serviceAccountName: "control-api-sa",
     image: image.fullImageUrl,
     replicas: 2,
     ports: [{ name: "http", containerPort: 9999 }],
@@ -142,6 +205,9 @@ export async function deployControlApi(
   });
 
   return {
+    serviceAccount,
+    clusterRole,
+    clusterRoleBinding,
     image,
     deployment,
     ingress,

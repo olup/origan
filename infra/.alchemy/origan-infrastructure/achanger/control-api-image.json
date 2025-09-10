@@ -24,11 +24,11 @@
     ],
     "buildArgs": {
       "NODE_ENV": "production",
-      "BUILD_VERSION": "1757496547679"
+      "BUILD_VERSION": "1757529846332"
     },
     "push": true,
     "fullImageUrl": "registry.platform.origan.dev/control-api:latest",
-    "digest": "sha256:c7e5357c1d95afb914ab68d75239daa57eb7939fee0f9ada07a391262d0e9c2a"
+    "digest": "sha256:93c9cbcd7b63f93735432348fc70a40c9ac04c2d9922c353acf8698c5ed80ac2"
   },
   "props": {
     "registryUrl": "registry.platform.origan.dev",
@@ -42,7 +42,7 @@
     ],
     "buildArgs": {
       "NODE_ENV": "production",
-      "BUILD_VERSION": "1757496547679"
+      "BUILD_VERSION": "1757529846332"
     },
     "push": true
   }

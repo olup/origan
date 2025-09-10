@@ -72,22 +72,6 @@ export async function deployRunner(
         cpu: "200m",
       },
     },
-    readinessProbe: {
-      httpGet: {
-        path: "/health",
-        port: 9000,
-      },
-      initialDelaySeconds: 10,
-      periodSeconds: 10,
-    },
-    livenessProbe: {
-      httpGet: {
-        path: "/health",
-        port: 9000,
-      },
-      initialDelaySeconds: 30,
-      periodSeconds: 30,
-    },
   });
 
   // Service is automatically created by the Deployment resource when ports are defined

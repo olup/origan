@@ -34,3 +34,4 @@ docker-compose.yml
 **/.ruff_cache
 
 **/.origan
+.claude

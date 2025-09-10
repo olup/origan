@@ -44,7 +44,7 @@ Edge functions runtime:
 - Worker process management
 - Resource isolation
 
-### Admin Panel (`packages/admin-panel`)
+### Admin (`packages/admin`)
 Web interface built with:
 - React & Vite
 - TypeScript

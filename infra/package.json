@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "deploy:alchemy": "pnpm exec alchemy deploy index.ts --env-file .env",
+    "deploy:alchemy": "pnpm exec alchemy deploy src/index.ts --env-file .env",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

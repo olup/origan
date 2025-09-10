@@ -1,9 +1,5 @@
 import { DockerImage } from "../resources/docker/image.js";
 
-export interface BuilderDeploymentProps {
-  namespace: string;
-}
-
 export interface BuilderDeploymentResult {
   image: DockerImage;
 }
@@ -13,9 +9,7 @@ export interface BuilderDeploymentResult {
  * Note: This only builds and pushes the image. The actual builder instances
  * are created as Kubernetes Jobs by the control-api when builds are triggered.
  */
-export async function deployBuilder(
-  props: BuilderDeploymentProps,
-): Promise<BuilderDeploymentResult> {
+export async function deployBuilder(): Promise<BuilderDeploymentResult> {
   // Build and push Builder Docker image
   const image = await DockerImage("builder-image", {
     registryUrl: "registry.platform.origan.dev",

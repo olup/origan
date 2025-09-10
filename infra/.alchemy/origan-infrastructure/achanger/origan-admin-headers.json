@@ -4,7 +4,7 @@
   "fqn": "origan-infrastructure/achanger/origan-admin-headers",
   "seq": 6,
   "data": {},
-  "status": "created",
+  "status": "updated",
   "output": {
     "Symbol(alchemy::ResourceKind)": "k3s::TraefikMiddleware",
     "Symbol(alchemy::ResourceID)": "origan-admin-headers",
@@ -17,19 +17,19 @@
     "type": "headers",
     "config": {
       "customRequestHeaders": {
-        "Host": "origan-admin-panel"
+        "Host": "origan-admin-app"
       }
     },
     "name": "origan-admin-headers",
     "reference": "platform-origan-admin-headers@kubernetescrd",
-    "createdAt": 1757416432510
+    "createdAt": 1757514658959
   },
   "props": {
     "namespace": "platform",
     "type": "headers",
     "config": {
       "customRequestHeaders": {
-        "Host": "origan-admin-panel"
+        "Host": "origan-admin-app"
       }
     }
   }

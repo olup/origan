@@ -1,134 +1,115 @@
-import * as k8s from "@pulumi/kubernetes";
-import * as pulumi from "@pulumi/pulumi";
-import { deployAdminPanel } from "./components/admin-panel";
-import { deployBucket } from "./components/bucket";
-import { deployBuilderImage } from "./components/builder";
-import { deployControl } from "./components/control";
-import {
-  deployDatabase,
-  deployDatabaseToKubernetes,
-} from "./components/database";
-import { deployGateway } from "./components/gateway";
-import { deployGlobal, deployGlobalToKubernetes } from "./components/global";
-import { deploySharedIngress } from "./components/ingress";
-import { deployKubernetes } from "./components/kubernetes";
-import { deployRegistry } from "./components/registry";
-import { deployRunner } from "./components/runner";
-import { config } from "./config";
+import alchemy from "alchemy";
+import { deployAdmin } from "./deployments/admin.js";
+import { deployBuilder } from "./deployments/builder.js";
+import { deployControlApi } from "./deployments/control-api.js";
+import { deployGateway } from "./deployments/gateway.js";
+import { deployLandingPage } from "./deployments/landing-page.js";
+import { deployRunner } from "./deployments/runner.js";
+import { GarageBucket } from "./resources/garage/bucket.js";
+import { Namespace } from "./resources/k3s/namespace.js";
+import { NatsDeployment } from "./resources/nats/deployment.js";
+import { PostgresDatabase } from "./resources/postgres/database.js";
 
-export function deployToScaleway() {
-  const globals = deployGlobal();
-
-  // Deploy database
-  const db = deployDatabase();
-
-  // Deploy bucket and get credentials
-  const bucketDeployment = deployBucket();
-
-  // Deploy registry and get credentials
-  const registryDeployment = deployRegistry();
-
-  // Deploy builder image
-  const builderImage = deployBuilderImage(registryDeployment);
-
-  // Deploy Kubernetes cluster first
-  const kubernetes = deployKubernetes(config.axiom);
-
-  // Deploy admin panel frontend
-  const adminPanelResult = deployAdminPanel({
-    registry: registryDeployment.namespace,
-    registryApiKey: registryDeployment.registryApiKey,
-    k8sProvider: kubernetes.k8sProvider,
+async function main() {
+  const app = await alchemy("origan-infrastructure", {
+    password: process.env.ALCHEMY_PASSWORD || "default-dev-password",
   });
 
-  // Deploy control API
-  const controlResult = deployControl({
-    registry: registryDeployment.namespace,
-    registryApiKey: registryDeployment.registryApiKey,
-    k8sProvider: kubernetes.k8sProvider,
-    db,
-    bucketConfig: bucketDeployment.config,
-    buildRunnerImage: buildRunnerImage.imageUri,
-    nats: globals.nats,
-    buildRunnerServiceAccount: kubernetes.buildRunnerRoleBinding,
+  // Create namespace for Origan
+  const origanNamespace = await Namespace("origan", {
+    labels: {
+      app: "origan",
+      managed_by: "alchemy",
+    },
   });
 
-  // Deploy shared ingress for both control API and admin panel
-  deploySharedIngress({
-    k8sProvider: kubernetes.k8sProvider,
-    nginxIngress: kubernetes.nginxIngress,
-    services: [
-      {
-        host: "api.origan.dev",
-        serviceName: "control-api",
-        port: 80,
-      },
-      {
-        host: "app.origan.dev",
-        serviceName: "admin-panel",
-        port: 80,
-      },
-    ],
+  // Deploy PostgreSQL for Origan
+  const origanDb = await PostgresDatabase("origan-db", {
+    namespace: origanNamespace.name,
+    database: "origan",
+    user: "origan_root",
+    password: process.env.POSTGRES_PASSWORD || "postgres",
+    storageSize: "5Gi",
+    version: "16",
   });
 
-  // Deploy runner with Kubernetes configuration
-  const runnerResult = deployRunner({
-    registry: registryDeployment.namespace,
-    registryApiKey: registryDeployment.registryApiKey,
-    k8sProvider: kubernetes.k8sProvider,
-    bucketConfig: bucketDeployment.config,
-    nats: globals.nats,
+  // Deploy NATS for Origan
+  const nats = await NatsDeployment("origan-nats", {
+    namespace: origanNamespace.name,
+    jetstream: true,
+    persistentStorage: true,
+    storageSize: "1Gi",
+    version: "2.10",
   });
 
-  // Deploy gateway last since it needs both URLs and k8s configuration
-  deployGateway({
-    registry: registryDeployment.namespace,
-    registryApiKey: registryDeployment.registryApiKey,
-    k8sProvider: kubernetes.k8sProvider,
-    controlApiUrl: controlResult.apiUrl,
-    runnerUrl: runnerResult.runnerUrl,
-    bucketConfig: bucketDeployment.config,
+  // Create Garage bucket for deployments
+  const deploymentBucket = await GarageBucket("origan-deployment-bucket", {
+    endpoint: process.env.GARAGE_ENDPOINT || "https://s3.platform.origan.dev",
+    keyName: "origan-deployment",
   });
 
-  // Export outputs
-  return {
-    apiUrl: controlResult.apiUrl,
-    adminPanelUrl: adminPanelResult.adminPanelUrl,
-    bucketUrl: bucketDeployment.config.bucketUrl,
-    bucketName: bucketDeployment.config.bucketName,
-    bucketRegion: bucketDeployment.config.bucketRegion,
-    bucketAccessKey: bucketDeployment.config.bucketAccessKey,
-    bucketSecretKey: bucketDeployment.config.bucketSecretKey,
-    nats: globals.nats,
-    database: db,
-  };
+  // Deploy Frontend Applications
+  const admin = await deployAdmin();
+  const landingPage = await deployLandingPage();
+
+  // Deploy Backend Services
+  const controlApi = await deployControlApi({
+    namespace: origanNamespace.name,
+    databaseEndpoint: origanDb.endpoint,
+    natsEndpoint: nats.endpoint,
+    bucketName: deploymentBucket.name,
+  });
+
+  // Deploy Gateway (reverse proxy for user deployments)
+  const gateway = await deployGateway({
+    namespace: origanNamespace.name,
+    bucketName: deploymentBucket.name,
+    bucketEndpoint: deploymentBucket.endpoint,
+    bucketAccessKey: deploymentBucket.accessKeyId,
+    bucketSecretKey: deploymentBucket.secretAccessKey,
+  });
+
+  // Deploy Runner (edge runtime for executing user functions)
+  const runner = await deployRunner({
+    namespace: origanNamespace.name,
+    bucketName: deploymentBucket.name,
+    bucketEndpoint: deploymentBucket.endpoint,
+    bucketAccessKey: deploymentBucket.accessKeyId,
+    bucketSecretKey: deploymentBucket.secretAccessKey,
+    natsEndpoint: nats.endpoint,
+  });
+
+  // Deploy Builder (builds user projects - image only, runs as K8s Jobs)
+  const builder = await deployBuilder();
+
+  await app.finalize();
+
+  console.log("✅ Origan infrastructure deployed successfully!");
+  console.log("\n📊 Resources:");
+  console.log(`- Namespace: ${origanNamespace.name}`);
+  console.log(`- PostgreSQL: ${origanDb.endpoint}`);
+  console.log(`- NATS: ${nats.endpoint}`);
+  console.log(
+    `- S3 Bucket: ${deploymentBucket.name} (${deploymentBucket.endpoint})`,
+  );
+  console.log(
+    `- Admin Panel: ${adminPanel.bucket.name} (${adminPanel.deployment.filesUploaded} files)`,
+  );
+  console.log(`  - URL: ${adminPanel.ingress.url}`);
+  console.log(
+    `- Landing Page: ${landingPage.bucket.name} (${landingPage.deployment.filesUploaded} files)`,
+  );
+  console.log(`  - URL: ${landingPage.ingress.url}`);
+  console.log(`- Control API: ${controlApi.deployment.name}`);
+  console.log(`  - URL: ${controlApi.ingress.url}`);
+  console.log(`- Gateway: ${gateway.deployment.name}`);
+  console.log(`  - Wildcard domain: ${gateway.ingress.url}`);
+  console.log(`- Runner: ${runner.deployment.name}`);
+  console.log(
+    `  - Service: http://runner.${origanNamespace.name}.svc.cluster.local:9000`,
+  );
+  console.log(`- Builder Image: ${builder.image.fullImageUrl}`);
+  console.log("  - Used by Control API for build jobs");
 }
 
-export function deployToK3s() {
-  const k8sProvider = new k8s.Provider("k3s-provider", {
-    context: "origan-k3s",
-  });
-  if (!config.nats) {
-    throw new Error("Missing nats config");
-  }
-  deployGlobalToKubernetes(k8sProvider, config.nats.userPublicKey);
-  const database = deployDatabaseToKubernetes(k8sProvider);
-
-  // FIXME: don't output the same stuff as for the normal stack
-  return {
-    apiUrl: pulumi.Output.create("todo"),
-    adminPanelUrl: pulumi.Output.create("todo"),
-    bucketUrl: pulumi.Output.create("todo"),
-    bucketName: pulumi.Output.create("todo"),
-    bucketRegion: pulumi.Output.create("todo"),
-    bucketAccessKey: pulumi.Output.create("todo"),
-    bucketSecretKey: pulumi.Output.create("todo"),
-    nats: {
-      endpoint: pulumi.Output.create("none"),
-      creds: pulumi.Output.create("see-pulumi-resource"),
-    },
-    database: {
-      connectionString: database,
-    },
-  };
-}
+main().catch(console.error);

@@ -44,7 +44,7 @@ importers:
         specifier: ^5.9.2
         version: 5.9.2
 
-  packages/admin-panel:
+  packages/admin:
     dependencies:
       '@fontsource/fira-code':
         specifier: ^5.2.6
@@ -78,7 +78,7 @@ importers:
         version: 3.7.0(react@19.1.0)
       zod:
         specifier: ^3.24.3
-        version: 3.24.3
+        version: 3.24.4
     devDependencies:
       '@types/react':
         specifier: ^19.0.10
@@ -105,7 +105,7 @@ importers:
         specifier: ^6.2.0
         version: 6.3.2(@types/node@24.3.1)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.20.5)(yaml@2.8.0)
 
-  packages/build-runner:
+  packages/builder:
     dependencies:
       '@origan/control-api':
         specifier: workspace:*
@@ -121,7 +121,7 @@ importers:
         version: 0.20.2
       execa:
         specifier: ^9.5.3
-        version: 9.5.3
+        version: 9.6.0
       hono:
         specifier: 4.7.7
         version: 4.7.7
@@ -143,10 +143,10 @@ importers:
         version: 17.0.33
       tsx:
         specifier: ^4.19.4
-        version: 4.19.4
+        version: 4.20.5
       typescript:
         specifier: ^5.8.3
-        version: 5.8.3
+        version: 5.9.2
 
   packages/cli:
     dependencies:
@@ -4292,10 +4292,6 @@ packages:
     resolution: {integrity: sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg==}
     engines: {node: '>=16.17'}
 
-  execa@9.5.3:
-    resolution: {integrity: sha512-QFNnTvU3UjgWFy8Ef9iDHvIdcgZ344ebkwYx4/KLbR+CKQA4xBaHzv+iRpp86QfMHP8faFQLh8iOc57215y4Rg==}
-    engines: {node: ^18.19.0 || >=20.5.0}
-
   execa@9.6.0:
     resolution: {integrity: sha512-jpWzZ1ZhwUmeWRhS7Qv3mhpOhLfwI+uAX4e5fOcXqwMR7EcJ0pj2kV1CVzHVMX/LphnKWD3LObjZCoJ71lKpHw==}
     engines: {node: ^18.19.0 || >=20.5.0}
@@ -5826,11 +5822,6 @@ packages:
 
   tsx@4.19.3:
     resolution: {integrity: sha512-4H8vUNGNjQ4V2EOoGw005+c+dGuPSnhpPBPHBtsZdGZBk/iJb4kguGlPWaZTZ3q5nMtFOEsY0nRDlh9PJyd6SQ==}
-    engines: {node: '>=18.0.0'}
-    hasBin: true
-
-  tsx@4.19.4:
-    resolution: {integrity: sha512-gK5GVzDkJK1SI1zwHf32Mqxf2tSJkNx+eYcNly5+nHvWqXUJYUkWBQtKauoESz3ymezAI++ZwT855x5p5eop+Q==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -11212,21 +11203,6 @@ snapshots:
       signal-exit: 4.1.0
       strip-final-newline: 3.0.0
 
-  execa@9.5.3:
-    dependencies:
-      '@sindresorhus/merge-streams': 4.0.0
-      cross-spawn: 7.0.6
-      figures: 6.1.0
-      get-stream: 9.0.1
-      human-signals: 8.0.1
-      is-plain-obj: 4.1.0
-      is-stream: 4.0.1
-      npm-run-path: 6.0.0
-      pretty-ms: 9.2.0
-      signal-exit: 4.1.0
-      strip-final-newline: 4.0.0
-      yoctocolors: 2.1.1
-
   execa@9.6.0:
     dependencies:
       '@sindresorhus/merge-streams': 4.0.0
@@ -12789,13 +12765,6 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  tsx@4.19.4:
-    dependencies:
-      esbuild: 0.25.4
-      get-tsconfig: 4.10.0
-    optionalDependencies:
-      fsevents: 2.3.3
-
   tsx@4.20.5:
     dependencies:
       esbuild: 0.25.4
@@ -12967,7 +12936,7 @@ snapshots:
 
   vite@6.3.2(@types/node@24.3.1)(lightningcss@1.25.1)(sugarss@4.0.1(postcss@8.5.3))(tsx@4.20.5)(yaml@2.8.0):
     dependencies:
-      esbuild: 0.25.3
+      esbuild: 0.25.4
       fdir: 6.4.4(picomatch@4.0.2)
       picomatch: 4.0.2
       postcss: 8.5.3

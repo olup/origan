@@ -21,7 +21,7 @@
     "version": "16",
     "endpoint": "origan-db.origan.svc.cluster.local:5432",
     "connectionString": "postgresql://origan_root:origan-secret-password@origan-db.origan.svc.cluster.local:5432/origan",
-    "createdAt": 1757487311660
+    "createdAt": 1757514648515
   },
   "props": {
     "namespace": "origan",

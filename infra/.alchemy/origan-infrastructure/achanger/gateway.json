@@ -4,7 +4,7 @@
   "fqn": "origan-infrastructure/achanger/gateway",
   "seq": 16,
   "data": {},
-  "status": "created",
+  "status": "updated",
   "output": {
     "Symbol(alchemy::ResourceKind)": "k3s::Deployment",
     "Symbol(alchemy::ResourceID)": "gateway",
@@ -27,7 +27,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757496564085"
+      "deploy-version": "1757529860606"
     },
     "env": [
       {
@@ -40,7 +40,7 @@
       },
       {
         "name": "RUNNER_URL",
-        "value": "http://runner.origan.svc.cluster.local"
+        "value": "http://runner.origan.svc.cluster.local:9000"
       },
       {
         "name": "BUCKET_URL",
@@ -103,7 +103,7 @@
     },
     "name": "gateway",
     "serviceEndpoint": "gateway.origan.svc.cluster.local",
-    "createdAt": 1757496595817
+    "createdAt": 1757529865865
   },
   "props": {
     "namespace": "origan",
@@ -120,7 +120,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757496564085"
+      "deploy-version": "1757529860606"
     },
     "env": [
       {
@@ -133,7 +133,7 @@
       },
       {
         "name": "RUNNER_URL",
-        "value": "http://runner.origan.svc.cluster.local"
+        "value": "http://runner.origan.svc.cluster.local:9000"
       },
       {
         "name": "BUCKET_URL",
