@@ -1,0 +1,278 @@
+{
+  "kind": "k3s::Deployment",
+  "id": "control-api",
+  "fqn": "origan-infrastructure/achanger/control-api",
+  "seq": 13,
+  "data": {},
+  "status": "updated",
+  "output": {
+    "Symbol(alchemy::ResourceKind)": "k3s::Deployment",
+    "Symbol(alchemy::ResourceID)": "control-api",
+    "Symbol(alchemy::ResourceFQN)": "origan-infrastructure/achanger/control-api",
+    "Symbol(alchemy::ResourceScope)": {
+      "@scope": null
+    },
+    "Symbol(alchemy::ResourceSeq)": 13,
+    "namespace": "origan",
+    "image": "registry.platform.origan.dev/control-api:latest",
+    "replicas": 2,
+    "ports": [
+      {
+        "name": "http",
+        "containerPort": 9999
+      }
+    ],
+    "labels": {
+      "deploy-version": "1757496553179"
+    },
+    "env": [
+      {
+        "name": "NODE_ENV",
+        "value": "production"
+      },
+      {
+        "name": "APP_ENV",
+        "value": "production"
+      },
+      {
+        "name": "PORT",
+        "value": "9999"
+      },
+      {
+        "name": "ORIGAN_DEPLOY_DOMAIN",
+        "value": "origan.app"
+      },
+      {
+        "name": "ORIGAN_API_URL",
+        "value": "https://api.origan.dev"
+      },
+      {
+        "name": "ORIGAN_ADMIN_PANEL_URL",
+        "value": "https://app.origan.dev"
+      },
+      {
+        "name": "DATABASE_URL",
+        "value": "postgresql://origan_root:origan-secret-password@origan-db.origan.svc.cluster.local:5432/origan"
+      },
+      {
+        "name": "DATABASE_RUN_MIGRATIONS",
+        "value": "true"
+      },
+      {
+        "name": "EVENTS_NATS_SERVER",
+        "value": "nats://origan-nats.origan.svc.cluster.local:4222"
+      },
+      {
+        "name": "BUCKET_URL",
+        "value": "https://s3.platform.origan.dev"
+      },
+      {
+        "name": "BUCKET_ACCESS_KEY",
+        "value": "GKe0ce82fb09fefea90531eb6d"
+      },
+      {
+        "name": "BUCKET_SECRET_KEY",
+        "value": "6fa95f605947622197057ccf3a32bbd7d5e4ee8f2949848d07b9724d753ad76c"
+      },
+      {
+        "name": "BUCKET_NAME",
+        "value": "origan-deployment-bucket"
+      },
+      {
+        "name": "BUCKET_REGION",
+        "value": "garage"
+      },
+      {
+        "name": "GITHUB_CLIENT_ID",
+        "value": "Iv23liNZm4MOMTaen21l"
+      },
+      {
+        "name": "GITHUB_CLIENT_SECRET",
+        "value": "47baecd74b0b36f5309d36dab369238ce48fa0a4"
+      },
+      {
+        "name": "JWT_SECRET",
+        "value": "change-me-to-a-secure-random-string-in-production"
+      },
+      {
+        "name": "GITHUB_APP_ID",
+        "value": "1231709"
+      },
+      {
+        "name": "GITHUB_APP_PRIVATE_KEY_BASE64",
+        "value": "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBdzFLSmZkWktoTUhNcmdsZ2VNZlBHYytqNzNVVnQ1clNOOThaTkdxbTVFV0hLaTM0CnUweFN4QUs3RGo0dWJqZHMyM2pnbUxPa0FRQyt5YngwdE14cDkvZE1OQUhCUHI4OVBDTHl4VWRFOWh2RzFKclUKS0xwUC90SUw2Q1Z5aEllb05oNmYvR2JIM1VwSGFPbUxXZnZNMDQrQTRySnVNVzE4bFZMM01MVVp1L1puY0tFVwpaZXBSODg0cjB6OG14aEFRZUV2aDBSUTlEYzRKYy8weEhJcGpxd2JZNEpxa0FrSzRSOSs4RVc3Znp2cTNJbmhNCkxveDhJb3RrdnpvQy9xbjc0bHRnQmlqSzlBdzM3M25OcWFqR0RQaVdiczlqVDJVUCtiNzF5ZmluWUR4ZGhQbk0KZjRHSUZMVGJwVmdabDNEdlVaQnYyZDZmT0Z4TFN1LytxSWxEQ1FJREFRQUJBb0lCQURlRHh3WllHTmdBeVM4UwpCVFJ1L2dNRkRFQXNGQjhhUnZPUVduYVdkWmJkMkJ2NTh2OHhJemtJMmFlanJzaXV3aWJqQlZzQmUvUzVCSUVNCktsT1U0ZTJUZ1RvcTRZVDNEKzErdFdleTZQdldTejMwUDZiUHhaclVrb1BKMlBHb0tQd3cyaUlBQ0lCeDh6ZnoKWVNNVE9WVk1MVUxCbWlZOFN6T1o0QjRjNnhLTDV3SVdoV1BMZmRWTFRSYXdsWG90cU1wMTJjMVR4d0wwcURnRgpTVlFabGNqTnYzY2JFN3hUQm1IeFBXYkhQUXlyYlo1WkdOdXhHZzVFTzdCQXZsZFk1cUhaNUdzWmhocEdRbElECnhGdUtBK1ovRFp0L1hKaFVFeUM3cmxWbHlUMnFTa2pIbEQ0VE9sUGYvSnVOS0g4YUFhVk9qdTVhZU9mcC9iWFAKVHY0SHhvRUNnWUVBLzBSOUhkSUJUcjNGY3BuYW5SKzluSFFKWGQrK3dIeU1oSzlYWStZN1B4UTROajc1Mmh3RgoxMGNnQ0RYRTE5ZFlHWnJ3bml2U0w2ZTFJZERrZUJCSHEzN0FpV3FRaGVFOUhjbzA5YXpaVkpkWEsrRk42c01oCnJqZ2pCZjBxdFp2VXFNYXdINnlWOEFHNWtCU215aFgvYkVVcmhqVFo5MzljdlltQXI0SUQ0QkVDZ1lFQXcrSUQKdkdlSXV4TU9GNHUvaTNlVUhya1BkR2o5bEIwWnVwUU90dkUvMGczWWtYQzFJWmRQN25ITFV5aWE3ZXkzWUxldwo2ODNsOXgwcnpUS1VFVUpCMmloQTFCZkVuZ1lzZXlFdmwxVjk4REhuTzFLUzl3K2RRZzE5VkR5Q2lmRlRSU2l4CkdEVGdud2Jsa3VaNERmV1lzclRmY2tVVlJIbkFpNFNscDFaNXEza0NnWUVBejFIbHVCRjJ4R2YyYy9RbkRKUFoKNExhUllPKzJzZ2kxNjVHcERWYlE2Wk5YY0I5SHQzQXBBa1llNnV3WW1pQ295ZXIvMzhiQlo3anlzS3RDMDR5TgpXT2lTSVVrdVpiMmdjSkJvNE50b2kzNTY2d1dLemM5N2pFN0ZpemlwdG1RQW5LNzZIaytDV3pKYmJueUhWZnYxCnZnNlRvZVZNM2VsUC9oUXVNdDBLbnJFQ2dZQWZMVmNJNHJXNWlOUGlYWVRVTHVrdFpxa1dEeXZsS2lpUk1NV1MKeXAwczByVlltTWJMbk9qRSsrbXZ4N081RU1jekpxbUxMbzllb0k3N0x3U3dKb3FTclh0OEJuaHQ2bStqL1drMAp2Zys0YmtqdWdUc1JCYlF5OGpDemVwb1FXSSszWHoyb3E2bmd4ZGsrWTE1U1luZTJZZUY2cjVJdC91N3RoZVJUCjJRaXVpUUtCZ1FDRWxKdlBWM0s3RWNSSEhmM1VqTzlUajNrOTlXOTNZUTRtQUFaZEJHc1BBT3duZ25SL3lIeFQKbnJRaElNa2VpWS9aZDNHOW1UalhsalNXcFJaeEFCNTlIS0h1b2xoTWVsVHoveDZibG1VMndiQ2xHcFIxSkp4eAowbmgxQ2pVRlZlU3ltYUt3VExPRzkzRTJxcHcwMkpvREtoekhyQVgrV2RwWGlvU0dyS1doanc9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ=="
+      },
+      {
+        "name": "GITHUB_WEBHOOK_SECRET",
+        "value": "origanLocalWebhookSecret"
+      },
+      {
+        "name": "DOCKER_REGISTRY",
+        "value": "docker-registry.platform.svc.cluster.local:5000"
+      },
+      {
+        "name": "BUILD_RUNNER_IMAGE",
+        "value": "registry.platform.origan.dev/runner:latest"
+      }
+    ],
+    "resources": {
+      "requests": {
+        "memory": "256Mi",
+        "cpu": "100m"
+      },
+      "limits": {
+        "memory": "512Mi",
+        "cpu": "500m"
+      }
+    },
+    "readinessProbe": {
+      "httpGet": {
+        "path": "/.healthz",
+        "port": 9999
+      },
+      "initialDelaySeconds": 10,
+      "periodSeconds": 10
+    },
+    "livenessProbe": {
+      "httpGet": {
+        "path": "/.healthz",
+        "port": 9999
+      },
+      "initialDelaySeconds": 30,
+      "periodSeconds": 30
+    },
+    "name": "control-api",
+    "serviceEndpoint": "control-api.origan.svc.cluster.local",
+    "createdAt": 1757496560868
+  },
+  "props": {
+    "namespace": "origan",
+    "image": "registry.platform.origan.dev/control-api:latest",
+    "replicas": 2,
+    "ports": [
+      {
+        "name": "http",
+        "containerPort": 9999
+      }
+    ],
+    "labels": {
+      "deploy-version": "1757496553179"
+    },
+    "env": [
+      {
+        "name": "NODE_ENV",
+        "value": "production"
+      },
+      {
+        "name": "APP_ENV",
+        "value": "production"
+      },
+      {
+        "name": "PORT",
+        "value": "9999"
+      },
+      {
+        "name": "ORIGAN_DEPLOY_DOMAIN",
+        "value": "origan.app"
+      },
+      {
+        "name": "ORIGAN_API_URL",
+        "value": "https://api.origan.dev"
+      },
+      {
+        "name": "ORIGAN_ADMIN_PANEL_URL",
+        "value": "https://app.origan.dev"
+      },
+      {
+        "name": "DATABASE_URL",
+        "value": "postgresql://origan_root:origan-secret-password@origan-db.origan.svc.cluster.local:5432/origan"
+      },
+      {
+        "name": "DATABASE_RUN_MIGRATIONS",
+        "value": "true"
+      },
+      {
+        "name": "EVENTS_NATS_SERVER",
+        "value": "nats://origan-nats.origan.svc.cluster.local:4222"
+      },
+      {
+        "name": "BUCKET_URL",
+        "value": "https://s3.platform.origan.dev"
+      },
+      {
+        "name": "BUCKET_ACCESS_KEY",
+        "value": "GKe0ce82fb09fefea90531eb6d"
+      },
+      {
+        "name": "BUCKET_SECRET_KEY",
+        "value": "6fa95f605947622197057ccf3a32bbd7d5e4ee8f2949848d07b9724d753ad76c"
+      },
+      {
+        "name": "BUCKET_NAME",
+        "value": "origan-deployment-bucket"
+      },
+      {
+        "name": "BUCKET_REGION",
+        "value": "garage"
+      },
+      {
+        "name": "GITHUB_CLIENT_ID",
+        "value": "Iv23liNZm4MOMTaen21l"
+      },
+      {
+        "name": "GITHUB_CLIENT_SECRET",
+        "value": "47baecd74b0b36f5309d36dab369238ce48fa0a4"
+      },
+      {
+        "name": "JWT_SECRET",
+        "value": "change-me-to-a-secure-random-string-in-production"
+      },
+      {
+        "name": "GITHUB_APP_ID",
+        "value": "1231709"
+      },
+      {
+        "name": "GITHUB_APP_PRIVATE_KEY_BASE64",
+        "value": "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBdzFLSmZkWktoTUhNcmdsZ2VNZlBHYytqNzNVVnQ1clNOOThaTkdxbTVFV0hLaTM0CnUweFN4QUs3RGo0dWJqZHMyM2pnbUxPa0FRQyt5YngwdE14cDkvZE1OQUhCUHI4OVBDTHl4VWRFOWh2RzFKclUKS0xwUC90SUw2Q1Z5aEllb05oNmYvR2JIM1VwSGFPbUxXZnZNMDQrQTRySnVNVzE4bFZMM01MVVp1L1puY0tFVwpaZXBSODg0cjB6OG14aEFRZUV2aDBSUTlEYzRKYy8weEhJcGpxd2JZNEpxa0FrSzRSOSs4RVc3Znp2cTNJbmhNCkxveDhJb3RrdnpvQy9xbjc0bHRnQmlqSzlBdzM3M25OcWFqR0RQaVdiczlqVDJVUCtiNzF5ZmluWUR4ZGhQbk0KZjRHSUZMVGJwVmdabDNEdlVaQnYyZDZmT0Z4TFN1LytxSWxEQ1FJREFRQUJBb0lCQURlRHh3WllHTmdBeVM4UwpCVFJ1L2dNRkRFQXNGQjhhUnZPUVduYVdkWmJkMkJ2NTh2OHhJemtJMmFlanJzaXV3aWJqQlZzQmUvUzVCSUVNCktsT1U0ZTJUZ1RvcTRZVDNEKzErdFdleTZQdldTejMwUDZiUHhaclVrb1BKMlBHb0tQd3cyaUlBQ0lCeDh6ZnoKWVNNVE9WVk1MVUxCbWlZOFN6T1o0QjRjNnhLTDV3SVdoV1BMZmRWTFRSYXdsWG90cU1wMTJjMVR4d0wwcURnRgpTVlFabGNqTnYzY2JFN3hUQm1IeFBXYkhQUXlyYlo1WkdOdXhHZzVFTzdCQXZsZFk1cUhaNUdzWmhocEdRbElECnhGdUtBK1ovRFp0L1hKaFVFeUM3cmxWbHlUMnFTa2pIbEQ0VE9sUGYvSnVOS0g4YUFhVk9qdTVhZU9mcC9iWFAKVHY0SHhvRUNnWUVBLzBSOUhkSUJUcjNGY3BuYW5SKzluSFFKWGQrK3dIeU1oSzlYWStZN1B4UTROajc1Mmh3RgoxMGNnQ0RYRTE5ZFlHWnJ3bml2U0w2ZTFJZERrZUJCSHEzN0FpV3FRaGVFOUhjbzA5YXpaVkpkWEsrRk42c01oCnJqZ2pCZjBxdFp2VXFNYXdINnlWOEFHNWtCU215aFgvYkVVcmhqVFo5MzljdlltQXI0SUQ0QkVDZ1lFQXcrSUQKdkdlSXV4TU9GNHUvaTNlVUhya1BkR2o5bEIwWnVwUU90dkUvMGczWWtYQzFJWmRQN25ITFV5aWE3ZXkzWUxldwo2ODNsOXgwcnpUS1VFVUpCMmloQTFCZkVuZ1lzZXlFdmwxVjk4REhuTzFLUzl3K2RRZzE5VkR5Q2lmRlRSU2l4CkdEVGdud2Jsa3VaNERmV1lzclRmY2tVVlJIbkFpNFNscDFaNXEza0NnWUVBejFIbHVCRjJ4R2YyYy9RbkRKUFoKNExhUllPKzJzZ2kxNjVHcERWYlE2Wk5YY0I5SHQzQXBBa1llNnV3WW1pQ295ZXIvMzhiQlo3anlzS3RDMDR5TgpXT2lTSVVrdVpiMmdjSkJvNE50b2kzNTY2d1dLemM5N2pFN0ZpemlwdG1RQW5LNzZIaytDV3pKYmJueUhWZnYxCnZnNlRvZVZNM2VsUC9oUXVNdDBLbnJFQ2dZQWZMVmNJNHJXNWlOUGlYWVRVTHVrdFpxa1dEeXZsS2lpUk1NV1MKeXAwczByVlltTWJMbk9qRSsrbXZ4N081RU1jekpxbUxMbzllb0k3N0x3U3dKb3FTclh0OEJuaHQ2bStqL1drMAp2Zys0YmtqdWdUc1JCYlF5OGpDemVwb1FXSSszWHoyb3E2bmd4ZGsrWTE1U1luZTJZZUY2cjVJdC91N3RoZVJUCjJRaXVpUUtCZ1FDRWxKdlBWM0s3RWNSSEhmM1VqTzlUajNrOTlXOTNZUTRtQUFaZEJHc1BBT3duZ25SL3lIeFQKbnJRaElNa2VpWS9aZDNHOW1UalhsalNXcFJaeEFCNTlIS0h1b2xoTWVsVHoveDZibG1VMndiQ2xHcFIxSkp4eAowbmgxQ2pVRlZlU3ltYUt3VExPRzkzRTJxcHcwMkpvREtoekhyQVgrV2RwWGlvU0dyS1doanc9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ=="
+      },
+      {
+        "name": "GITHUB_WEBHOOK_SECRET",
+        "value": "origanLocalWebhookSecret"
+      },
+      {
+        "name": "DOCKER_REGISTRY",
+        "value": "docker-registry.platform.svc.cluster.local:5000"
+      },
+      {
+        "name": "BUILD_RUNNER_IMAGE",
+        "value": "registry.platform.origan.dev/runner:latest"
+      }
+    ],
+    "resources": {
+      "requests": {
+        "memory": "256Mi",
+        "cpu": "100m"
+      },
+      "limits": {
+        "memory": "512Mi",
+        "cpu": "500m"
+      }
+    },
+    "readinessProbe": {
+      "httpGet": {
+        "path": "/.healthz",
+        "port": 9999
+      },
+      "initialDelaySeconds": 10,
+      "periodSeconds": 10
+    },
+    "livenessProbe": {
+      "httpGet": {
+        "path": "/.healthz",
+        "port": 9999
+      },
+      "initialDelaySeconds": 30,
+      "periodSeconds": 30
+    }
+  }
+}

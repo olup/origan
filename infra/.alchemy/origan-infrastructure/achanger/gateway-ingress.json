@@ -1,0 +1,36 @@
+{
+  "kind": "k3s::Ingress",
+  "id": "gateway-ingress",
+  "fqn": "origan-infrastructure/achanger/gateway-ingress",
+  "seq": 17,
+  "data": {},
+  "status": "created",
+  "output": {
+    "Symbol(alchemy::ResourceKind)": "k3s::Ingress",
+    "Symbol(alchemy::ResourceID)": "gateway-ingress",
+    "Symbol(alchemy::ResourceFQN)": "origan-infrastructure/achanger/gateway-ingress",
+    "Symbol(alchemy::ResourceScope)": {
+      "@scope": null
+    },
+    "Symbol(alchemy::ResourceSeq)": 17,
+    "namespace": "origan",
+    "hostname": "*.origan.app",
+    "backend": {
+      "service": "gateway",
+      "port": 7777
+    },
+    "tls": true,
+    "name": "gateway-ingress",
+    "url": "https://*.origan.app",
+    "createdAt": 1757496597697
+  },
+  "props": {
+    "namespace": "origan",
+    "hostname": "*.origan.app",
+    "backend": {
+      "service": "gateway",
+      "port": 7777
+    },
+    "tls": true
+  }
+}

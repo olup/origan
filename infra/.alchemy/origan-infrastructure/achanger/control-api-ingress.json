@@ -1,0 +1,36 @@
+{
+  "kind": "k3s::Ingress",
+  "id": "control-api-ingress",
+  "fqn": "origan-infrastructure/achanger/control-api-ingress",
+  "seq": 14,
+  "data": {},
+  "status": "updated",
+  "output": {
+    "Symbol(alchemy::ResourceKind)": "k3s::Ingress",
+    "Symbol(alchemy::ResourceID)": "control-api-ingress",
+    "Symbol(alchemy::ResourceFQN)": "origan-infrastructure/achanger/control-api-ingress",
+    "Symbol(alchemy::ResourceScope)": {
+      "@scope": null
+    },
+    "Symbol(alchemy::ResourceSeq)": 14,
+    "namespace": "origan",
+    "hostname": "api.origan.dev",
+    "backend": {
+      "service": "control-api",
+      "port": 9999
+    },
+    "tls": true,
+    "name": "control-api-ingress",
+    "url": "https://api.origan.dev",
+    "createdAt": 1757428478997
+  },
+  "props": {
+    "namespace": "origan",
+    "hostname": "api.origan.dev",
+    "backend": {
+      "service": "control-api",
+      "port": 9999
+    },
+    "tls": true
+  }
+}

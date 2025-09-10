@@ -39,27 +39,7 @@ export const config = z
     ...env,
     DEPLOY_DOMAIN_PROTOCOL:
       env.APP_ENV === "production" ? "https://" : "http://",
-  }))
-  // custom validation rules
-  .superRefine(({ APP_ENV, AXIOM_TOKEN, AXIOM_DATASET }, refinementContext) => {
-    if (APP_ENV === "production") {
-      if (AXIOM_TOKEN == null) {
-        refinementContext.addIssue({
-          code: z.ZodIssueCode.invalid_type,
-          path: ["AXIOM_TOKEN"],
-          expected: "string",
-          received: typeof AXIOM_TOKEN,
-        });
-      }
-      if (AXIOM_DATASET == null) {
-        refinementContext.addIssue({
-          code: z.ZodIssueCode.invalid_type,
-          path: ["AXIOM_DATASET"],
-          expected: "string",
-          received: typeof AXIOM_DATASET,
-        });
-      }
-    }
-  });
+  }));
+// custom validation rules (removed Axiom requirement for now)
 
 export const env = config.parse(process.env);

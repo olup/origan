@@ -3,7 +3,8 @@
   "private": true,
   "packageManager": "pnpm@10.8.1",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "infra"
   ],
   "scripts": {
     "build": "turbo build",
@@ -17,7 +18,8 @@
     "format": "turbo format",
     "check": "turbo check",
     "clean": "turbo clean",
-    "build:cli": "turbo build --filter=@origan/cli"
+    "build:cli": "turbo build --filter=@origan/cli",
+    "deploy:infra": "pnpm --filter infra run deploy:alchemy"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.5",

@@ -1,0 +1,34 @@
+{
+  "kind": "garage::Bucket",
+  "id": "origan-admin-panel",
+  "fqn": "origan-infrastructure/achanger/origan-admin-panel",
+  "seq": 4,
+  "data": {},
+  "status": "created",
+  "output": {
+    "Symbol(alchemy::ResourceKind)": "garage::Bucket",
+    "Symbol(alchemy::ResourceID)": "origan-admin-panel",
+    "Symbol(alchemy::ResourceFQN)": "origan-infrastructure/achanger/origan-admin-panel",
+    "Symbol(alchemy::ResourceScope)": {
+      "@scope": null
+    },
+    "Symbol(alchemy::ResourceSeq)": 4,
+    "endpoint": "https://s3.platform.origan.dev",
+    "keyName": "origan-admin",
+    "website": true,
+    "indexDocument": "index.html",
+    "errorDocument": "index.html",
+    "name": "origan-admin-panel",
+    "accessKeyId": "GK09bbcafe03212d86f4d323ee",
+    "secretAccessKey": "9235f68850b04dee30ca99e1b196b3b4999e8a4e64a49d409ab0fe9cb5ceb602",
+    "region": "garage",
+    "createdAt": 1757411012515
+  },
+  "props": {
+    "endpoint": "https://s3.platform.origan.dev",
+    "keyName": "origan-admin",
+    "website": true,
+    "indexDocument": "index.html",
+    "errorDocument": "index.html"
+  }
+}

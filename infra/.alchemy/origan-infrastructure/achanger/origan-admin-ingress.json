@@ -1,0 +1,42 @@
+{
+  "kind": "k3s::Ingress",
+  "id": "origan-admin-ingress",
+  "fqn": "origan-infrastructure/achanger/origan-admin-ingress",
+  "seq": 7,
+  "data": {},
+  "status": "created",
+  "output": {
+    "Symbol(alchemy::ResourceKind)": "k3s::Ingress",
+    "Symbol(alchemy::ResourceID)": "origan-admin-ingress",
+    "Symbol(alchemy::ResourceFQN)": "origan-infrastructure/achanger/origan-admin-ingress",
+    "Symbol(alchemy::ResourceScope)": {
+      "@scope": null
+    },
+    "Symbol(alchemy::ResourceSeq)": 7,
+    "namespace": "platform",
+    "hostname": "app.origan.dev",
+    "backend": {
+      "service": "garage",
+      "port": 3902
+    },
+    "tls": true,
+    "annotations": {
+      "traefik.ingress.kubernetes.io/router.middlewares": "platform-origan-admin-headers@kubernetescrd"
+    },
+    "name": "origan-admin-ingress",
+    "url": "https://app.origan.dev",
+    "createdAt": 1757416436260
+  },
+  "props": {
+    "namespace": "platform",
+    "hostname": "app.origan.dev",
+    "backend": {
+      "service": "garage",
+      "port": 3902
+    },
+    "tls": true,
+    "annotations": {
+      "traefik.ingress.kubernetes.io/router.middlewares": "platform-origan-admin-headers@kubernetescrd"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "kind": "garage::StaticSite",
+  "id": "landing-deployment",
+  "fqn": "origan-infrastructure/achanger/landing-deployment",
+  "seq": 9,
+  "data": {},
+  "status": "created",
+  "output": {
+    "Symbol(alchemy::ResourceKind)": "garage::StaticSite",
+    "Symbol(alchemy::ResourceID)": "landing-deployment",
+    "Symbol(alchemy::ResourceFQN)": "origan-infrastructure/achanger/landing-deployment",
+    "Symbol(alchemy::ResourceScope)": {
+      "@scope": null
+    },
+    "Symbol(alchemy::ResourceSeq)": 9,
+    "sourceDir": "../packages/landing/out",
+    "bucketName": "origan-landing",
+    "endpoint": "https://s3.platform.origan.dev",
+    "accessKeyId": "GK0684f53fd1eba93dc30c9669",
+    "secretAccessKey": "642d30e93bec6bb7336126a2abdc8d1972a292a93a40557c05e5dc797a4ce8e3",
+    "cleanupOrphaned": true,
+    "contentHash": "ac4cbef94fae21d2cdf876b78336aab5a926a4537d4c66fdf8a81d0c35049bb2",
+    "websiteUrl": "https://s3.platform.origan.dev/origan-landing",
+    "filesUploaded": 40,
+    "deployedAt": 1757418769868
+  },
+  "props": {
+    "sourceDir": "../packages/landing/out",
+    "bucketName": "origan-landing",
+    "endpoint": "https://s3.platform.origan.dev",
+    "accessKeyId": "GK0684f53fd1eba93dc30c9669",
+    "secretAccessKey": "642d30e93bec6bb7336126a2abdc8d1972a292a93a40557c05e5dc797a4ce8e3",
+    "cleanupOrphaned": true
+  }
+}

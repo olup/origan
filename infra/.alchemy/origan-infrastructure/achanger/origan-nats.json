@@ -1,0 +1,32 @@
+{
+  "kind": "nats::Deployment",
+  "id": "origan-nats",
+  "fqn": "origan-infrastructure/achanger/origan-nats",
+  "seq": 2,
+  "data": {},
+  "status": "created",
+  "output": {
+    "Symbol(alchemy::ResourceKind)": "nats::Deployment",
+    "Symbol(alchemy::ResourceID)": "origan-nats",
+    "Symbol(alchemy::ResourceFQN)": "origan-infrastructure/achanger/origan-nats",
+    "Symbol(alchemy::ResourceScope)": {
+      "@scope": null
+    },
+    "Symbol(alchemy::ResourceSeq)": 2,
+    "namespace": "origan",
+    "jetstream": true,
+    "persistentStorage": true,
+    "storageSize": "1Gi",
+    "version": "2.10",
+    "endpoint": "origan-nats.origan.svc.cluster.local:4222",
+    "clusterEndpoint": "origan-nats-cluster.origan.svc.cluster.local:4222",
+    "createdAt": 1757407356418
+  },
+  "props": {
+    "namespace": "origan",
+    "jetstream": true,
+    "persistentStorage": true,
+    "storageSize": "1Gi",
+    "version": "2.10"
+  }
+}

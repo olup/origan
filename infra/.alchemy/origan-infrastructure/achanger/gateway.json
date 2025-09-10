@@ -1,0 +1,198 @@
+{
+  "kind": "k3s::Deployment",
+  "id": "gateway",
+  "fqn": "origan-infrastructure/achanger/gateway",
+  "seq": 16,
+  "data": {},
+  "status": "created",
+  "output": {
+    "Symbol(alchemy::ResourceKind)": "k3s::Deployment",
+    "Symbol(alchemy::ResourceID)": "gateway",
+    "Symbol(alchemy::ResourceFQN)": "origan-infrastructure/achanger/gateway",
+    "Symbol(alchemy::ResourceScope)": {
+      "@scope": null
+    },
+    "Symbol(alchemy::ResourceSeq)": 16,
+    "namespace": "origan",
+    "image": "registry.platform.origan.dev/gateway:latest",
+    "replicas": 2,
+    "ports": [
+      {
+        "name": "http",
+        "containerPort": 7777
+      },
+      {
+        "name": "https",
+        "containerPort": 7778
+      }
+    ],
+    "labels": {
+      "deploy-version": "1757496564085"
+    },
+    "env": [
+      {
+        "name": "ORIGAN_DEPLOY_DOMAIN",
+        "value": "origan.app"
+      },
+      {
+        "name": "CONTROL_API_URL",
+        "value": "http://control-api.origan.svc.cluster.local:9999"
+      },
+      {
+        "name": "RUNNER_URL",
+        "value": "http://runner.origan.svc.cluster.local"
+      },
+      {
+        "name": "BUCKET_URL",
+        "value": "https://s3.platform.origan.dev"
+      },
+      {
+        "name": "BUCKET_NAME",
+        "value": "origan-deployment-bucket"
+      },
+      {
+        "name": "BUCKET_ACCESS_KEY",
+        "value": "GKa33adb00c532057bdcb3fd1d"
+      },
+      {
+        "name": "BUCKET_SECRET_KEY",
+        "value": "6496357b767ae361ab6d26e29e205ef01b4725ac04be67f3bb363f51a2843411"
+      },
+      {
+        "name": "BUCKET_REGION",
+        "value": "garage"
+      },
+      {
+        "name": "HAS_TLS_SERVER",
+        "value": "false"
+      },
+      {
+        "name": "TLS_CERT_FILE",
+        "value": "/tmp/cert.pem"
+      },
+      {
+        "name": "TLS_KEY_FILE",
+        "value": "/tmp/key.pem"
+      }
+    ],
+    "resources": {
+      "requests": {
+        "memory": "128Mi",
+        "cpu": "100m"
+      },
+      "limits": {
+        "memory": "256Mi",
+        "cpu": "200m"
+      }
+    },
+    "readinessProbe": {
+      "httpGet": {
+        "path": "/health",
+        "port": 7777
+      },
+      "initialDelaySeconds": 10,
+      "periodSeconds": 10
+    },
+    "livenessProbe": {
+      "httpGet": {
+        "path": "/health",
+        "port": 7777
+      },
+      "initialDelaySeconds": 30,
+      "periodSeconds": 30
+    },
+    "name": "gateway",
+    "serviceEndpoint": "gateway.origan.svc.cluster.local",
+    "createdAt": 1757496595817
+  },
+  "props": {
+    "namespace": "origan",
+    "image": "registry.platform.origan.dev/gateway:latest",
+    "replicas": 2,
+    "ports": [
+      {
+        "name": "http",
+        "containerPort": 7777
+      },
+      {
+        "name": "https",
+        "containerPort": 7778
+      }
+    ],
+    "labels": {
+      "deploy-version": "1757496564085"
+    },
+    "env": [
+      {
+        "name": "ORIGAN_DEPLOY_DOMAIN",
+        "value": "origan.app"
+      },
+      {
+        "name": "CONTROL_API_URL",
+        "value": "http://control-api.origan.svc.cluster.local:9999"
+      },
+      {
+        "name": "RUNNER_URL",
+        "value": "http://runner.origan.svc.cluster.local"
+      },
+      {
+        "name": "BUCKET_URL",
+        "value": "https://s3.platform.origan.dev"
+      },
+      {
+        "name": "BUCKET_NAME",
+        "value": "origan-deployment-bucket"
+      },
+      {
+        "name": "BUCKET_ACCESS_KEY",
+        "value": "GKa33adb00c532057bdcb3fd1d"
+      },
+      {
+        "name": "BUCKET_SECRET_KEY",
+        "value": "6496357b767ae361ab6d26e29e205ef01b4725ac04be67f3bb363f51a2843411"
+      },
+      {
+        "name": "BUCKET_REGION",
+        "value": "garage"
+      },
+      {
+        "name": "HAS_TLS_SERVER",
+        "value": "false"
+      },
+      {
+        "name": "TLS_CERT_FILE",
+        "value": "/tmp/cert.pem"
+      },
+      {
+        "name": "TLS_KEY_FILE",
+        "value": "/tmp/key.pem"
+      }
+    ],
+    "resources": {
+      "requests": {
+        "memory": "128Mi",
+        "cpu": "100m"
+      },
+      "limits": {
+        "memory": "256Mi",
+        "cpu": "200m"
+      }
+    },
+    "readinessProbe": {
+      "httpGet": {
+        "path": "/health",
+        "port": 7777
+      },
+      "initialDelaySeconds": 10,
+      "periodSeconds": 10
+    },
+    "livenessProbe": {
+      "httpGet": {
+        "path": "/health",
+        "port": 7777
+      },
+      "initialDelaySeconds": 30,
+      "periodSeconds": 30
+    }
+  }
+}

@@ -44,6 +44,28 @@ export class K3sApi {
   }
 
   /**
+   * Execute kubectl command via SSH and return raw output
+   */
+  async exec(args: string): Promise<string> {
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    const host = process.env.K3S_SSH_HOST || '62.171.156.174';
+    // Escape single quotes in the command for proper shell handling
+    const escapedArgs = args.replace(/'/g, "'\\''");
+    const cmd = `ssh root@${host} '${escapedArgs}'`;
+    
+    try {
+      const { stdout } = await execAsync(cmd);
+      return stdout.trim();
+    } catch (error: any) {
+      console.error('exec error:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Apply a Kubernetes manifest
    */
   async apply(manifest: any): Promise<any> {
@@ -53,7 +75,9 @@ export class K3sApi {
     
     const host = process.env.K3S_SSH_HOST || '62.171.156.174';
     const manifestJson = JSON.stringify(manifest);
-    const cmd = `ssh root@${host} "echo '${manifestJson}' | kubectl apply -f - -o json"`;
+    // Use base64 encoding to avoid shell quoting issues
+    const base64Manifest = Buffer.from(manifestJson).toString('base64');
+    const cmd = `ssh root@${host} "echo '${base64Manifest}' | base64 -d | kubectl apply -f - -o json"`;
     
     try {
       const { stdout } = await execAsync(cmd);
@@ -68,8 +92,22 @@ export class K3sApi {
    * Delete a Kubernetes resource
    */
   async delete(kind: string, name: string, namespace?: string): Promise<void> {
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    const host = process.env.K3S_SSH_HOST || '62.171.156.174';
     const ns = namespace || this.namespace;
-    await this.kubectl(`delete ${kind} ${name} -n ${ns}`);
+    const cmd = `ssh root@${host} "kubectl delete ${kind} ${name} -n ${ns}"`;
+    
+    try {
+      await execAsync(cmd);
+    } catch (error: any) {
+      // Ignore errors if resource doesn't exist
+      if (!error.stderr?.includes('NotFound') && !error.stderr?.includes('not found')) {
+        throw error;
+      }
+    }
   }
 
   /**

@@ -2,8 +2,10 @@
   "name": "infra",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
+    "deploy:alchemy": "pnpm exec alchemy deploy index.ts --env-file .env",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -11,6 +13,12 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.1",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
     "alchemy": "^0.65.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
   }
 }

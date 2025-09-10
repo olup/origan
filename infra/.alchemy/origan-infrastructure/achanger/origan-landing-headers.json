@@ -1,0 +1,36 @@
+{
+  "kind": "k3s::TraefikMiddleware",
+  "id": "origan-landing-headers",
+  "fqn": "origan-infrastructure/achanger/origan-landing-headers",
+  "seq": 10,
+  "data": {},
+  "status": "created",
+  "output": {
+    "Symbol(alchemy::ResourceKind)": "k3s::TraefikMiddleware",
+    "Symbol(alchemy::ResourceID)": "origan-landing-headers",
+    "Symbol(alchemy::ResourceFQN)": "origan-infrastructure/achanger/origan-landing-headers",
+    "Symbol(alchemy::ResourceScope)": {
+      "@scope": null
+    },
+    "Symbol(alchemy::ResourceSeq)": 10,
+    "namespace": "platform",
+    "type": "headers",
+    "config": {
+      "customRequestHeaders": {
+        "Host": "origan-landing"
+      }
+    },
+    "name": "origan-landing-headers",
+    "reference": "platform-origan-landing-headers@kubernetescrd",
+    "createdAt": 1757418770933
+  },
+  "props": {
+    "namespace": "platform",
+    "type": "headers",
+    "config": {
+      "customRequestHeaders": {
+        "Host": "origan-landing"
+      }
+    }
+  }
+}

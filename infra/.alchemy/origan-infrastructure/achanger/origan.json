@@ -1,0 +1,29 @@
+{
+  "kind": "k3s::Namespace",
+  "id": "origan",
+  "fqn": "origan-infrastructure/achanger/origan",
+  "seq": 0,
+  "data": {},
+  "status": "created",
+  "output": {
+    "Symbol(alchemy::ResourceKind)": "k3s::Namespace",
+    "Symbol(alchemy::ResourceID)": "origan",
+    "Symbol(alchemy::ResourceFQN)": "origan-infrastructure/achanger/origan",
+    "Symbol(alchemy::ResourceScope)": {
+      "@scope": null
+    },
+    "Symbol(alchemy::ResourceSeq)": 0,
+    "labels": {
+      "app": "origan",
+      "managed_by": "alchemy"
+    },
+    "name": "origan",
+    "createdAt": 1757405974327
+  },
+  "props": {
+    "labels": {
+      "app": "origan",
+      "managed_by": "alchemy"
+    }
+  }
+}
