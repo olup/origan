@@ -2,10 +2,15 @@ import { DockerImage } from "../resources/docker/image.js";
 import { Deployment } from "../resources/k3s/deployment.js";
 import { Ingress } from "../resources/k3s/ingress.js";
 import {
+  type ClusterRole,
+  type ClusterRoleBinding,
   K3sClusterRole,
   K3sClusterRoleBinding,
 } from "../resources/k3s/rbac.js";
-import type ServiceAccount from "../resources/k3s/service-account.js";
+import {
+  K3sServiceAccount,
+  type ServiceAccount,
+} from "../resources/k3s/service-account.js";
 
 export interface ControlApiDeploymentProps {
   namespace: string;
@@ -16,8 +21,8 @@ export interface ControlApiDeploymentProps {
 
 export interface ControlApiDeploymentResult {
   serviceAccount: ServiceAccount;
-  clusterRole: any;
-  clusterRoleBinding: any;
+  clusterRole: ClusterRole;
+  clusterRoleBinding: ClusterRoleBinding;
   image: DockerImage;
   deployment: Deployment;
   ingress: Ingress;
@@ -30,7 +35,7 @@ export async function deployControlApi(
   props: ControlApiDeploymentProps,
 ): Promise<ControlApiDeploymentResult> {
   // Create ServiceAccount for control-api
-  const serviceAccount = await ServiceAccount("control-api-sa", {
+  const serviceAccount = await K3sServiceAccount("control-api-sa", {
     namespace: props.namespace,
     labels: {
       app: "control-api",

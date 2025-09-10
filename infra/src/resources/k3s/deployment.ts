@@ -1,4 +1,4 @@
-import alchemy, { type Context, Resource } from "alchemy";
+import { type Context, Resource } from "alchemy";
 import { K3sApi } from "./api.js";
 
 /**

@@ -1,75 +1,105 @@
-import alchemy, { BaseResource } from "alchemy";
+import { type Context, Resource } from "alchemy";
 import { K3sApi } from "./api.js";
 
+/**
+ * Properties for creating a Kubernetes ServiceAccount
+ */
 export interface ServiceAccountProps {
+  /**
+   * Namespace for the ServiceAccount
+   */
   namespace: string;
+
+  /**
+   * Labels to apply to the ServiceAccount
+   */
   labels?: Record<string, string>;
 }
 
-export class ServiceAccount extends BaseResource {
+/**
+ * Kubernetes ServiceAccount resource
+ */
+export interface ServiceAccount
+  extends Resource<"k3s::ServiceAccount">,
+    ServiceAccountProps {
+  /**
+   * ServiceAccount name
+   */
   name: string;
-  namespace: string;
 
-  constructor(name: string, props: ServiceAccountProps) {
-    super(name);
-    this.name = name;
-    this.namespace = props.namespace;
-  }
+  /**
+   * Created timestamp
+   */
+  createdAt: number;
+}
 
-  async refresh() {
-    const api = new K3sApi();
-    try {
-      const result = await api.get(
-        `/api/v1/namespaces/${this.namespace}/serviceaccounts/${this.name}`,
-      );
-      return { exists: true, resource: result };
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return { exists: false };
+/**
+ * Create a Kubernetes ServiceAccount
+ *
+ * @example
+ * const sa = await K3sServiceAccount("my-sa", {
+ *   namespace: "default",
+ *   labels: {
+ *     app: "my-app"
+ *   }
+ * });
+ */
+export const K3sServiceAccount = Resource(
+  "k3s::ServiceAccount",
+  async function (
+    this: Context<ServiceAccount>,
+    name: string,
+    props: ServiceAccountProps,
+  ): Promise<ServiceAccount> {
+    const api = new K3sApi({ namespace: props.namespace });
+    const namespace = props.namespace;
+
+    if (this.phase === "delete") {
+      try {
+        await api.delete("serviceaccount", name, namespace);
+      } catch (error) {
+        console.error("Error deleting ServiceAccount:", error);
       }
-      throw error;
+      return this.destroy();
     }
-  }
 
-  async create(props: ServiceAccountProps) {
-    const api = new K3sApi();
+    // Check if ServiceAccount already exists
+    try {
+      const _existing = await api.kubectl(
+        `get serviceaccount ${name} -n ${namespace}`,
+      );
+      console.log(
+        `ServiceAccount ${name} already exists in namespace ${namespace}`,
+      );
+      return this({
+        name,
+        namespace,
+        labels: props.labels,
+        createdAt: Date.now(),
+      });
+    } catch (_error: any) {
+      // ServiceAccount doesn't exist, create it
+    }
 
+    // Create ServiceAccount
     const manifest = {
       apiVersion: "v1",
       kind: "ServiceAccount",
       metadata: {
-        name: this.name,
-        namespace: props.namespace,
+        name,
+        namespace,
         labels: props.labels,
       },
     };
 
-    await api.post(
-      `/api/v1/namespaces/${props.namespace}/serviceaccounts`,
-      manifest,
-    );
-    console.log(
-      `✅ ServiceAccount ${this.name} created in namespace ${props.namespace}`,
-    );
-  }
+    await api.apply(manifest);
+    console.log(`✅ ServiceAccount ${name} created in namespace ${namespace}`);
 
-  async update(props: ServiceAccountProps) {
-    // ServiceAccounts typically don't need updates
-    // If needed, implement a patch operation here
-    console.log(`ServiceAccount ${this.name} is up to date`);
-  }
-
-  async delete() {
-    const api = new K3sApi();
-    await api.delete(
-      `/api/v1/namespaces/${this.namespace}/serviceaccounts/${this.name}`,
-    );
-    console.log(
-      `🗑️ ServiceAccount ${this.name} deleted from namespace ${this.namespace}`,
-    );
-  }
-}
-
-export default function (name: string, props: ServiceAccountProps) {
-  return alchemy.resource(new ServiceAccount(name, props));
-}
+    return this({
+      name,
+      namespace,
+      labels: props.labels,
+      createdAt: Date.now(),
+    });
+  },
+);

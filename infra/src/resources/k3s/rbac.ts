@@ -1,168 +1,225 @@
-import alchemy from "alchemy";
-
+import { type Context, Resource } from "alchemy";
 import { K3sApi } from "./api.js";
 
+/**
+ * Properties for creating a ClusterRole
+ */
 export interface ClusterRoleProps {
+  /**
+   * Rules defining permissions
+   */
   rules: Array<{
     apiGroups: string[];
     resources: string[];
     verbs: string[];
   }>;
+
+  /**
+   * Labels to apply to the ClusterRole
+   */
   labels?: Record<string, string>;
 }
 
-export class ClusterRole extends BaseResource {
+/**
+ * Kubernetes ClusterRole resource
+ */
+export interface ClusterRole
+  extends Resource<"k3s::ClusterRole">,
+    ClusterRoleProps {
+  /**
+   * ClusterRole name
+   */
   name: string;
 
-  constructor(name: string) {
-    super(name);
-    this.name = name;
-  }
-
-  async refresh() {
-    const api = new K3sApi();
-    try {
-      const result = await api.get(
-        `/apis/rbac.authorization.k8s.io/v1/clusterroles/${this.name}`,
-      );
-      return { exists: true, resource: result };
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return { exists: false };
-      }
-      throw error;
-    }
-  }
-
-  async create(props: ClusterRoleProps) {
-    const api = new K3sApi();
-
-    const manifest = {
-      apiVersion: "rbac.authorization.k8s.io/v1",
-      kind: "ClusterRole",
-      metadata: {
-        name: this.name,
-        labels: props.labels,
-      },
-      rules: props.rules,
-    };
-
-    await api.post("/apis/rbac.authorization.k8s.io/v1/clusterroles", manifest);
-    console.log(`✅ ClusterRole ${this.name} created`);
-  }
-
-  async update(props: ClusterRoleProps) {
-    const api = new K3sApi();
-
-    const manifest = {
-      apiVersion: "rbac.authorization.k8s.io/v1",
-      kind: "ClusterRole",
-      metadata: {
-        name: this.name,
-        labels: props.labels,
-      },
-      rules: props.rules,
-    };
-
-    await api.put(
-      `/apis/rbac.authorization.k8s.io/v1/clusterroles/${this.name}`,
-      manifest,
-    );
-    console.log(`✅ ClusterRole ${this.name} updated`);
-  }
-
-  async delete() {
-    const api = new K3sApi();
-    await api.delete(
-      `/apis/rbac.authorization.k8s.io/v1/clusterroles/${this.name}`,
-    );
-    console.log(`🗑️ ClusterRole ${this.name} deleted`);
-  }
+  /**
+   * Created timestamp
+   */
+  createdAt: number;
 }
 
+/**
+ * Create a Kubernetes ClusterRole
+ *
+ * @example
+ * const role = await K3sClusterRole("my-role", {
+ *   rules: [{
+ *     apiGroups: [""],
+ *     resources: ["pods"],
+ *     verbs: ["get", "list", "watch"]
+ *   }]
+ * });
+ */
+export const K3sClusterRole = Resource(
+  "k3s::ClusterRole",
+  async function (
+    this: Context<ClusterRole>,
+    name: string,
+    props: ClusterRoleProps,
+  ): Promise<ClusterRole> {
+    const api = new K3sApi();
+
+    if (this.phase === "delete") {
+      try {
+        await api.delete("clusterrole", name);
+      } catch (error) {
+        console.error("Error deleting ClusterRole:", error);
+      }
+      return this.destroy();
+    }
+
+    // Check if ClusterRole already exists
+    try {
+      const _existing = await api.kubectl(`get clusterrole ${name}`);
+      console.log(`ClusterRole ${name} already exists`);
+      return this({
+        name,
+        rules: props.rules,
+        labels: props.labels,
+        createdAt: Date.now(),
+      });
+    } catch (_error: any) {
+      // ClusterRole doesn't exist, create it
+    }
+
+    // Create ClusterRole
+    const manifest = {
+      apiVersion: "rbac.authorization.k8s.io/v1",
+      kind: "ClusterRole",
+      metadata: {
+        name,
+        labels: props.labels,
+      },
+      rules: props.rules,
+    };
+
+    await api.apply(manifest);
+    console.log(`✅ ClusterRole ${name} created`);
+
+    return this({
+      name,
+      rules: props.rules,
+      labels: props.labels,
+      createdAt: Date.now(),
+    });
+  },
+);
+
+/**
+ * Properties for creating a ClusterRoleBinding
+ */
 export interface ClusterRoleBindingProps {
+  /**
+   * Reference to the ClusterRole
+   */
   roleRef: {
     apiGroup: string;
     kind: string;
     name: string;
   };
+
+  /**
+   * Subjects to bind to the role
+   */
   subjects: Array<{
     kind: string;
     name: string;
     namespace?: string;
   }>;
+
+  /**
+   * Labels to apply to the ClusterRoleBinding
+   */
   labels?: Record<string, string>;
 }
 
-export class ClusterRoleBinding extends BaseResource {
+/**
+ * Kubernetes ClusterRoleBinding resource
+ */
+export interface ClusterRoleBinding
+  extends Resource<"k3s::ClusterRoleBinding">,
+    ClusterRoleBindingProps {
+  /**
+   * ClusterRoleBinding name
+   */
   name: string;
 
-  constructor(name: string) {
-    super(name);
-    this.name = name;
-  }
+  /**
+   * Created timestamp
+   */
+  createdAt: number;
+}
 
-  async refresh() {
+/**
+ * Create a Kubernetes ClusterRoleBinding
+ *
+ * @example
+ * const binding = await K3sClusterRoleBinding("my-binding", {
+ *   roleRef: {
+ *     apiGroup: "rbac.authorization.k8s.io",
+ *     kind: "ClusterRole",
+ *     name: "my-role"
+ *   },
+ *   subjects: [{
+ *     kind: "ServiceAccount",
+ *     name: "my-sa",
+ *     namespace: "default"
+ *   }]
+ * });
+ */
+export const K3sClusterRoleBinding = Resource(
+  "k3s::ClusterRoleBinding",
+  async function (
+    this: Context<ClusterRoleBinding>,
+    name: string,
+    props: ClusterRoleBindingProps,
+  ): Promise<ClusterRoleBinding> {
     const api = new K3sApi();
-    try {
-      const result = await api.get(
-        `/apis/rbac.authorization.k8s.io/v1/clusterrolebindings/${this.name}`,
-      );
-      return { exists: true, resource: result };
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return { exists: false };
+
+    if (this.phase === "delete") {
+      try {
+        await api.delete("clusterrolebinding", name);
+      } catch (error) {
+        console.error("Error deleting ClusterRoleBinding:", error);
       }
-      throw error;
+      return this.destroy();
     }
-  }
 
-  async create(props: ClusterRoleBindingProps) {
-    const api = new K3sApi();
+    // Check if ClusterRoleBinding already exists
+    try {
+      const _existing = await api.kubectl(`get clusterrolebinding ${name}`);
+      console.log(`ClusterRoleBinding ${name} already exists`);
+      return this({
+        name,
+        roleRef: props.roleRef,
+        subjects: props.subjects,
+        labels: props.labels,
+        createdAt: Date.now(),
+      });
+    } catch (_error: any) {
+      // ClusterRoleBinding doesn't exist, create it
+    }
 
+    // Create ClusterRoleBinding
     const manifest = {
       apiVersion: "rbac.authorization.k8s.io/v1",
       kind: "ClusterRoleBinding",
       metadata: {
-        name: this.name,
+        name,
         labels: props.labels,
       },
       roleRef: props.roleRef,
       subjects: props.subjects,
     };
 
-    await api.post(
-      "/apis/rbac.authorization.k8s.io/v1/clusterrolebindings",
-      manifest,
-    );
-    console.log(`✅ ClusterRoleBinding ${this.name} created`);
-  }
+    await api.apply(manifest);
+    console.log(`✅ ClusterRoleBinding ${name} created`);
 
-  async update(props: ClusterRoleBindingProps) {
-    // ClusterRoleBindings are immutable (roleRef cannot be changed)
-    // If you need to change it, delete and recreate
-    console.log(
-      `ClusterRoleBinding ${this.name} is immutable, skipping update`,
-    );
-  }
-
-  async delete() {
-    const api = new K3sApi();
-    await api.delete(
-      `/apis/rbac.authorization.k8s.io/v1/clusterrolebindings/${this.name}`,
-    );
-    console.log(`🗑️ ClusterRoleBinding ${this.name} deleted`);
-  }
-}
-
-export function K3sClusterRole(name: string, props: ClusterRoleProps) {
-  return alchemy.resource(new ClusterRole(name, props));
-}
-
-export function K3sClusterRoleBinding(
-  name: string,
-  props: ClusterRoleBindingProps,
-) {
-  return alchemy.resource(new ClusterRoleBinding(name, props));
-}
-}
+    return this({
+      name,
+      roleRef: props.roleRef,
+      subjects: props.subjects,
+      labels: props.labels,
+      createdAt: Date.now(),
+    });
+  },
+);

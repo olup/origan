@@ -2,7 +2,7 @@
   "kind": "docker::Image",
   "id": "control-api-image",
   "fqn": "origan-infrastructure/achanger/control-api-image",
-  "seq": 12,
+  "seq": 15,
   "data": {},
   "status": "updated",
   "output": {
@@ -12,7 +12,7 @@
     "Symbol(alchemy::ResourceScope)": {
       "@scope": null
     },
-    "Symbol(alchemy::ResourceSeq)": 12,
+    "Symbol(alchemy::ResourceSeq)": 15,
     "registryUrl": "registry.platform.origan.dev",
     "imageName": "control-api",
     "tag": "latest",
@@ -24,11 +24,11 @@
     ],
     "buildArgs": {
       "NODE_ENV": "production",
-      "BUILD_VERSION": "1757529846332"
+      "BUILD_VERSION": "1757531492730"
     },
     "push": true,
     "fullImageUrl": "registry.platform.origan.dev/control-api:latest",
-    "digest": "sha256:93c9cbcd7b63f93735432348fc70a40c9ac04c2d9922c353acf8698c5ed80ac2"
+    "digest": "sha256:9121ebceefbc72c2a2ca023af58172834e324ee7e529b32e45113dc69999bbd5"
   },
   "props": {
     "registryUrl": "registry.platform.origan.dev",
@@ -42,7 +42,7 @@
     ],
     "buildArgs": {
       "NODE_ENV": "production",
-      "BUILD_VERSION": "1757529846332"
+      "BUILD_VERSION": "1757531492730"
     },
     "push": true
   }

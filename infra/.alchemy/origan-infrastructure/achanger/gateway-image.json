@@ -2,7 +2,7 @@
   "kind": "docker::Image",
   "id": "gateway-image",
   "fqn": "origan-infrastructure/achanger/gateway-image",
-  "seq": 15,
+  "seq": 18,
   "data": {},
   "status": "updated",
   "output": {
@@ -12,7 +12,7 @@
     "Symbol(alchemy::ResourceScope)": {
       "@scope": null
     },
-    "Symbol(alchemy::ResourceSeq)": 15,
+    "Symbol(alchemy::ResourceSeq)": 18,
     "registryUrl": "registry.platform.origan.dev",
     "imageName": "gateway",
     "tag": "latest",
@@ -24,11 +24,11 @@
     ],
     "buildArgs": {
       "NODE_ENV": "production",
-      "BUILD_VERSION": "1757529859305"
+      "BUILD_VERSION": "1757531589248"
     },
     "push": true,
     "fullImageUrl": "registry.platform.origan.dev/gateway:latest",
-    "digest": "sha256:775444cde0bf91728347f6142dbe2fade746142c6e767bb8af561dc1ca61e1c1"
+    "digest": "sha256:d6844098f3befbd1175e60ee69ec75d77e6e9b61e6e5bc3ace2ef134fe78e9d9"
   },
   "props": {
     "registryUrl": "registry.platform.origan.dev",
@@ -42,7 +42,7 @@
     ],
     "buildArgs": {
       "NODE_ENV": "production",
-      "BUILD_VERSION": "1757529859305"
+      "BUILD_VERSION": "1757531589248"
     },
     "push": true
   }

@@ -49,7 +49,7 @@ async function main() {
   });
 
   // Deploy Frontend Applications
-  const admin = await deployAdmin();
+  const adminPanel = await deployAdmin();
   const landingPage = await deployLandingPage();
 
   // Deploy Backend Services

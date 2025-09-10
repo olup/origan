@@ -2,7 +2,7 @@
   "kind": "k3s::Deployment",
   "id": "gateway",
   "fqn": "origan-infrastructure/achanger/gateway",
-  "seq": 16,
+  "seq": 19,
   "data": {},
   "status": "updated",
   "output": {
@@ -12,7 +12,7 @@
     "Symbol(alchemy::ResourceScope)": {
       "@scope": null
     },
-    "Symbol(alchemy::ResourceSeq)": 16,
+    "Symbol(alchemy::ResourceSeq)": 19,
     "namespace": "origan",
     "image": "registry.platform.origan.dev/gateway:latest",
     "replicas": 2,
@@ -27,7 +27,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757529860606"
+      "deploy-version": "1757531600631"
     },
     "env": [
       {
@@ -103,7 +103,7 @@
     },
     "name": "gateway",
     "serviceEndpoint": "gateway.origan.svc.cluster.local",
-    "createdAt": 1757529865865
+    "createdAt": 1757531606987
   },
   "props": {
     "namespace": "origan",
@@ -120,7 +120,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757529860606"
+      "deploy-version": "1757531600631"
     },
     "env": [
       {
