@@ -2,7 +2,7 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { deployAdminPanel } from "./components/admin-panel";
 import { deployBucket } from "./components/bucket";
-import { deployBuildRunnerImage } from "./components/build-runner";
+import { deployBuilderImage } from "./components/builder";
 import { deployControl } from "./components/control";
 import {
   deployDatabase,
@@ -28,8 +28,8 @@ export function deployToScaleway() {
   // Deploy registry and get credentials
   const registryDeployment = deployRegistry();
 
-  // Deploy build runner image
-  const buildRunnerImage = deployBuildRunnerImage(registryDeployment);
+  // Deploy builder image
+  const builderImage = deployBuilderImage(registryDeployment);
 
   // Deploy Kubernetes cluster first
   const kubernetes = deployKubernetes(config.axiom);

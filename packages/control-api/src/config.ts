@@ -16,7 +16,7 @@ export const config = z
     ORIGAN_DEPLOY_DOMAIN: z.string(),
     ORIGAN_ADMIN_PANEL_URL: z.string(),
     ORIGAN_API_URL: z.string(),
-    BUILD_RUNNER_IMAGE: z.string(),
+    BUILDER_IMAGE: z.string(),
 
     GITHUB_CLIENT_ID: z.string(),
     GITHUB_CLIENT_SECRET: z.string(),

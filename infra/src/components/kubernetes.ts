@@ -448,10 +448,10 @@ export function deployKubernetes(axiomConfig: AxiomConfig) {
   );
 
   const buildRunnerServiceAccount = new k8s.core.v1.ServiceAccount(
-    k("build-runner-sa"),
+    k("builder-sa"),
     {
       metadata: {
-        name: "build-runner-sa",
+        name: "builder-sa",
         namespace: "default",
       },
     },
@@ -482,16 +482,16 @@ export function deployKubernetes(axiomConfig: AxiomConfig) {
   );
 
   const buildRunnerRoleBinding = new k8s.rbac.v1.RoleBinding(
-    k("build-runner-binding"),
+    k("builder-binding"),
     {
       metadata: {
-        name: "build-runner-binding",
+        name: "builder-binding",
         namespace: "default",
       },
       subjects: [
         {
           kind: "ServiceAccount",
-          name: "build-runner-sa",
+          name: "builder-sa",
           namespace: "default",
         },
       ],

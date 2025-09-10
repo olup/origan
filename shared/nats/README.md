@@ -57,7 +57,7 @@ Configure the NATS client using environment variables:
 
 This library is used by several Origan platform components:
 
-- Build Runner: For build event notifications
+- Builder: For build event notifications
 - Control API: For deployment status updates
 - Gateway: For configuration updates
 

@@ -133,7 +133,7 @@ pnpm uninstall -g @origan/cli
 └─────┬───────┘    └──────────────┘
       │
 ┌─────▼───────┐    ┌──────────────┐
-│Build Runner │◄───┤Object Storage│
+│Builder      │◄───┤Object Storage│
 └─────┬───────┘    └──────────────┘
       │
 ┌─────▼───────┐

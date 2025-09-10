@@ -42,7 +42,7 @@ The `custom-resources/` directory contains custom infrastructure definitions, co
 - Load balancing rules
 
 ### Build Infrastructure
-- Build runner configurations
+- Builder configurations
 - CI/CD pipeline definitions
 - Resource allocation
 
@@ -56,7 +56,7 @@ The `custom-resources/` directory contains custom infrastructure definitions, co
 The infrastructure supports multiple environments:
 
 - **Development**: Local development environment
-- **Staging**: Testing and QA environment  
+- **Staging**: Testing and QA environment
 - **Production**: Live environment
 
 ## Architecture
@@ -73,7 +73,7 @@ The infrastructure supports multiple environments:
        │
        ▼
 ┌──────────────┐    ┌──────────────┐
-│Build Runner  │◄───┤Object Storage│
+│Builder  │◄───┤Object Storage│
 └──────┬───────┘    └──────────────┘
        │
        ▼

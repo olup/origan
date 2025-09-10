@@ -111,8 +111,8 @@
         "value": "docker-registry.platform.svc.cluster.local:5000"
       },
       {
-        "name": "BUILD_RUNNER_IMAGE",
-        "value": "registry.platform.origan.dev/runner:latest"
+        "name": "BUILDER_IMAGE",
+        "value": "registry.platform.origan.dev/builder:latest"
       }
     ],
     "resources": {
@@ -244,8 +244,8 @@
         "value": "docker-registry.platform.svc.cluster.local:5000"
       },
       {
-        "name": "BUILD_RUNNER_IMAGE",
-        "value": "registry.platform.origan.dev/runner:latest"
+        "name": "BUILDER_IMAGE",
+        "value": "registry.platform.origan.dev/builder:latest"
       }
     ],
     "resources": {

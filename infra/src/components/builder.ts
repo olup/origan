@@ -2,23 +2,23 @@ import * as pulumi from "@pulumi/pulumi";
 import { dockerImageWithTag, gn } from "../utils";
 import type { RegistryOutputs } from "./registry";
 
-export interface BuildRunnerImageOutputs {
+export interface BuilderImageOutputs {
   imageUri: pulumi.Output<string>;
 }
 
 // this package is only needed to build the image and push it
 // to the registry. We do not create a deployment for it.
-export function deployBuildRunnerImage(
+export function deployBuilderImage(
   registry: RegistryOutputs,
-): BuildRunnerImageOutputs {
-  const image = dockerImageWithTag(gn("build-runner"), {
+): BuilderImageOutputs {
+  const image = dockerImageWithTag(gn("builder"), {
     build: {
       context: "../",
       dockerfile: "../build/docker/prod.Dockerfile",
       platform: "linux/amd64",
-      target: "build-runner",
+      target: "builder",
     },
-    imageName: pulumi.interpolate`${registry.namespace.endpoint}/build-runner`,
+    imageName: pulumi.interpolate`${registry.namespace.endpoint}/builder`,
     registry: {
       server: registry.namespace.endpoint,
       username: registry.registryApiKey.accessKey,
@@ -27,6 +27,6 @@ export function deployBuildRunnerImage(
   });
 
   return {
-    imageUri: pulumi.interpolate`${registry.namespace.endpoint}/build-runner:${image.digestTag}`,
+    imageUri: pulumi.interpolate`${registry.namespace.endpoint}/builder:${image.digestTag}`,
   };
 }

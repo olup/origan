@@ -70,7 +70,7 @@ export function deployControl({
             },
           },
           spec: {
-            serviceAccountName: "build-runner-sa",
+            serviceAccountName: "builder-sa",
             containers: [
               {
                 name: "control",
@@ -96,7 +96,7 @@ export function deployControl({
                     value: "production",
                   },
                   {
-                    name: "BUILD_RUNNER_IMAGE",
+                    name: "BUILDER_IMAGE",
                     value: buildRunnerImage,
                   },
                   {

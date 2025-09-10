@@ -22,7 +22,7 @@ RUN pnpm run build
 
 RUN pnpm deploy --filter=@origan/control-api --prod /prod/control-api
 RUN pnpm deploy --filter=@origan/gateway --prod /prod/gateway
-RUN pnpm deploy --filter=@origan/build-runner --prod /prod/build-runner
+RUN pnpm deploy --filter=@origan/builder --prod /prod/builder
 
 FROM base AS control-api
 COPY --from=build /prod/control-api /prod/control-api
@@ -37,13 +37,13 @@ WORKDIR /prod/gateway
 EXPOSE 9999
 CMD [ "node", "dist/index.js" ]
 
-FROM base AS build-runner
+FROM base AS builder
 RUN apt-get update && \
     apt-get install -y git && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=build /prod/build-runner /prod/build-runner
-WORKDIR /prod/build-runner
+COPY --from=build /prod/builder /prod/builder
+WORKDIR /prod/builder
 ENTRYPOINT [ "node", "dist/index.js" ]
 
 FROM ghcr.io/supabase/edge-runtime:v1.67.4 AS runner

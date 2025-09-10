@@ -1,10 +1,10 @@
-# Build Runner
+# Builder
 
-The Build Runner is responsible for executing builds for projects in the Origan platform.
+The Builder is responsible for executing builds for projects in the Origan platform.
 
 ## Configuration
 
-The Build Runner is configured using environment variables by its parent process.
+The Builder is configured using environment variables by its parent process.
 
 ### Required Environment Variables
 

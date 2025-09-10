@@ -161,13 +161,13 @@ export async function triggerBuildTask(
       }),
     };
 
-    const imageName = env.BUILD_RUNNER_IMAGE;
+    const imageName = env.BUILDER_IMAGE;
 
     await triggerTask({
       taskId: build.id,
       imageName,
       env: buildRunnerEnv,
-      namePrefix: "build-runner",
+      namePrefix: "builder",
       resources: buildResourceLimits,
     });
   } catch (error) {

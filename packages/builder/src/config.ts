@@ -34,7 +34,7 @@ export function getConfig() {
     return BuildRunnerEnvSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error("Invalid build runner environment variables:");
+      console.error("Invalid builder environment variables:");
       for (const err of error.errors) {
         console.error(`- ${err.path.join(".")}: ${err.message}`);
       }

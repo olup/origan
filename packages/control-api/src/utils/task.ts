@@ -219,7 +219,7 @@ export class KubernetesTaskRunner implements TaskRunner {
             },
           },
           spec: {
-            serviceAccountName: "build-runner-sa",
+            serviceAccountName: "builder-sa",
             containers: [
               {
                 name: `${namePrefix}-container`,
