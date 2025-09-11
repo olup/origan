@@ -15,7 +15,7 @@
     "Symbol(alchemy::ResourceSeq)": 19,
     "registryUrl": "registry.platform.origan.dev",
     "imageName": "gateway",
-    "tag": "1757533260385",
+    "tag": "1757537353719",
     "context": "../",
     "dockerfile": "build/docker/prod.Dockerfile",
     "target": "gateway",
@@ -24,16 +24,16 @@
     ],
     "buildArgs": {
       "NODE_ENV": "production",
-      "BUILD_VERSION": "1757533260385"
+      "BUILD_VERSION": "1757537353719"
     },
     "push": true,
-    "fullImageUrl": "registry.platform.origan.dev/gateway:1757533260385",
-    "digest": "sha256:72d4052e079e968c5dc62f75dc2c90a6684eab68d481d4b07ceafc09e551dd22"
+    "fullImageUrl": "registry.platform.origan.dev/gateway:1757537353719",
+    "digest": "sha256:70f1595dae2208d8615ab722f5a2ba4a4b1dfe7dd94f5d06e0868e6f69543455"
   },
   "props": {
     "registryUrl": "registry.platform.origan.dev",
     "imageName": "gateway",
-    "tag": "1757533260385",
+    "tag": "1757537353719",
     "context": "../",
     "dockerfile": "build/docker/prod.Dockerfile",
     "target": "gateway",
@@ -42,7 +42,7 @@
     ],
     "buildArgs": {
       "NODE_ENV": "production",
-      "BUILD_VERSION": "1757533260385"
+      "BUILD_VERSION": "1757537353719"
     },
     "push": true
   }

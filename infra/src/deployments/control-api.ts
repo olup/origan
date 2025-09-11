@@ -137,8 +137,11 @@ export async function deployControlApi(
       // NATS connection
       { name: "EVENTS_NATS_SERVER", value: `nats://${props.natsEndpoint}` },
 
-      // S3/Garage configuration for deployments
-      { name: "BUCKET_URL", value: process.env.GARAGE_ENDPOINT },
+      // S3/Garage configuration for deployments (use internal HTTP endpoint)
+      {
+        name: "BUCKET_URL",
+        value: "http://garage-s3.platform.svc.cluster.local:3900",
+      },
       { name: "BUCKET_ACCESS_KEY", value: process.env.GARAGE_ACCESS_KEY || "" },
       { name: "BUCKET_SECRET_KEY", value: process.env.GARAGE_SECRET_KEY || "" },
       { name: "BUCKET_NAME", value: props.bucketName },

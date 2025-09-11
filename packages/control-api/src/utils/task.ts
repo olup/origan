@@ -243,7 +243,7 @@ export class KubernetesTaskRunner implements TaskRunner {
             restartPolicy: "Never",
           },
         },
-        backoffLimit: 1,
+        backoffLimit: 0, // No retries - fail immediately for easier debugging
         ttlSecondsAfterFinished: params.resources?.timeoutSeconds
           ? Math.max(60, params.resources.timeoutSeconds + 60)
           : 3600,

@@ -18,6 +18,8 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 ENV VITE_APP_ENV=production
 
 # Build all packages using turbo (builds in dependency order)
+# Disable turbo telemetry to avoid issues
+ENV TURBO_TELEMETRY_DISABLED=1
 RUN pnpm run build
 
 RUN pnpm deploy --filter=@origan/control-api --prod /prod/control-api
