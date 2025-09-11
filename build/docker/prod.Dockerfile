@@ -43,7 +43,8 @@ FROM base AS builder
 RUN apt-get update && \
     apt-get install -y git && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    npm install -g @antfu/ni
 COPY --from=build /prod/builder /prod/builder
 WORKDIR /prod/builder
 ENTRYPOINT [ "node", "dist/index.js" ]

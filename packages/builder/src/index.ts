@@ -6,7 +6,6 @@ import { createDeployment } from "./utils/deploy.js";
 import { execWithLogs } from "./utils/exec.js";
 import type { Logger } from "./utils/logger.js";
 import { createBuildLogger } from "./utils/logger.js";
-import { detectPackageManager } from "./utils/package-manager.js";
 
 const config = getConfig();
 
@@ -86,11 +85,7 @@ async function runBuild() {
 
     // Build
     await logger.info("Starting build...");
-    const buildResult = await executeBuild(
-      await detectPackageManager(execWithLogs, logger),
-      execWithLogs,
-      logger,
-    );
+    const buildResult = await executeBuild(execWithLogs, logger);
 
     // Deploy
     await updateBuildStatus(

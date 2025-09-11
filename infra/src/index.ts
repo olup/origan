@@ -64,6 +64,9 @@ async function main() {
     databaseEndpoint: origanDb.endpoint,
     natsEndpoint: nats.endpoint,
     bucketName: deploymentBucket.name,
+    bucketEndpoint: deploymentBucket.endpoint,
+    bucketAccessKey: deploymentBucket.accessKeyId,
+    bucketSecretKey: deploymentBucket.secretAccessKey,
     builderImageTag: deploymentTag, // Use same tag as builder for coordination
   });
 

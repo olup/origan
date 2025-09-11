@@ -225,10 +225,13 @@ export const GarageBucket = Resource(
     // Verify the bucket is accessible
     console.log(`✅ Garage bucket ${name} is ready`);
 
+    // Use internal HTTP endpoint for cluster services
+    const internalEndpoint = "http://garage-s3.platform.svc.cluster.local:3900";
+
     return this({
       ...props,
       name,
-      endpoint,
+      endpoint: internalEndpoint, // Use internal endpoint for cluster-to-cluster communication
       accessKeyId,
       secretAccessKey,
       region: "garage", // Garage uses 'garage' as the region

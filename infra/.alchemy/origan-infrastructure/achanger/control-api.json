@@ -15,7 +15,7 @@
     "Symbol(alchemy::ResourceSeq)": 17,
     "namespace": "origan",
     "serviceAccountName": "control-api-sa",
-    "image": "registry.platform.origan.dev/control-api:1757575459804",
+    "image": "registry.platform.origan.dev/control-api:1757577534075",
     "replicas": 2,
     "ports": [
       {
@@ -24,7 +24,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757575583415"
+      "deploy-version": "1757577672958"
     },
     "env": [
       {
@@ -65,15 +65,15 @@
       },
       {
         "name": "BUCKET_URL",
-        "value": "http://garage-s3.platform.svc.cluster.local:3900"
+        "value": "https://s3.platform.origan.dev"
       },
       {
         "name": "BUCKET_ACCESS_KEY",
-        "value": "GKe0ce82fb09fefea90531eb6d"
+        "value": "GKa33adb00c532057bdcb3fd1d"
       },
       {
         "name": "BUCKET_SECRET_KEY",
-        "value": "6fa95f605947622197057ccf3a32bbd7d5e4ee8f2949848d07b9724d753ad76c"
+        "value": "6496357b767ae361ab6d26e29e205ef01b4725ac04be67f3bb363f51a2843411"
       },
       {
         "name": "BUCKET_NAME",
@@ -113,7 +113,7 @@
       },
       {
         "name": "BUILDER_IMAGE",
-        "value": "registry.platform.origan.dev/builder:1757575459804"
+        "value": "registry.platform.origan.dev/builder:1757577534075"
       }
     ],
     "resources": {
@@ -144,12 +144,12 @@
     },
     "name": "control-api",
     "serviceEndpoint": "control-api.origan.svc.cluster.local",
-    "createdAt": 1757575592404
+    "createdAt": 1757577681084
   },
   "props": {
     "namespace": "origan",
     "serviceAccountName": "control-api-sa",
-    "image": "registry.platform.origan.dev/control-api:1757575459804",
+    "image": "registry.platform.origan.dev/control-api:1757577534075",
     "replicas": 2,
     "ports": [
       {
@@ -158,7 +158,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757575583415"
+      "deploy-version": "1757577672958"
     },
     "env": [
       {
@@ -199,15 +199,15 @@
       },
       {
         "name": "BUCKET_URL",
-        "value": "http://garage-s3.platform.svc.cluster.local:3900"
+        "value": "https://s3.platform.origan.dev"
       },
       {
         "name": "BUCKET_ACCESS_KEY",
-        "value": "GKe0ce82fb09fefea90531eb6d"
+        "value": "GKa33adb00c532057bdcb3fd1d"
       },
       {
         "name": "BUCKET_SECRET_KEY",
-        "value": "6fa95f605947622197057ccf3a32bbd7d5e4ee8f2949848d07b9724d753ad76c"
+        "value": "6496357b767ae361ab6d26e29e205ef01b4725ac04be67f3bb363f51a2843411"
       },
       {
         "name": "BUCKET_NAME",
@@ -247,7 +247,7 @@
       },
       {
         "name": "BUILDER_IMAGE",
-        "value": "registry.platform.origan.dev/builder:1757575459804"
+        "value": "registry.platform.origan.dev/builder:1757577534075"
       }
     ],
     "resources": {

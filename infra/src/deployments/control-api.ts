@@ -17,6 +17,9 @@ export interface ControlApiDeploymentProps {
   databaseEndpoint: string;
   natsEndpoint: string;
   bucketName: string;
+  bucketEndpoint?: string;
+  bucketAccessKey?: string;
+  bucketSecretKey?: string;
   builderImageTag?: string; // Optional builder image tag to use
 }
 
@@ -140,10 +143,18 @@ export async function deployControlApi(
       // S3/Garage configuration for deployments (use internal HTTP endpoint)
       {
         name: "BUCKET_URL",
-        value: "http://garage-s3.platform.svc.cluster.local:3900",
+        value:
+          props.bucketEndpoint ||
+          "http://garage-s3.platform.svc.cluster.local:3900",
       },
-      { name: "BUCKET_ACCESS_KEY", value: process.env.GARAGE_ACCESS_KEY || "" },
-      { name: "BUCKET_SECRET_KEY", value: process.env.GARAGE_SECRET_KEY || "" },
+      {
+        name: "BUCKET_ACCESS_KEY",
+        value: props.bucketAccessKey || process.env.GARAGE_ACCESS_KEY || "",
+      },
+      {
+        name: "BUCKET_SECRET_KEY",
+        value: props.bucketSecretKey || process.env.GARAGE_SECRET_KEY || "",
+      },
       { name: "BUCKET_NAME", value: props.bucketName },
       { name: "BUCKET_REGION", value: "garage" },
 
