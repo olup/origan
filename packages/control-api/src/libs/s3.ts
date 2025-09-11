@@ -9,7 +9,7 @@ import { getLogger } from "../instrumentation.js";
 const s3Client = new S3Client({
   endpoint: env.BUCKET_URL,
   region: env.BUCKET_REGION || "us-east-1", // Use configured region or default to MinIO's default
-  forcePathStyle: env.BUCKET_URL?.includes("minio") || false, // Required for MinIO
+  forcePathStyle: true, // Required for MinIO/Garage - use path-style URLs instead of virtual-hosted-style
   credentials: {
     accessKeyId: env.BUCKET_ACCESS_KEY || "",
     secretAccessKey: env.BUCKET_SECRET_KEY || "",

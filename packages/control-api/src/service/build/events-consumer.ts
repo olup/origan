@@ -53,6 +53,8 @@ export class BuildEventsDatabaseConsumer {
       async (event: BuildEvent) => {
         await this.handleBuildStatusEvent(event);
       },
+      undefined, // buildId wildcard
+      "control-api", // queue group to ensure only one instance processes each message
     );
 
     this.logsSubscription = await this.natsClient.subscriber.onBuildLog(
@@ -61,6 +63,8 @@ export class BuildEventsDatabaseConsumer {
         const buildId = parts[parts.length - 2];
         await this.addLogToBatch(buildId, log);
       },
+      undefined, // buildId wildcard
+      "control-api", // queue group to ensure only one instance processes each message
     );
 
     this.flushInterval = setInterval(

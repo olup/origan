@@ -15,7 +15,7 @@
     "Symbol(alchemy::ResourceSeq)": 17,
     "namespace": "origan",
     "serviceAccountName": "control-api-sa",
-    "image": "registry.platform.origan.dev/control-api:1757537340239",
+    "image": "registry.platform.origan.dev/control-api:1757575459804",
     "replicas": 2,
     "ports": [
       {
@@ -24,7 +24,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757537345848"
+      "deploy-version": "1757575583415"
     },
     "env": [
       {
@@ -113,7 +113,7 @@
       },
       {
         "name": "BUILDER_IMAGE",
-        "value": "registry.platform.origan.dev/builder:1757537340239"
+        "value": "registry.platform.origan.dev/builder:1757575459804"
       }
     ],
     "resources": {
@@ -144,12 +144,12 @@
     },
     "name": "control-api",
     "serviceEndpoint": "control-api.origan.svc.cluster.local",
-    "createdAt": 1757537353697
+    "createdAt": 1757575592404
   },
   "props": {
     "namespace": "origan",
     "serviceAccountName": "control-api-sa",
-    "image": "registry.platform.origan.dev/control-api:1757537340239",
+    "image": "registry.platform.origan.dev/control-api:1757575459804",
     "replicas": 2,
     "ports": [
       {
@@ -158,7 +158,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757537345848"
+      "deploy-version": "1757575583415"
     },
     "env": [
       {
@@ -247,7 +247,7 @@
       },
       {
         "name": "BUILDER_IMAGE",
-        "value": "registry.platform.origan.dev/builder:1757537340239"
+        "value": "registry.platform.origan.dev/builder:1757575459804"
       }
     ],
     "resources": {

@@ -12,10 +12,13 @@ export class Subscriber {
   async onBuildStatus(
     handler: (event: BuildEvent, msg: Msg) => Promise<void>,
     buildId?: string,
+    queueGroup?: string,
   ): Promise<Subscription> {
     try {
       const subject = subjects.builds.status(buildId);
-      const subscription = await this.client.subscribe(subject);
+      const subscription = queueGroup
+        ? await this.client.subscribe(subject, { queue: queueGroup })
+        : await this.client.subscribe(subject);
       this.handleMessages(subscription, handler);
       return subscription;
     } catch (error) {
@@ -27,10 +30,13 @@ export class Subscriber {
   async onBuildLog(
     handler: (log: BuildLogEntry, msg: Msg) => Promise<void>,
     buildId?: string,
+    queueGroup?: string,
   ): Promise<Subscription> {
     try {
       const subject = subjects.builds.logs(buildId);
-      const subscription = await this.client.subscribe(subject);
+      const subscription = queueGroup
+        ? await this.client.subscribe(subject, { queue: queueGroup })
+        : await this.client.subscribe(subject);
       this.handleMessages(subscription, handler);
       return subscription;
     } catch (error) {
@@ -43,10 +49,13 @@ export class Subscriber {
     handler: (log: DeploymentLogEvent, msg: Msg) => Promise<void>,
     projectId: string,
     deploymentId: string,
+    queueGroup?: string,
   ): Promise<Subscription> {
     try {
       const subject = subjects.deployments.logs(projectId, deploymentId);
-      const subscription = await this.client.subscribe(subject);
+      const subscription = queueGroup
+        ? await this.client.subscribe(subject, { queue: queueGroup })
+        : await this.client.subscribe(subject);
       this.handleMessages(subscription, handler);
       return subscription;
     } catch (error) {
