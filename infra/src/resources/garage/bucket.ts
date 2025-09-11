@@ -9,7 +9,7 @@ const execAsync = promisify(exec);
  */
 export interface GarageBucketProps {
   /**
-   * Garage endpoint URL
+   * Garage endpoint URL (external)
    */
   endpoint?: string;
 
@@ -37,6 +37,11 @@ export interface GarageBucketProps {
    * Error document for website (default: error.html)
    */
   errorDocument?: string;
+
+  /**
+   * Force update flag - change this to force resource update
+   */
+  forceUpdate?: string | number;
 }
 
 /**
@@ -51,9 +56,14 @@ export interface GarageBucket
   name: string;
 
   /**
-   * S3 endpoint URL
+   * S3 endpoint URL (external HTTPS)
    */
   endpoint: string;
+
+  /**
+   * Internal S3 endpoint URL (internal HTTP for cluster services)
+   */
+  internalEndpoint: string;
 
   /**
    * Access key ID
@@ -225,13 +235,15 @@ export const GarageBucket = Resource(
     // Verify the bucket is accessible
     console.log(`✅ Garage bucket ${name} is ready`);
 
-    // Use internal HTTP endpoint for cluster services
+    // Define both endpoints
     const internalEndpoint = "http://garage-s3.platform.svc.cluster.local:3900";
+    const externalEndpoint = endpoint; // The external endpoint from props or env
 
     return this({
-      ...props,
+      ...props, // Include all props including forceUpdate
       name,
-      endpoint: internalEndpoint, // Use internal endpoint for cluster-to-cluster communication
+      endpoint: externalEndpoint, // External HTTPS endpoint
+      internalEndpoint, // Internal HTTP endpoint for cluster services
       accessKeyId,
       secretAccessKey,
       region: "garage", // Garage uses 'garage' as the region

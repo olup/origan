@@ -46,6 +46,7 @@ async function main() {
   const deploymentBucket = await GarageBucket("origan-deployment-bucket", {
     endpoint: process.env.GARAGE_ENDPOINT || "https://s3.platform.origan.dev",
     keyName: "origan-deployment",
+    forceUpdate: "v2", // Change this value to force resource update
   });
 
   // Deploy Frontend Applications
@@ -64,7 +65,7 @@ async function main() {
     databaseEndpoint: origanDb.endpoint,
     natsEndpoint: nats.endpoint,
     bucketName: deploymentBucket.name,
-    bucketEndpoint: deploymentBucket.endpoint,
+    bucketEndpoint: deploymentBucket.internalEndpoint, // Use internal endpoint
     bucketAccessKey: deploymentBucket.accessKeyId,
     bucketSecretKey: deploymentBucket.secretAccessKey,
     builderImageTag: deploymentTag, // Use same tag as builder for coordination
@@ -74,7 +75,7 @@ async function main() {
   const gateway = await deployGateway({
     namespace: origanNamespace.name,
     bucketName: deploymentBucket.name,
-    bucketEndpoint: deploymentBucket.endpoint,
+    bucketEndpoint: deploymentBucket.internalEndpoint, // Use internal endpoint
     bucketAccessKey: deploymentBucket.accessKeyId,
     bucketSecretKey: deploymentBucket.secretAccessKey,
   });
@@ -83,7 +84,7 @@ async function main() {
   const runner = await deployRunner({
     namespace: origanNamespace.name,
     bucketName: deploymentBucket.name,
-    bucketEndpoint: deploymentBucket.endpoint,
+    bucketEndpoint: deploymentBucket.internalEndpoint, // Use internal endpoint
     bucketAccessKey: deploymentBucket.accessKeyId,
     bucketSecretKey: deploymentBucket.secretAccessKey,
     natsEndpoint: nats.endpoint,
@@ -97,8 +98,10 @@ async function main() {
   console.log(`- PostgreSQL: ${origanDb.endpoint}`);
   console.log(`- NATS: ${nats.endpoint}`);
   console.log(
-    `- S3 Bucket: ${deploymentBucket.name} (${deploymentBucket.endpoint})`,
+    `- S3 Bucket: ${deploymentBucket.name}`,
   );
+  console.log(`  - External: ${deploymentBucket.endpoint}`);
+  console.log(`  - Internal: ${deploymentBucket.internalEndpoint}`);
   console.log(
     `- Admin Panel: ${adminPanel.bucket.name} (${adminPanel.deployment.filesUploaded} files)`,
   );

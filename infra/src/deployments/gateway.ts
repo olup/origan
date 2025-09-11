@@ -22,6 +22,7 @@ export interface GatewayDeploymentResult {
 export async function deployGateway(
   props: GatewayDeploymentProps,
 ): Promise<GatewayDeploymentResult> {
+  console.log(props.bucketEndpoint);
   // Build and push Gateway Docker image with unique tag
   const imageTag = Date.now().toString();
   const image = await DockerImage("gateway-image", {

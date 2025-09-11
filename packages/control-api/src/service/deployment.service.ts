@@ -142,7 +142,8 @@ async function uploadToS3(
 
     // Read and upload file
     const fileContent = await readFile(entryPath);
-    const key = `deployments/${deploymentId}/app/${entry}`;
+    // Entry already contains the correct path structure (app/... or api/...)
+    const key = `deployments/${deploymentId}/${entry}`;
 
     try {
       await putObject(bucketName, key, fileContent, getContentType(entry));
