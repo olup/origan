@@ -5,7 +5,7 @@ import { envConfig } from "../config/index.js";
 export const s3Client = new S3Client({
   endpoint: envConfig.bucketUrl,
   region: envConfig.bucketRegion || "us-east-1", // Use configured region or default to MinIO's default
-  forcePathStyle: envConfig.bucketUrl?.includes("minio") || false, // Required for MinIO
+  forcePathStyle: true, // Required for MinIO/Garage - use path-style URLs
   credentials: {
     accessKeyId: envConfig.bucketAccessKey || "",
     secretAccessKey: envConfig.bucketSecretKey || "",
