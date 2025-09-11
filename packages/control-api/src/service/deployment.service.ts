@@ -342,7 +342,7 @@ export async function operateDeployment({
       .where(eq(deploymentSchema.id, deploymentId));
 
     // Create or update domain record
-    const domain = `${deployment.reference}--${project.reference}.`;
+    const domain = `${deployment.reference}--${project.reference}.${env.ORIGAN_DEPLOY_DOMAIN}`;
 
     await db
       .insert(domainSchema)
@@ -362,7 +362,7 @@ export async function operateDeployment({
     return {
       projectRef,
       deploymentId: deployment.id,
-      urls: [`https://${domain}${env.ORIGAN_DEPLOY_DOMAIN}`],
+      urls: [`https://${domain}`],
     };
   } catch (err) {
     // Set deployment status to error

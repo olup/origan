@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
 import {
   deploymentSchema,
@@ -34,7 +35,7 @@ export async function createTrack({
     });
     if (!project) throw new Error("Project not found");
 
-    const domainName = `${name}--${project.reference}.`;
+    const domainName = `${name}--${project.reference}.${env.ORIGAN_DEPLOY_DOMAIN}`;
 
     // Direct ORM call: should belong to the domain service
     await tx.insert(domainSchema).values({

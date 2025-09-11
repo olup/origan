@@ -207,8 +207,8 @@ export const deploymentsRouter = new Hono<Env>()
           domains: deployment.domains.map((domain) => ({
             id: domain.id,
             name: domain.name,
-            // computing real URL based on environment
-            url: `${env.DEPLOY_DOMAIN_PROTOCOL}${domain.name}${env.ORIGAN_DEPLOY_DOMAIN}`,
+            // domain.name already contains the full domain with .origan.app
+            url: `${env.DEPLOY_DOMAIN_PROTOCOL}${domain.name}`,
             createdAt: domain.createdAt,
             updatedAt: domain.updatedAt,
             trackId: domain.trackId,
@@ -278,8 +278,8 @@ export const deploymentsRouter = new Hono<Env>()
               domains: deployment.domains.map((domain) => ({
                 id: domain.id,
                 name: domain.name,
-                // computing real URL based on environment
-                url: `${env.DEPLOY_DOMAIN_PROTOCOL}${domain.name}${env.ORIGAN_DEPLOY_DOMAIN}`,
+                // domain.name already contains the full domain with .origan.app
+                url: `${env.DEPLOY_DOMAIN_PROTOCOL}${domain.name}`,
                 createdAt: domain.createdAt,
                 updatedAt: domain.updatedAt,
                 trackId: domain.trackId,

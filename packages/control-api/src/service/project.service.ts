@@ -1,4 +1,5 @@
 import { and, eq, type SQLWrapper } from "drizzle-orm";
+import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
 import { generateReference } from "../utils/reference.js";
@@ -43,7 +44,7 @@ export async function createProjectWithProdTrack(
   const [prodDomain] = await db
     .insert(schema.domainSchema)
     .values({
-      name: `${project.reference}.origan.app`,
+      name: `${project.reference}.${env.ORIGAN_DEPLOY_DOMAIN}`,
       projectId: project.id,
       trackId: track.id,
     })
