@@ -16,6 +16,7 @@ import {
 import { putObject } from "../libs/s3.js";
 import { deploymentConfigSchema } from "../schemas/deploy.js";
 import { generateReference, REFERENCE_PREFIXES } from "../utils/reference.js";
+import { generateDeploymentSubdomain } from "../utils/subdomain.js";
 import { getLatestRevision } from "./environment.service.js";
 import { getOrCreateTrack, updateTrackDomains } from "./track.service.js";
 
@@ -342,7 +343,8 @@ export async function operateDeployment({
       .where(eq(deploymentSchema.id, deploymentId));
 
     // Create or update domain record
-    const domain = `${deployment.reference}--${project.reference}.${env.ORIGAN_DEPLOY_DOMAIN}`;
+    const subdomain = generateDeploymentSubdomain(project.reference);
+    const domain = `${subdomain}.${env.ORIGAN_DEPLOY_DOMAIN}`;
 
     await db
       .insert(domainSchema)

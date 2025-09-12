@@ -88,12 +88,7 @@ async function runBuild() {
     const buildResult = await executeBuild(execWithLogs, logger);
 
     // Deploy
-    await updateBuildStatus(
-      nc,
-      logger,
-      "in_progress",
-      "Creating deployment...",
-    );
+    await logger.info("Creating deployment...");
     await createDeployment(config.BUILD_ID, buildResult.buildDir, logger);
 
     await updateBuildStatus(
