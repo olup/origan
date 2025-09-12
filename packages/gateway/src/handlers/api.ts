@@ -30,7 +30,7 @@ export async function handleApiRoute(
 
     headers.set(
       "x-origan-function-path",
-      `deployments/${deploymentId}/app/api/${route.functionPath}`,
+      `deployments/${deploymentId}/api/${route.functionPath}`,
     );
     headers.set("x-origan-deployment-id", deploymentId);
     headers.set("x-origan-project-id", projectId);

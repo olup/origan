@@ -49,9 +49,17 @@ const listdirPath = async (
   return files;
 };
 
-async function bundleApiRoute(route: Route): Promise<string> {
+async function bundleApiRoute(
+  apiPath: string,
+  route: Route,
+  logger: Logger,
+): Promise<string> {
+  const entryPoint = join(apiPath, route.functionPath);
+
+  await logger.info(`Bundling API route ${route.urlPath} from ${entryPoint}`);
+
   const bundled = await esbuild.build({
-    entryPoints: [route.functionPath],
+    entryPoints: [entryPoint],
     external: [],
     bundle: true,
     platform: "node",
@@ -72,9 +80,25 @@ async function createDeploymentArchive(
   artifactsDir: string,
   uuid: string,
   appFiles: string[],
-  _routes: Route[],
+  routes: Route[],
   distPath: string,
+  apiPath: string | null,
+  logger: Logger,
 ): Promise<BundleResult> {
+  // Bundle API routes first (before creating the Promise)
+  const bundledRoutes: Array<{ code: string; route: Route }> = [];
+  if (apiPath && routes.length > 0) {
+    for (const route of routes) {
+      try {
+        const bundledCode = await bundleApiRoute(apiPath, route, logger);
+        bundledRoutes.push({ code: bundledCode, route });
+      } catch (error) {
+        logger.error(`Failed to bundle route ${route.urlPath}: ${error}`);
+        throw error;
+      }
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const zipPath = join(artifactsDir, `${uuid}.zip`);
     const output = createWriteStream(zipPath);
@@ -96,10 +120,72 @@ async function createDeploymentArchive(
       archive.file(fullPath, { name: join("app", file) });
     }
 
-    // TODO : Add API routes to zip
+    // Add bundled API routes to zip
+    for (const { code, route } of bundledRoutes) {
+      archive.append(code, {
+        name: join("api", route.functionPath),
+      });
+    }
 
     archive.finalize();
   });
+}
+
+async function detectApiRoutes(
+  apiPath: string,
+  logger: Logger,
+): Promise<Route[]> {
+  const routes: Route[] = [];
+
+  if (!existsSync(apiPath)) {
+    await logger.info("No /api directory found, skipping API route detection");
+    return routes;
+  }
+
+  await logger.info("Detecting API routes...");
+
+  async function scanDirectory(dir: string, basePath = ""): Promise<void> {
+    const items = await readdir(dir);
+
+    for (const item of items) {
+      const itemPath = join(dir, item);
+      const stats = await stat(itemPath);
+
+      if (stats.isDirectory()) {
+        // Recursively scan subdirectories
+        await scanDirectory(itemPath, join(basePath, item));
+      } else if (stats.isFile()) {
+        // Check if it's a valid API file
+        if (
+          item.match(/\.(js|ts|jsx|tsx|mjs)$/) &&
+          !item.includes(".test.") &&
+          !item.includes(".spec.")
+        ) {
+          // Remove file extension to get the route path
+          const routeName = item.replace(/\.(js|ts|jsx|tsx|mjs)$/, "");
+          const urlPath = join(
+            "/api",
+            basePath,
+            routeName === "index" ? "" : routeName,
+          ).replace(/\\/g, "/"); // Ensure forward slashes for URLs
+
+          const functionPath = join(basePath, item).replace(/\\/g, "/");
+
+          routes.push({
+            urlPath,
+            functionPath,
+          });
+
+          await logger.info(`Found API route: ${urlPath} -> ${functionPath}`);
+        }
+      }
+    }
+  }
+
+  await scanDirectory(apiPath);
+
+  await logger.info(`Detected ${routes.length} API routes`);
+  return routes;
 }
 
 export async function createDeployment(
@@ -116,14 +202,17 @@ export async function createDeployment(
 
   await logger.info("Creating deployment package...");
 
-  // first, list the path of the files in the build directory using fs
-
+  // List files in the build directory
   const appFiles = await listdirPath(buildDir);
+
+  // Detect and bundle API routes
+  const apiPath = join(process.cwd(), "api");
+  const apiRoutes = await detectApiRoutes(apiPath, logger);
 
   // Create deployment config
   const config: DeployConfig = {
     app: appFiles,
-    api: [], // TODO bundle and list api files
+    api: apiRoutes,
   };
 
   // Create archive
@@ -133,6 +222,8 @@ export async function createDeployment(
     config.app,
     config.api,
     buildDir,
+    existsSync(apiPath) ? apiPath : null,
+    logger,
   );
 
   await logger.info("Uploading deployment...");
