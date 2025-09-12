@@ -6,6 +6,7 @@ import {
   CardSection,
   Container,
   Group,
+  Loader,
   ScrollArea,
   Stack,
   Text,
@@ -13,7 +14,7 @@ import {
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { client } from "../libs/client.js";
 import { createQueryHelper } from "../utils/honoQuery.js";
@@ -62,7 +63,9 @@ export const DeploymentDetailsPage = () => {
   const [, navigate] = useLocation();
   const params = useParams();
   const reference = params?.reference;
-  const osComponentRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const prevLogsLength = useRef(0);
 
   const { data: deployment, refetch } = useQuery({
     ...createQueryHelper(client.deployments["by-ref"][":ref"].$get, {
@@ -71,29 +74,75 @@ export const DeploymentDetailsPage = () => {
     enabled: Boolean(reference),
   });
 
-  // Function to scroll logs container to the bottom
-  const scrollLogsToBottom = useCallback(() => {
-    osComponentRef.current?.scrollTo({
-      top: osComponentRef.current.scrollHeight,
-      behavior: "smooth",
-    });
+  // Get the ScrollArea viewport element
+  const getViewport = useCallback(() => {
+    // Mantine ScrollArea viewport has the data attribute
+    return scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]",
+    ) as HTMLElement | null;
   }, []);
 
-  // Refetch and scroll on deployment status
+  // Check if user is near bottom (within 50px threshold)
+  const isNearBottom = useCallback(() => {
+    const viewport = getViewport();
+    if (!viewport) return true;
+    const threshold = 50;
+    return (
+      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <
+      threshold
+    );
+  }, [getViewport]);
+
+  // Function to scroll logs container to the bottom
+  const scrollLogsToBottom = useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      const viewport = getViewport();
+      if (viewport) {
+        viewport.scrollTo({
+          top: viewport.scrollHeight,
+          behavior,
+        });
+      }
+    },
+    [getViewport],
+  );
+
+  // Handle manual scroll detection
+  const handleScroll = useCallback(() => {
+    setAutoScroll(isNearBottom());
+  }, [isNearBottom]);
+
+  // Auto-scroll when new logs appear
+  useEffect(() => {
+    if (!deployment || "error" in deployment) return;
+
+    const currentLogsLength = deployment.build?.logs?.length || 0;
+
+    // Scroll on initial load or when new logs appear (if auto-scroll is enabled)
+    if (currentLogsLength > 0) {
+      if (prevLogsLength.current === 0) {
+        // Initial load - instant scroll
+        scrollLogsToBottom("instant");
+      } else if (currentLogsLength > prevLogsLength.current && autoScroll) {
+        // New logs - smooth scroll if user hasn't scrolled away
+        scrollLogsToBottom("smooth");
+      }
+    }
+
+    prevLogsLength.current = currentLogsLength;
+  }, [deployment, autoScroll, scrollLogsToBottom]);
+
+  // Refetch on interval when deployment is active
   useEffect(() => {
     if (!deployment || "error" in deployment) return;
     if (deployment.status === "success" || deployment.status === "error")
       return;
 
-    // Initial scroll to bottom
-    scrollLogsToBottom();
-
     const interval = setInterval(() => {
       refetch();
-      scrollLogsToBottom();
     }, 1000);
     return () => clearInterval(interval);
-  }, [refetch, deployment, scrollLogsToBottom]);
+  }, [refetch, deployment]);
 
   if (!reference || !deployment) return null;
   if ("error" in deployment) return null;
@@ -125,24 +174,35 @@ export const DeploymentDetailsPage = () => {
           </Stack>
         </Card>
 
-        <Card withBorder padding="xl">
-          <Stack>
-            {deployment.domains?.map((domain) => (
-              <Text key={domain.id}>
-                <Text
-                  component="a"
-                  href={domain.url}
-                  target="_blank"
-                  c="blue"
-                  style={{ textDecoration: "underline" }}
-                >
-                  {domain.url}
+        {deployment.domains && deployment.domains.length > 0 && (
+          <Card withBorder padding="xl">
+            <Stack>
+              {deployment.domains.map((domain) => (
+                <Text key={domain.id}>
+                  <Text
+                    component="a"
+                    href={domain.url}
+                    target="_blank"
+                    c="blue"
+                    style={{ textDecoration: "underline" }}
+                  >
+                    {domain.url}
+                  </Text>
                 </Text>
-              </Text>
-            ))}
-          </Stack>
-        </Card>
-        {deployment.build && (
+              ))}
+            </Stack>
+          </Card>
+        )}
+        {deployment.status === "pending" ? (
+          // Show initialization message when deployment hasn't started
+          <Card withBorder padding="xl">
+            <Stack align="center" gap="md" py="xl">
+              <Loader size="sm" />
+              <Text c="dimmed">Deployment is initializing...</Text>
+            </Stack>
+          </Card>
+        ) : deployment.build ? (
+          // Show build details and logs when deployment has started
           <Card withBorder padding="xl">
             <Stack>
               <Title order={3}>Build Details</Title>
@@ -175,9 +235,12 @@ export const DeploymentDetailsPage = () => {
                 )}
               <CardSection>
                 <Stack>
-                  <ScrollArea.Autosize mah={300}>
+                  <ScrollArea.Autosize
+                    mah={300}
+                    ref={scrollAreaRef}
+                    onScrollPositionChange={handleScroll}
+                  >
                     <Box
-                      ref={osComponentRef}
                       bg="dark"
                       p="md"
                       style={{
@@ -185,25 +248,36 @@ export const DeploymentDetailsPage = () => {
                         fontSize: "0.8rem",
                       }}
                     >
-                      {deployment.build.logs.map((log, index) => (
-                        <Box
-                          // biome-ignore lint/suspicious/noArrayIndexKey: no other way to make a key
-                          key={index}
-                          c={getLogColor(log.level)}
-                        >
-                          {log.message}
-                        </Box>
-                      ))}
-                      {deployment.build.status === "in_progress" && (
-                        <Box c="gray">...</Box>
+                      {deployment.build.logs.length > 0 ? (
+                        <>
+                          {deployment.build.logs.map((log, index) => (
+                            <Box
+                              // biome-ignore lint/suspicious/noArrayIndexKey: no other way to make a key
+                              key={index}
+                              c={getLogColor(log.level)}
+                            >
+                              {log.message}
+                            </Box>
+                          ))}
+                          {deployment.build.status === "in_progress" && (
+                            <Box c="gray">...</Box>
+                          )}
+                        </>
+                      ) : (
+                        <Text c="dimmed">Waiting for build logs...</Text>
                       )}
                     </Box>
                   </ScrollArea.Autosize>
+                  {!autoScroll && deployment.build.status === "in_progress" && (
+                    <Text size="xs" c="dimmed" ta="center">
+                      Auto-scroll paused. Scroll to bottom to resume.
+                    </Text>
+                  )}
                 </Stack>
               </CardSection>
             </Stack>
           </Card>
-        )}
+        ) : null}
       </Stack>
     </Container>
   );
