@@ -1,16 +1,18 @@
 import {
   Badge,
   Box,
+  Button,
   Card,
   Container,
   Group,
+  Menu,
   Stack,
   Table,
   Text,
   Title,
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
-import { GithubIcon } from "lucide-react";
+import { ChevronDownIcon, ExternalLinkIcon, GithubIcon } from "lucide-react";
 import { Link, Route, useLocation, useParams } from "wouter";
 import { EnvironmentManager } from "../components/EnvironmentManager";
 import { client } from "../libs/client";
@@ -70,6 +72,7 @@ const DeploymentsList = ({
           <Table.Th>Commit</Table.Th>
           <Table.Th>Deployment</Table.Th>
           <Table.Th>Created At</Table.Th>
+          <Table.Th />
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
@@ -81,8 +84,7 @@ const DeploymentsList = ({
           return (
             <Table.Tr
               key={deployment.reference}
-              style={{ cursor: "pointer" }}
-              onClick={() => navigate(`/deployments/${deployment.reference}`)}
+              // onClick={() => navigate(`/deployments/${deployment.reference}`)}
             >
               <Table.Td>
                 <Badge color={getStatusColor(deployment.status)}>
@@ -98,23 +100,47 @@ const DeploymentsList = ({
               </Table.Td>
               <Table.Td>{deployment.build?.commitSha.substring(0, 7)}</Table.Td>
               <Table.Td>
-                {deployment.domains.map((domain) => (
-                  <Group gap="xs" key={domain.name}>
-                    <Text
-                      component="a"
-                      href={domain.url}
-                      target="_blank"
-                      c="blue"
-                      size="sm"
-                      style={{ textDecoration: "underline" }}
-                    >
-                      Open
-                    </Text>
-                  </Group>
-                ))}
+                {deployment.domains.length > 0 && (
+                  <Menu shadow="md" position="bottom-start">
+                    <Menu.Target>
+                      <Button
+                        variant="subtle"
+                        size="xs"
+                        rightSection={<ChevronDownIcon />}
+                      >
+                        Deplyment Urls ({deployment.domains.length})
+                      </Button>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Label>Open deployment</Menu.Label>
+                      {deployment.domains.map((domain) => (
+                        <Menu.Item
+                          key={domain.name}
+                          component="a"
+                          href={domain.url}
+                          target="_blank"
+                          leftSection={<ExternalLinkIcon size={14} />}
+                        >
+                          {domain.name}
+                        </Menu.Item>
+                      ))}
+                    </Menu.Dropdown>
+                  </Menu>
+                )}
               </Table.Td>
               <Table.Td>
                 {new Date(deployment.createdAt).toLocaleString()}
+              </Table.Td>
+              <Table.Td style={{ textAlign: "right" }}>
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  onClick={() =>
+                    navigate(`/deployments/${deployment.reference}`)
+                  }
+                >
+                  View
+                </Button>
               </Table.Td>
             </Table.Tr>
           );

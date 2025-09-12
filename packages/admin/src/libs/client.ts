@@ -9,7 +9,17 @@ const state = {
   refreshPromise: null as Promise<boolean> | null,
 };
 
-const baseClient = hc<ApiType>(getConfig().apiUrl, {
+// Use proxy path in development if configured
+const getApiUrl = () => {
+  const config = getConfig();
+  if (config.appEnv === "development" && config.useProxy) {
+    // Use local proxy path
+    return `${window.location.origin}/api`;
+  }
+  return config.apiUrl;
+};
+
+const baseClient = hc<ApiType>(getApiUrl(), {
   init: {
     credentials: "include",
   },
@@ -100,6 +110,6 @@ const authenticatedFetch: typeof fetch = async (input, init) => {
 };
 
 // Main client with auth : uses the fetch interceptor for automatic token refresh
-export const client = hc<ApiType>(getConfig().apiUrl, {
+export const client = hc<ApiType>(getApiUrl(), {
   fetch: authenticatedFetch,
 });

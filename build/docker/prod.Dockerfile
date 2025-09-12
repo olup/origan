@@ -17,10 +17,12 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 # Set environment variable for admin panel Vite build
 ENV VITE_APP_ENV=production
 
-# Build all packages using turbo (builds in dependency order)
+# Build only backend packages using turbo filter
+# This excludes frontend packages (admin, landing) to save build time
 # Disable turbo telemetry to avoid issues
 ENV TURBO_TELEMETRY_DISABLED=1
-RUN pnpm run build
+# Build specific backend packages and their dependencies
+RUN pnpm run build --filter=@origan/control-api --filter=@origan/gateway --filter=@origan/builder
 
 RUN pnpm deploy --filter=@origan/control-api --prod /prod/control-api
 RUN pnpm deploy --filter=@origan/gateway --prod /prod/gateway

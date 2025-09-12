@@ -2,6 +2,9 @@
   "name": "@origan/builder",
   "version": "0.1.0",
   "private": true,
+  "keywords": [
+    "backend"
+  ],
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,6 +33,7 @@
   "devDependencies": {
     "@types/archiver": "^6.0.0",
     "@types/node": "^22.15.18",
+    "@types/unzipper": "^0.10.11",
     "@types/yargs": "^17.0.33",
     "@vitest/ui": "^2.0.0",
     "tsx": "^4.19.4",

@@ -2,6 +2,7 @@ type Config = {
   appEnv: string;
   apiUrl: string;
   ghAppName: string;
+  useProxy?: boolean;
 };
 
 const productionConfig: Config = {
@@ -9,10 +10,12 @@ const productionConfig: Config = {
   apiUrl: "https://api.origan.dev",
   ghAppName: "OriganEu",
 };
+
 const developmentConfig: Config = {
   appEnv: "development",
-  apiUrl: "http://localhost:9999",
+  apiUrl: import.meta.env.VITE_API_URL || "http://localhost:9999",
   ghAppName: "OriganEu-local",
+  useProxy: import.meta.env.VITE_USE_PROXY === "true",
 };
 
 export const getConfig = (): Config => {
