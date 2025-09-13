@@ -1,5 +1,5 @@
 import { LRUCache } from "lru-cache";
-import { client } from "../libs/client.js";
+import { trpc } from "../libs/trpc-client.js";
 import type { Config } from "../types/config.js";
 
 type CachedConfig = { config: Config; deploymentId: string; projectId: string };
@@ -11,20 +11,8 @@ const configCache = new LRUCache<string, CachedConfig>({
   fetchMethod: async (domain) => {
     console.log(`Fetching config for domain: ${domain}`);
     try {
-      const response = await client.deployments["get-config"].$post({
-        json: {
-          domain,
-        },
-      });
-
-      const data = await response.json();
-
-      if ("error" in data) {
-        console.error(`Error fetching config for ${domain}:`, data.error);
-        return undefined; // Don't cache errors
-      }
-
-      return data;
+      const data = await trpc.deployments.getConfigByDomain.query({ domain });
+      return data as CachedConfig;
     } catch (error) {
       console.error(`Error fetching config for ${domain}:`, error);
       return undefined; // Don't cache errors

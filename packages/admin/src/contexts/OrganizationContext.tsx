@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   createContext,
   type ReactNode,
@@ -6,7 +5,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { client } from "../libs/client";
+import { trpc } from "../utils/trpc";
 import { useAuth } from "./AuthContext";
 
 interface Organization {
@@ -35,15 +34,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const [selectedOrganization, setSelectedOrganization] =
     useState<Organization | null>(null);
 
-  const organizationsQuery = useQuery({
-    queryKey: ["organizations", user?.username],
-    queryFn: async () => {
-      const response = await client.organization.list.$get();
-      if (!response.ok) {
-        throw new Error("Failed to fetch organizations");
-      }
-      return response.json();
-    },
+  const organizationsQuery = trpc.organizations.list.useQuery(undefined, {
     enabled: !!user,
   });
 

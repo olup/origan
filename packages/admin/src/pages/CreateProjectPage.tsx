@@ -14,7 +14,6 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { useForm, zodResolver } from "@mantine/form";
-import { useQuery } from "@tanstack/react-query";
 import {
   ChevronDown,
   ChevronRight,
@@ -30,8 +29,7 @@ import { getConfig } from "../config";
 import { useAuth } from "../contexts/AuthContext";
 import { useOrganization } from "../contexts/OrganizationContext";
 import { useCreateProjectWithGithubConfiguration } from "../hooks/useCreateProjectWithGithubConfiguration";
-import { client } from "../libs/client";
-import { createQueryHelper } from "../utils/honoQuery";
+import { trpc } from "../utils/trpc";
 
 const toUrlSafe = (name: string): string => {
   return name
@@ -79,23 +77,16 @@ export const CreateProjectPage = () => {
     refetch: onRefreshRepos,
     error: reposError,
     isError: hasReposError,
-  } = useQuery({
-    ...createQueryHelper(client.github.repos.$get),
+  } = trpc.github.listRepos.useQuery(undefined, {
     enabled: !!user,
     retry: false,
   });
 
-  const { data: branches, refetch: onRefreshBranches } = useQuery({
-    ...createQueryHelper(
-      client.github.repos[":githubRepositoryId"].branches.$get,
-      {
-        param: {
-          githubRepositoryId: form.values.repoId?.toString() || "",
-        },
-      },
-    ),
-    enabled: form.values.repoId !== null,
-  });
+  const { data: branches, refetch: onRefreshBranches } =
+    trpc.github.getBranches.useQuery(
+      { githubRepositoryId: form.values.repoId || 0 },
+      { enabled: form.values.repoId !== null },
+    );
 
   const { mutateAsync: createProject, isPending: isLoadingCreateProject } =
     useCreateProjectWithGithubConfiguration();

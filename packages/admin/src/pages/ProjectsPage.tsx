@@ -9,34 +9,19 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import { useQuery } from "@tanstack/react-query";
 import { FolderIcon, RocketIcon } from "lucide-react";
 import { useLocation } from "wouter";
 import { useOrganization } from "../contexts/OrganizationContext";
-import { client } from "../libs/client";
+import { trpc } from "../utils/trpc";
 
 export const ProjectsPage = () => {
   const [, navigate] = useLocation();
   const { selectedOrganization } = useOrganization();
 
-  const projects = useQuery({
-    queryKey: ["projects", selectedOrganization?.reference],
-    queryFn: () => {
-      if (!selectedOrganization) return null;
-
-      return client.projects
-        .$get({
-          query: { organizationReference: selectedOrganization.reference },
-        })
-        .then((res) => {
-          if (!res.ok) {
-            return null;
-          }
-          return res.json();
-        });
-    },
-    enabled: !!selectedOrganization,
-  });
+  const projects = trpc.projects.list.useQuery(
+    { organizationReference: selectedOrganization?.reference ?? "" },
+    { enabled: !!selectedOrganization },
+  );
 
   return (
     <Container size="xl">
@@ -53,7 +38,7 @@ export const ProjectsPage = () => {
         </Group>
 
         <SimpleGrid cols={3} spacing="lg">
-          {projects?.data?.map((project) => (
+          {projects.data?.map((project) => (
             <Card
               key={project.id}
               withBorder
@@ -61,7 +46,6 @@ export const ProjectsPage = () => {
               onClick={() => navigate(`/projects/${project.reference}`)}
               styles={{
                 root: {
-                  backgroundColor: "white",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
                   transition: "transform 0.2s ease, box-shadow 0.2s ease",
                   cursor: "pointer",

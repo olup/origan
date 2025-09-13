@@ -26,5 +26,14 @@
     "@types/node": "^20.17.30",
     "turbo": "^2.5.4",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@hono/trpc-server": "^0.4.0",
+    "@tanstack/react-query": "^5",
+    "@tanstack/react-query-devtools": "^5",
+    "@trpc/client": "^11",
+    "@trpc/server": "^11",
+    "@trpc/tanstack-react-query": "^11",
+    "superjson": "^2.2.2"
   }
 }

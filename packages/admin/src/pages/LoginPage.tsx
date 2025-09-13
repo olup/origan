@@ -14,7 +14,8 @@ export function LoginPage() {
         w="100%"
       >
         <Button
-          color="black"
+          variant="filled"
+          color="dark"
           leftSection={<GithubIcon size="1rem" />}
           onClick={() => doLogin()}
         >

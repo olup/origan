@@ -1,6 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext } from "react";
-import { client } from "../libs/client";
+import { trpc } from "../utils/trpc";
 
 interface User {
   username: string;
@@ -23,40 +22,37 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const doLogin = useCallback(async () => {
-    window.location.href = client.auth.login
-      .$url({ query: { type: "web" } })
-      .toString();
+    // Get login URL from tRPC query
+    const loginData = await trpc.auth.login.query({ type: "web" });
+    window.location.href = loginData.authorizationUrl;
   }, []);
 
-  const getUserQuery = useQuery({
-    queryKey: [client.auth.me.$url().toString()],
-    queryFn: () =>
-      client.auth.me.$get().then((res) => {
-        if (!res.ok) {
-          return null;
-        }
-        return res.json();
-      }),
+  const getUserQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
   });
 
+  const logoutMutation = trpc.auth.logout.useMutation({
+    onSettled: () => {
+      window.location.href = "/";
+    },
+  });
+
   const doLogout = useCallback(async () => {
     try {
-      await client.auth.logout.$post();
+      await logoutMutation.mutateAsync();
     } catch (error) {
       console.error("Error during logout:", error);
-    } finally {
       window.location.href = "/";
     }
-  }, []);
+  }, [logoutMutation]);
 
   const value: AuthContextType = {
-    user: getUserQuery.data,
+    user: getUserQuery.data ?? null,
     isLoading: getUserQuery.isLoading,
     doLogin,
     doLogout,
-    refetchUser: getUserQuery.refetch,
+    refetchUser: () => getUserQuery.refetch(),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

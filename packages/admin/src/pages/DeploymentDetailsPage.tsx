@@ -12,12 +12,10 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { client } from "../libs/client.js";
-import { createQueryHelper } from "../utils/honoQuery.js";
+import { trpc } from "../utils/trpc";
 
 // Format duration between two dates as "X min Y sec" or "X hr Y min Z sec" if hours > 0
 function formatDuration(startDate: Date, endDate: Date): string {
@@ -67,12 +65,10 @@ export const DeploymentDetailsPage = () => {
   const [autoScroll, setAutoScroll] = useState(true);
   const prevLogsLength = useRef(0);
 
-  const { data: deployment, refetch } = useQuery({
-    ...createQueryHelper(client.deployments["by-ref"][":ref"].$get, {
-      param: { ref: reference || "" },
-    }),
-    enabled: Boolean(reference),
-  });
+  const { data: deployment, refetch } = trpc.deployments.getByRef.useQuery(
+    { ref: reference || "" },
+    { enabled: Boolean(reference) },
+  );
 
   // Get the ScrollArea viewport element
   const getViewport = useCallback(() => {
@@ -176,19 +172,23 @@ export const DeploymentDetailsPage = () => {
         {deployment.domains && deployment.domains.length > 0 && (
           <Card withBorder padding="xl">
             <Stack>
-              {deployment.domains.map((domain) => (
-                <Text key={domain.id}>
-                  <Text
-                    component="a"
-                    href={domain.url}
-                    target="_blank"
-                    c="blue"
-                    style={{ textDecoration: "underline" }}
-                  >
-                    {domain.url}
+              <Title order={4}>URLs</Title>
+              {deployment.domains.map((domain) => {
+                const url = `https://${domain.name}`;
+                return (
+                  <Text key={domain.id}>
+                    <Text
+                      component="a"
+                      href={url}
+                      target="_blank"
+                      c="blue"
+                      style={{ textDecoration: "underline" }}
+                    >
+                      {url}
+                    </Text>
                   </Text>
-                </Text>
-              ))}
+                );
+              })}
             </Stack>
           </Card>
         )}

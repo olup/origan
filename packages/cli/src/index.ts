@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import type { AppRouter } from "@origan/control-api/src/trpc/router";
+import type { inferRouterOutputs } from "@trpc/server";
 // TODO: Split each command into its own file for better organization
 import { Cli, Command, Option } from "clipanion";
 import pc from "picocolors";
@@ -36,6 +38,10 @@ import {
   OriganConfigNotFoundError,
   parseOriganConfig,
 } from "./utils/origan.js";
+
+type RouterOutput = inferRouterOutputs<AppRouter>;
+type Project = RouterOutput["projects"]["list"][number];
+type Organization = RouterOutput["organizations"]["list"][number];
 
 class LoginCommand extends Command {
   static paths = [["login"]];
@@ -83,12 +89,21 @@ class ProjectsCommand extends Command {
   async execute() {
     const projects = await getProjects();
     table(
-      projects.map((p) =>
+      projects.map((p: Project) =>
         R.pipe(
           p,
-          R.omit(["deployments", "githubConfig"]),
+          R.omit([
+            "deployments",
+            "githubConfig",
+            "id",
+            "organizationId",
+            "creatorId",
+            "deletedAt",
+          ]),
           R.merge({
             deployments: p.deployments.map((d) => d.reference).join(", "),
+            createdAt: p.createdAt.toISOString(),
+            updatedAt: p.updatedAt,
           }),
         ),
       ),
@@ -135,16 +150,15 @@ class DeploymentsCommand extends Command {
 
     const deployments = await getDeployments(projectRef);
     table(
-      deployments.map((d) =>
-        R.pipe(
-          d,
-          R.omit(["domains"]),
-          R.merge({
-            domains: d.domains.map((h) => h.name).join(", "),
-          }),
-        ),
-      ),
-      ["reference", "id", "domains", "createdAt", "updatedAt"],
+      deployments.map((d) => ({
+        reference: d.reference,
+        id: d.id,
+        status: d.status,
+        domains: d.domains.map((h) => h.name).join(", "),
+        createdAt: d.createdAt.toISOString(),
+        updatedAt: d.updatedAt,
+      })),
+      ["reference", "id", "status", "domains", "createdAt", "updatedAt"],
     );
   }
 }
@@ -263,7 +277,7 @@ class OrgsCommand extends Command {
       const currentOrg = await getCurrentOrganization();
 
       // Prepare data for table
-      const tableData = organizations.map((org) => {
+      const tableData = organizations.map((org: Organization) => {
         const isCurrent = org.reference === currentOrg?.reference;
         return {
           "Org Name": org.name,
@@ -325,7 +339,7 @@ class EnvListCommand extends Command {
           Name: env.name,
           Default: env.isDefault ? "Yes" : "No",
           System: env.isSystem ? "Yes" : "No",
-          Variables: Object.keys(env.variables).length,
+          Variables: String(Object.keys(env.variables).length),
         })),
       );
     } catch (error) {
@@ -563,7 +577,7 @@ class OrgSwitchCommand extends Command {
 
       // Find organization by reference
       const selectedOrg = organizations.find(
-        (org) => org.reference === this.organizationReference,
+        (org: Organization) => org.reference === this.organizationReference,
       );
 
       if (!selectedOrg) {

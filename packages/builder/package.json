@@ -21,12 +21,14 @@
     "clean": "rm -rf dist; rm -rf tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@origan/nats": "workspace:*",
     "@origan/control-api": "workspace:*",
+    "@origan/nats": "workspace:*",
+    "@trpc/client": "^11",
     "archiver": "^6.0.0",
     "esbuild": "^0.20.0",
     "execa": "^9.5.3",
     "hono": "4.7.7",
+    "superjson": "^2.2.2",
     "yargs": "^17.7.2",
     "zod": "^3.24.4"
   },

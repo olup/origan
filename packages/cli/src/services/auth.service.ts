@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { baseClient, getAuthenticatedClient } from "../libs/client.js";
+import { trpc } from "../libs/trpc-client.js";
 import { log } from "../utils/logger.js";
 import { clearTokens, readTokens, saveTokens } from "../utils/token.js";
 import {
@@ -14,9 +14,7 @@ const POLLING_INTERVAL = 3000;
  * Initialize device flow authentication
  */
 async function initializeDeviceFlow() {
-  const response = await baseClient.auth.cli.session.initialize.$post();
-  const data = await response.json();
-  return data;
+  return await trpc.auth.initializeCLISession.mutate();
 }
 
 /**
@@ -24,14 +22,7 @@ async function initializeDeviceFlow() {
  */
 async function pollSession(sessionId: string) {
   while (true) {
-    const response = await baseClient.auth.cli.session[":id"].$get({
-      param: { id: sessionId },
-    });
-    const data = await response.json();
-
-    if ("error" in data) {
-      throw new Error(data.error);
-    }
+    const data = await trpc.auth.checkCLISession.query({ sessionId });
 
     if (data.status === "completed") {
       return data.tokens;
@@ -45,23 +36,14 @@ async function pollSession(sessionId: string) {
 /**
  * Attempt to refresh the tokens
  */
-async function refreshTokens(currentRefreshToken: string) {
+async function refreshTokens(
+  _currentRefreshToken: string,
+): Promise<{ accessToken: string; refreshToken: string } | null> {
   try {
-    const response = await baseClient.auth["refresh-token"].$post({
-      headers: {
-        Cookie: `refreshToken=${currentRefreshToken}`,
-      },
-    });
-    const data = await response.json();
-
-    if ("error" in data || !data.accessToken || !data.refreshToken) {
-      return null;
-    }
-
-    return {
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
-    };
+    // tRPC doesn't support cookies from CLI, so we'll need to handle this differently
+    // For now, return null to force re-login
+    // TODO: Update server to accept refresh token in header or body for CLI
+    return null;
   } catch (_error) {
     return null;
   }
@@ -73,11 +55,11 @@ async function refreshTokens(currentRefreshToken: string) {
 export async function login(): Promise<void> {
   try {
     // Initialize device flow and get login URL
-    const { sessionId, loginUrl } = await initializeDeviceFlow();
+    const { sessionId, authUrl } = await initializeDeviceFlow();
 
     // Display login instructions
     log.info("\nTo login with origan cli, visit this URL in your browser:");
-    log.color("cyanBright", loginUrl);
+    log.color("cyanBright", authUrl);
     log.info("\nWaiting for authentication to complete...\n");
 
     // Poll for completion
@@ -113,14 +95,7 @@ export async function login(): Promise<void> {
 
 export async function whoami(): Promise<void> {
   try {
-    const client = await getAuthenticatedClient();
-    const response = await client.auth.me.$get();
-    const data = await response.json();
-    if ("error" in data) {
-      log.error(`Error fetching user info: ${data.error}`);
-      process.exit(1);
-    }
-
+    const data = await trpc.auth.me.query();
     log.success(JSON.stringify(data, null, 2));
   } catch (error) {
     log.error(
@@ -188,13 +163,17 @@ export async function getAccessToken(): Promise<string | null> {
   if (Date.now() >= expiresAt) {
     // Token is expired, attempt to refresh
     const newTokens = await refreshTokens(tokens.refreshToken);
-    if (newTokens) {
+    if (newTokens?.accessToken) {
       // Preserve organization info when refreshing tokens
       const currentTokens = await readTokens();
-      await saveTokens({
-        ...newTokens,
-        currentOrganizationRef: currentTokens?.currentOrganizationRef,
-      });
+      if (currentTokens?.currentOrganizationRef) {
+        await saveTokens({
+          ...newTokens,
+          currentOrganizationRef: currentTokens.currentOrganizationRef,
+        });
+      } else {
+        await saveTokens(newTokens);
+      }
       return newTokens.accessToken;
     }
 

@@ -1,0 +1,182 @@
+import { eq } from "drizzle-orm";
+import { z } from "zod";
+import { db } from "../../libs/db/index.js";
+import { organizationSchema, projectSchema } from "../../libs/db/schema.js";
+import {
+  projectCreateSchema,
+  projectUpdateSchema,
+} from "../../schemas/project.js";
+import {
+  createProjectWithProdTrack,
+  getProjects,
+  removeProjectGithubConfig,
+  setProjectGithubConfig,
+  updateProject,
+} from "../../service/project.service.js";
+import { protectedProcedure, router } from "../init.js";
+
+export const projectsRouter = router({
+  // Get projects for a specific organization
+  list: protectedProcedure
+    .input(
+      z.object({
+        organizationReference: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      // Get organization by reference
+      const [organization] = await db
+        .select()
+        .from(organizationSchema)
+        .where(eq(organizationSchema.reference, input.organizationReference))
+        .limit(1);
+
+      if (!organization) {
+        throw new Error("Organization not found");
+      }
+
+      // TODO: Add organization membership check in service layer
+      const projects = await getProjects(organization.id);
+      return projects;
+    }),
+
+  // Create a new project
+  create: protectedProcedure
+    .input(projectCreateSchema)
+    .mutation(async ({ input, ctx }) => {
+      const [organization] = await db
+        .select()
+        .from(organizationSchema)
+        .where(eq(organizationSchema.reference, input.organizationReference))
+        .limit(1);
+
+      if (!organization) {
+        throw new Error("Organization not found");
+      }
+
+      const result = await createProjectWithProdTrack({
+        ...input,
+        organizationId: organization.id,
+        creatorId: ctx.userId,
+      });
+      return result.project;
+    }),
+
+  // Get a single project by reference
+  get: protectedProcedure
+    .input(
+      z.object({
+        reference: z.string().min(1),
+      }),
+    )
+    .query(async ({ input }) => {
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, input.reference),
+        with: {
+          deployments: {
+            with: {
+              domains: true,
+            },
+          },
+          githubConfig: true,
+        },
+      });
+
+      if (!project) {
+        throw new Error(`No project found with reference ${input.reference}`);
+      }
+
+      return project;
+    }),
+
+  // Update a project
+  update: protectedProcedure
+    .input(
+      z.object({
+        reference: z.string().min(1),
+        ...projectUpdateSchema.shape,
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { reference, ...updateData } = input;
+
+      const existingProject = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, reference),
+      });
+
+      if (!existingProject) {
+        throw new Error(`No project found with reference ${reference}`);
+      }
+
+      const project = await updateProject(
+        existingProject.id,
+        existingProject.organizationId,
+        updateData,
+      );
+      return project;
+    }),
+
+  // Delete a project
+  delete: protectedProcedure
+    .input(
+      z.object({
+        reference: z.string().min(1),
+      }),
+    )
+    .mutation(async () => {
+      // TODO - Implementation pending
+      // Delete each remaining deployment (which involves cleaning the directory in s3)
+      // Delete any remaining domain object (which involves cleaning any certificates we might have)
+      throw new Error("Not implemented yet");
+    }),
+
+  // GitHub Configuration
+  setGithubConfig: protectedProcedure
+    .input(
+      z.object({
+        reference: z.string().min(1),
+        githubRepositoryId: z.number(),
+        githubRepositoryFullName: z.string(),
+        productionBranchName: z.string(),
+        projectRootPath: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { reference, ...githubData } = input;
+
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, reference),
+      });
+
+      if (!project) {
+        throw new Error("Project not found");
+      }
+
+      const githubConfig = await setProjectGithubConfig(
+        reference,
+        project.organizationId,
+        ctx.userId, // Still need userId for GitHub installation lookup
+        githubData,
+      );
+      return githubConfig;
+    }),
+
+  removeGithubConfig: protectedProcedure
+    .input(
+      z.object({
+        reference: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, input.reference),
+      });
+
+      if (!project) {
+        throw new Error(`No project found with reference ${input.reference}`);
+      }
+
+      await removeProjectGithubConfig(project.id, project.organizationId);
+      return { success: true };
+    }),
+});

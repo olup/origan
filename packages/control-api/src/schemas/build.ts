@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // TODO necessary ?
-const BuildArtifactConfigSchema = z.object({
+export const BuildArtifactConfigSchema = z.object({
   app: z.array(z.string()),
   api: z.array(
     z.object({

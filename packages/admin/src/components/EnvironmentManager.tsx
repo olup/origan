@@ -11,11 +11,9 @@ import {
   Title,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { client } from "../libs/client";
-import { createQueryHelper } from "../utils/honoQuery";
+import { trpc } from "../utils/trpc";
 
 interface Environment {
   id: string;
@@ -89,57 +87,29 @@ const EnvironmentVariables = ({
   projectReference: string;
   environment: Environment;
 }) => {
-  const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
 
-  const environmentsQuery = createQueryHelper(
-    client.environments.listByProjectReference.$post,
-    { json: { projectReference } },
-  );
+  const utils = trpc.useUtils();
 
-  const setVariablesMutation = useMutation({
-    mutationFn: async (variables: Array<{ key: string; value: string }>) => {
-      const response = await client.environments.setVariables.$post({
-        json: {
-          projectReference,
-          name: environment.name,
-          variables,
-        },
-      });
-      if (!response.ok) {
-        const error = (await response.json()) as { error?: string };
-        throw new Error(error.error || "Failed to set variables");
-      }
-      return response.json();
-    },
+  const setVariablesMutation = trpc.environments.setVariables.useMutation({
     onSuccess: () => {
-      environmentsQuery.invalidate(queryClient);
+      utils.environments.listByProject.invalidate({ projectReference });
       setIsAdding(false);
     },
   });
 
-  const deleteVariableMutation = useMutation({
-    mutationFn: async (key: string) => {
-      const response = await client.environments.unsetVariable.$post({
-        json: {
-          projectReference,
-          name: environment.name,
-          key,
-        },
-      });
-      if (!response.ok) {
-        const error = (await response.json()) as { error?: string };
-        throw new Error(error.error || "Failed to delete variable");
-      }
-      return response.json();
-    },
+  const deleteVariableMutation = trpc.environments.unsetVariable.useMutation({
     onSuccess: () => {
-      environmentsQuery.invalidate(queryClient);
+      utils.environments.listByProject.invalidate({ projectReference });
     },
   });
 
   const handleAddVariable = (key: string, value: string) => {
-    setVariablesMutation.mutate([{ key, value }]);
+    setVariablesMutation.mutate({
+      projectReference,
+      name: environment.name,
+      variables: [{ key, value }],
+    });
   };
 
   const variables = Object.entries(environment.variables);
@@ -189,7 +159,13 @@ const EnvironmentVariables = ({
                     variant="subtle"
                     color="red"
                     size="sm"
-                    onClick={() => deleteVariableMutation.mutate(key)}
+                    onClick={() =>
+                      deleteVariableMutation.mutate({
+                        projectReference,
+                        name: environment.name,
+                        key,
+                      })
+                    }
                     loading={deleteVariableMutation.isPending}
                   >
                     <Trash2 size={14} />
@@ -229,11 +205,10 @@ const EnvironmentVariables = ({
 export const EnvironmentManager = ({
   projectReference,
 }: EnvironmentManagerProps) => {
-  const { data: environmentsResponse, isLoading } = useQuery(
-    createQueryHelper(client.environments.listByProjectReference.$post, {
-      json: { projectReference },
-    }),
-  );
+  const { data: environmentsResponse, isLoading } =
+    trpc.environments.listByProject.useQuery({
+      projectReference,
+    });
 
   if (isLoading) {
     return <Text>Loading environments...</Text>;
@@ -243,7 +218,9 @@ export const EnvironmentManager = ({
     return (
       <Text c="red">
         Failed to load environments:{" "}
-        {environmentsResponse ? environmentsResponse.error : "Unknown error"}
+        {environmentsResponse
+          ? (environmentsResponse.error as string)
+          : "Unknown error"}
       </Text>
     );
   }

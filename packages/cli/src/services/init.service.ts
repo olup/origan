@@ -1,9 +1,14 @@
 import { appendFile, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { AppRouter } from "@origan/control-api/src/trpc/router";
+import type { inferRouterOutputs } from "@trpc/server";
 import prompts from "prompts";
 import type { OriganConfig } from "../types.js";
 import { log } from "../utils/logger.js";
 import { createProject, getProjects } from "./project.service.js";
+
+type RouterOutput = inferRouterOutputs<AppRouter>;
+type Project = RouterOutput["projects"]["list"][number];
 
 export async function init() {
   const origanConfigPath = join(process.cwd(), "origan.jsonc");
@@ -102,7 +107,7 @@ export async function init() {
         type: "select",
         name: "selected",
         message: "Select a project",
-        choices: projects.map((p) => ({
+        choices: projects.map((p: Project) => ({
           title: `${p.name} (${p.reference})`,
           value: p.reference,
         })),
@@ -113,7 +118,9 @@ export async function init() {
         return;
       }
 
-      const selectedProject = projects.find((p) => p.reference === selected);
+      const selectedProject = projects.find(
+        (p: Project) => p.reference === selected,
+      );
       if (!selectedProject) {
         log.error("Selected project not found");
         return;

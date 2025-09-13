@@ -27,7 +27,10 @@ interface DeployConfig {
   api: Route[];
 }
 
-const controlApiClient = createControlApiClient(getConfig().CONTROL_API_URL);
+const controlApiClient = createControlApiClient(
+  getConfig().CONTROL_API_URL,
+  getConfig().DEPLOY_TOKEN,
+);
 
 const listdirPath = async (
   dir: string,
@@ -227,35 +230,33 @@ export async function createDeployment(
   );
 
   await logger.info("Uploading deployment...");
-  const formData = new FormData();
-  formData.append("config", JSON.stringify(config));
 
   const bundleBuffer = readFileSync(bundle.path);
   const bundleFile = new File([bundleBuffer], "bundle.zip", {
     type: "application/zip",
   });
 
+  // Create FormData for tRPC
+  const formData = new FormData();
+  formData.append("buildId", buildId);
+  formData.append("config", JSON.stringify(config));
+  formData.append("artifact", bundleFile);
+  if (track) {
+    formData.append("track", track);
+  }
+
   // Note : maybe this would be better architected by uploading to s3
   // And signaling to control that a build is ready to deploy (through NATS)
-  const response = await controlApiClient.builds[":buildId"].deploy.$post(
-    {
-      param: {
-        buildId,
-      },
-      form: {
-        config: JSON.stringify(config),
-        artifact: bundleFile,
-        ...(track ? { track } : {}),
-      },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${getConfig().DEPLOY_TOKEN}`,
-      },
-    },
-  );
-
-  return response;
+  try {
+    const result = await controlApiClient.builds.deploy.mutate(formData);
+    return result;
+  } catch (error) {
+    throw new Error(
+      `Deploy to control API failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    );
+  }
 }
 
 export {

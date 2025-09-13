@@ -1,6 +1,6 @@
 import { fetchEventData, type ServerSentEvent } from "fetch-sse";
 import { z } from "zod";
-import { baseClient } from "../libs/client.js";
+import { config } from "../config.js";
 import { getAccessToken } from "./auth.service.js";
 
 const LogEntry = z.object({
@@ -17,29 +17,20 @@ export async function streamLogs(
 ) {
   const token = await getAccessToken();
 
-  await fetchEventData(
-    baseClient.logs.stream[":deploymentId"]
-      .$url({
-        param: {
-          deploymentId,
-        },
-      })
-      .toString(),
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      onError: (error) => {
-        console.error(error);
-      },
-      onMessage: (message: ServerSentEvent | null) => {
-        if (!message) {
-          return;
-        }
-        const data = JSON.parse(message.data);
-        const deploymentLog = LogEntry.parse(data);
-        onMessage(deploymentLog);
-      },
+  await fetchEventData(`${config.apiUrl}/logs/stream/${deploymentId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-  );
+    onError: (error) => {
+      console.error(error);
+    },
+    onMessage: (message: ServerSentEvent | null) => {
+      if (!message) {
+        return;
+      }
+      const data = JSON.parse(message.data);
+      const deploymentLog = LogEntry.parse(data);
+      onMessage(deploymentLog);
+    },
+  });
 }

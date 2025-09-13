@@ -1,6 +1,11 @@
-import { getAuthenticatedClient } from "../libs/client.js";
+import type { AppRouter } from "@origan/control-api/src/trpc/router";
+import type { inferRouterOutputs } from "@trpc/server";
+import { trpc } from "../libs/trpc-client.js";
 import { log } from "../utils/logger.js";
 import { getCurrentOrganization } from "./organization.service.js";
+
+type RouterOutput = inferRouterOutputs<AppRouter>;
+type Project = RouterOutput["projects"]["list"][number];
 
 // TODO : Move this to a common place and use it in all services
 interface ErrorResponse {
@@ -8,7 +13,7 @@ interface ErrorResponse {
   details?: string;
 }
 
-function handleApiError(
+function _handleApiError(
   error: ErrorResponse,
   status: number,
   resourceName?: string | undefined,
@@ -43,19 +48,9 @@ export async function getProjects() {
       process.exit(1);
     }
 
-    const client = await getAuthenticatedClient();
-    const response = await client.projects.$get({
-      query: {
-        organizationReference: currentOrg.reference,
-      },
+    return await trpc.projects.list.query({
+      organizationReference: currentOrg.reference,
     });
-    const data = await response.json();
-
-    if ("error" in data) {
-      handleApiError(data, response.status as number);
-    }
-
-    return data;
   } catch (error) {
     log.error(
       "Failed to fetch projects:",
@@ -68,7 +63,7 @@ export async function getProjects() {
 export async function getProjectByRef(projectRef: string) {
   try {
     const projects = await getProjects();
-    const project = projects.find((p) => p.reference === projectRef);
+    const project = projects.find((p: Project) => p.reference === projectRef);
 
     if (!project) {
       log.error(`Project ${projectRef} not found.`);
@@ -97,21 +92,10 @@ export async function createProject(name: string) {
       process.exit(1);
     }
 
-    const client = await getAuthenticatedClient();
-    const response = await client.projects.$post({
-      json: {
-        name,
-        organizationReference: currentOrg.reference,
-      },
+    return await trpc.projects.create.mutate({
+      name,
+      organizationReference: currentOrg.reference,
     });
-
-    const data = await response.json();
-
-    if ("error" in data) {
-      handleApiError(data, response.status as number);
-    }
-
-    return data;
   } catch (error) {
     log.error(
       "Failed to create project:",

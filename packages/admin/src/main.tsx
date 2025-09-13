@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "@fontsource/fira-code/400.css";
@@ -8,8 +8,8 @@ import { AppWithTheme } from "./components/AppWithTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { OrganizationProvider } from "./contexts/OrganizationContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { queryClient, trpc, trpcClient } from "./utils/trpc";
 
-const queryClient = new QueryClient();
 const rootElement = document.getElementById("root");
 
 if (!rootElement) {
@@ -18,14 +18,16 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <OrganizationProvider>
-            <AppWithTheme />
-          </OrganizationProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <OrganizationProvider>
+              <AppWithTheme />
+            </OrganizationProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
   </React.StrictMode>,
 );

@@ -11,12 +11,10 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import { useQuery } from "@tanstack/react-query";
 import { ChevronDownIcon, ExternalLinkIcon, GithubIcon } from "lucide-react";
 import { Link, Route, useLocation, useParams } from "wouter";
 import { EnvironmentManager } from "../components/EnvironmentManager";
-import { client } from "../libs/client";
-import { createQueryHelper } from "../utils/honoQuery.js";
+import { trpc } from "../utils/trpc";
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -38,26 +36,11 @@ const DeploymentsList = ({
   projectReference: string;
 }) => {
   const [, navigate] = useLocation();
-  const { data: deploymentsResponse } = useQuery(
-    createQueryHelper(
-      client.deployments["by-project-ref"][":projectReference"].$get,
-      {
-        param: { projectReference },
-      },
-    ),
-  );
+  const { data: deployments } = trpc.deployments.listByProject.useQuery({
+    projectRef: projectReference,
+  });
 
-  if (deploymentsResponse && "error" in deploymentsResponse) {
-    return (
-      <Text c="red">
-        Failed to load deployments: {deploymentsResponse.error}
-      </Text>
-    );
-  }
-
-  const deployments = deploymentsResponse?.deployments || [];
-
-  if (!deployments.length) {
+  if (!deployments || !deployments.length) {
     return <Text c="dimmed">No deployments yet</Text>;
   }
 
@@ -117,7 +100,7 @@ const DeploymentsList = ({
                         <Menu.Item
                           key={domain.name}
                           component="a"
-                          href={domain.url}
+                          href={domain.name}
                           target="_blank"
                           leftSection={<ExternalLinkIcon size={14} />}
                         >
@@ -215,15 +198,12 @@ export const ProjectPage = () => {
   const [location] = useLocation();
   const projectReference = params?.reference;
 
-  const { data: project } = useQuery({
-    ...createQueryHelper(client.projects[":reference"].$get, {
-      param: { reference: projectReference || "" },
-    }),
-    enabled: Boolean(projectReference),
-  });
+  const { data: project } = trpc.projects.get.useQuery(
+    { reference: projectReference || "" },
+    { enabled: Boolean(projectReference) },
+  );
 
   if (!projectReference || !project) return null;
-  if ("error" in project) return null;
 
   // Determine active tab based on current route
   const isSettingsTab = location.includes("/settings");

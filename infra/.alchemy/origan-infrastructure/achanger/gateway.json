@@ -14,7 +14,7 @@
     },
     "Symbol(alchemy::ResourceSeq)": 20,
     "namespace": "origan",
-    "image": "registry.platform.origan.dev/gateway:1757712835613",
+    "image": "registry.platform.origan.dev/gateway:1757800875740",
     "replicas": 2,
     "ports": [
       {
@@ -27,7 +27,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757712862414"
+      "deploy-version": "1757800903333"
     },
     "env": [
       {
@@ -103,11 +103,11 @@
     },
     "name": "gateway",
     "serviceEndpoint": "gateway.origan.svc.cluster.local",
-    "createdAt": 1757712867424
+    "createdAt": 1757800909156
   },
   "props": {
     "namespace": "origan",
-    "image": "registry.platform.origan.dev/gateway:1757712835613",
+    "image": "registry.platform.origan.dev/gateway:1757800875740",
     "replicas": 2,
     "ports": [
       {
@@ -120,7 +120,7 @@
       }
     ],
     "labels": {
-      "deploy-version": "1757712862414"
+      "deploy-version": "1757800903333"
     },
     "env": [
       {

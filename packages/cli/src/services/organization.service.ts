@@ -1,18 +1,10 @@
-import { getAuthenticatedClient } from "../libs/client.js";
+import { trpc } from "../libs/trpc-client.js";
 import { log } from "../utils/logger.js";
 import { readTokens, saveTokens } from "../utils/token.js";
 
 export async function getUserOrganizations() {
   try {
-    const client = await getAuthenticatedClient();
-    const response = await client.organization.list.$get();
-
-    if (!response.ok) {
-      log.error("Failed to fetch organizations:");
-      throw new Error("Failed to fetch organizations");
-    }
-
-    return await response.json();
+    return await trpc.organizations.list.query();
   } catch (error) {
     log.error(
       "Failed to fetch organizations:",

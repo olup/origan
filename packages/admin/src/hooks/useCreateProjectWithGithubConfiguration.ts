@@ -1,6 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { client } from "../libs/client";
-import { safeQuery } from "../utils/honoQuery";
+import { trpc } from "../utils/trpc";
 
 type CreateProjectWithGithubConfigurationInput = {
   projectName: string;
@@ -21,26 +20,18 @@ export const useCreateProjectWithGithubConfiguration = () =>
       projectRootPath,
       organizationReference,
     }: CreateProjectWithGithubConfigurationInput) => {
-      const project = await safeQuery(
-        client.projects.$post({
-          json: {
-            name: projectName,
-            organizationReference,
-          },
-        }),
-      );
+      const project = await trpc.projects.create.mutate({
+        name: projectName,
+        organizationReference,
+      });
 
-      await safeQuery(
-        client.projects[":reference"].github.config.$post({
-          param: { reference: project.reference },
-          json: {
-            githubRepositoryId: repoId,
-            githubRepositoryFullName: repoName,
-            productionBranchName: branch,
-            projectRootPath,
-          },
-        }),
-      );
+      await trpc.projects.setGithubConfig.mutate({
+        reference: project.reference,
+        githubRepositoryId: repoId,
+        githubRepositoryFullName: repoName,
+        productionBranchName: branch,
+        projectRootPath,
+      });
 
       return project;
     },

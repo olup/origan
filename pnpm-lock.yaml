@@ -11,6 +11,28 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      '@hono/trpc-server':
+        specifier: ^0.4.0
+        version: 0.4.0(@trpc/server@11.5.1(typescript@5.8.3))(hono@4.7.7)
+      '@tanstack/react-query':
+        specifier: ^5
+        version: 5.74.4(react@19.1.0)
+      '@tanstack/react-query-devtools':
+        specifier: ^5
+        version: 5.87.4(@tanstack/react-query@5.74.4(react@19.1.0))(react@19.1.0)
+      '@trpc/client':
+        specifier: ^11
+        version: 11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3)
+      '@trpc/server':
+        specifier: ^11
+        version: 11.5.1(typescript@5.8.3)
+      '@trpc/tanstack-react-query':
+        specifier: ^11
+        version: 11.5.1(@tanstack/react-query@5.74.4(react@19.1.0))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3))(@trpc/server@11.5.1(typescript@5.8.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)
+      superjson:
+        specifier: ^2.2.2
+        version: 2.2.2
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.0.5
@@ -58,9 +80,15 @@ importers:
       '@mantine/hooks':
         specifier: ^7.17.4
         version: 7.17.4(react@19.1.0)
+      '@origan/control-api':
+        specifier: workspace:*
+        version: file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(typescript@5.7.3)(ws@8.18.3)
       '@tanstack/react-query':
         specifier: ^5.69.0
         version: 5.74.4(react@19.1.0)
+      '@trpc/react-query':
+        specifier: ^11.5.1
+        version: 11.5.1(@tanstack/react-query@5.74.4(react@19.1.0))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3))(@trpc/server@11.5.1(typescript@5.7.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.7.3)
       hono:
         specifier: 4.7.7
         version: 4.7.7
@@ -109,10 +137,13 @@ importers:
     dependencies:
       '@origan/control-api':
         specifier: workspace:*
-        version: file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(ws@8.18.3)
+        version: file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(typescript@5.9.2)(ws@8.18.3)
       '@origan/nats':
         specifier: workspace:*
         version: link:../../shared/nats
+      '@trpc/client':
+        specifier: ^11
+        version: 11.5.1(@trpc/server@11.5.1(typescript@5.9.2))(typescript@5.9.2)
       archiver:
         specifier: ^6.0.0
         version: 6.0.2
@@ -125,6 +156,9 @@ importers:
       hono:
         specifier: 4.7.7
         version: 4.7.7
+      superjson:
+        specifier: ^2.2.2
+        version: 2.2.2
       yargs:
         specifier: ^17.7.2
         version: 17.7.2
@@ -164,7 +198,10 @@ importers:
     dependencies:
       '@origan/control-api':
         specifier: workspace:^
-        version: file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(ws@8.18.3)
+        version: file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(typescript@5.8.3)(ws@8.18.3)
+      '@trpc/client':
+        specifier: ^11
+        version: 11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3)
       '@types/form-data':
         specifier: ^2.5.2
         version: 2.5.2
@@ -213,10 +250,13 @@ importers:
       remeda:
         specifier: ^2.21.2
         version: 2.21.3
-      zod:
-        specifier: ^3.24.2
-        version: 3.24.3
+      superjson:
+        specifier: ^2.2.2
+        version: 2.2.2
     devDependencies:
+      '@trpc/server':
+        specifier: ^11
+        version: 11.5.1(typescript@5.8.3)
       '@types/archiver':
         specifier: ^6.0.3
         version: 6.0.3
@@ -235,6 +275,9 @@ importers:
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
+      zod:
+        specifier: ^3.24.3
+        version: 3.24.3
 
   packages/control-api:
     dependencies:
@@ -247,6 +290,9 @@ importers:
       '@hono/otel':
         specifier: ^0.2.1
         version: 0.2.1(hono@4.7.7)
+      '@hono/trpc-server':
+        specifier: ^0.4.0
+        version: 0.4.0(@trpc/server@11.5.1(typescript@5.8.3))(hono@4.7.7)
       '@hono/zod-validator':
         specifier: ^0.4.3
         version: 0.4.3(hono@4.7.7)(zod@3.24.3)
@@ -295,6 +341,9 @@ importers:
       '@origan/nats':
         specifier: workspace:*
         version: link:../../shared/nats
+      '@trpc/server':
+        specifier: ^11
+        version: 11.5.1(typescript@5.8.3)
       '@types/pg':
         specifier: ^8.15.4
         version: 8.15.4
@@ -331,6 +380,9 @@ importers:
       pino-pretty:
         specifier: ^13.0.0
         version: 13.0.0
+      superjson:
+        specifier: ^2.2.2
+        version: 2.2.2
       tmp-promise:
         specifier: ^3.0.3
         version: 3.0.3
@@ -379,13 +431,19 @@ importers:
         version: 1.14.1(hono@4.7.7)
       '@origan/control-api':
         specifier: workspace:*
-        version: file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(ws@8.18.3)
+        version: file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(typescript@5.8.3)(ws@8.18.3)
+      '@trpc/client':
+        specifier: ^11
+        version: 11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3)
       hono:
         specifier: 4.7.7
         version: 4.7.7
       lru-cache:
         specifier: ^11.1.0
         version: 11.1.0
+      superjson:
+        specifier: ^2.2.2
+        version: 2.2.2
       zod:
         specifier: ^3.24.2
         version: 3.24.3
@@ -1739,6 +1797,13 @@ packages:
     resolution: {integrity: sha512-dXWJam+QUDwkYhwJMnoZYfBGlhXcINZsEOydIbuj+f23u227YAgeNVFRa48bsu6+fDfEh9yEnF+fanVQK8jFvw==}
     peerDependencies:
       hono: '*'
+
+  '@hono/trpc-server@0.4.0':
+    resolution: {integrity: sha512-LGlJfCmNIGMwcknZEIYdujVMs9OkNVazhpOhaz3kTWOXvNL660VOHpvvktosCiJrajyBY1RtIJKQ+IKaQvNuSg==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      '@trpc/server': ^10.10.0 || >11.0.0-rc
+      hono: '>=4.*'
 
   '@hono/zod-validator@0.4.3':
     resolution: {integrity: sha512-xIgMYXDyJ4Hj6ekm9T9Y27s080Nl9NXHcJkOvkXPhubOLj8hZkOL8pDnnXfvCf5xEE8Q4oMFenQUZZREUY2gqQ==}
@@ -3408,10 +3473,50 @@ packages:
   '@tanstack/query-core@5.74.4':
     resolution: {integrity: sha512-YuG0A0+3i9b2Gfo9fkmNnkUWh5+5cFhWBN0pJAHkHilTx6A0nv8kepkk4T4GRt4e5ahbtFj2eTtkiPcVU1xO4A==}
 
+  '@tanstack/query-devtools@5.87.3':
+    resolution: {integrity: sha512-LkzxzSr2HS1ALHTgDmJH5eGAVsSQiuwz//VhFW5OqNk0OQ+Fsqba0Tsf+NzWRtXYvpgUqwQr4b2zdFZwxHcGvg==}
+
+  '@tanstack/react-query-devtools@5.87.4':
+    resolution: {integrity: sha512-JYcnVJBBW1DCPyNGM0S2CyrLpe6KFiL2gpYd/k9tAp62Du7+Y27zkzd+dKFyxpFadYaTxsx4kUA7YvnkMLVUoQ==}
+    peerDependencies:
+      '@tanstack/react-query': ^5.87.4
+      react: ^18 || ^19
+
   '@tanstack/react-query@5.74.4':
     resolution: {integrity: sha512-mAbxw60d4ffQ4qmRYfkO1xzRBPUEf/72Dgo3qqea0J66nIKuDTLEqQt0ku++SDFlMGMnB6uKDnEG1xD/TDse4Q==}
     peerDependencies:
       react: ^18 || ^19
+
+  '@trpc/client@11.5.1':
+    resolution: {integrity: sha512-7I6JJ1I1lxv3S87ht3FAIZi0XxQa7hnQ9K+Oo5BH7cGO8ZtWe9Ftq6ItdkuDfpsnsRPcR2h158AMWbNs/iptqg==}
+    peerDependencies:
+      '@trpc/server': 11.5.1
+      typescript: '>=5.7.2'
+
+  '@trpc/react-query@11.5.1':
+    resolution: {integrity: sha512-Y+e0Lp7na1LAjoYqtHVjxpfayOuvvnuchS723b4dsI/V0h3irBuI+bx38S3m7RgaIh/L1av1SldFrKIauk+r/A==}
+    peerDependencies:
+      '@tanstack/react-query': ^5.80.3
+      '@trpc/client': 11.5.1
+      '@trpc/server': 11.5.1
+      react: '>=18.2.0'
+      react-dom: '>=18.2.0'
+      typescript: '>=5.7.2'
+
+  '@trpc/server@11.5.1':
+    resolution: {integrity: sha512-KIDzHRS5m8U1ncPwjgtOtPWK9lNO0kYL7b+lnvKXRqowSAQIEC/z6y7g/dkt4Aqv3DKI/STLydt2/afrP1QrxQ==}
+    peerDependencies:
+      typescript: '>=5.7.2'
+
+  '@trpc/tanstack-react-query@11.5.1':
+    resolution: {integrity: sha512-1irzKOXhasMq09pHvLqJPTTwaEULIoNfFtoeLNkLnOVHLGvfHkS9qvpVjinRyW1aiQi7OqFDeaUDrQhtbP6tVA==}
+    peerDependencies:
+      '@tanstack/react-query': ^5.80.3
+      '@trpc/client': 11.5.1
+      '@trpc/server': 11.5.1
+      react: '>=18.2.0'
+      react-dom: '>=18.2.0'
+      typescript: '>=5.7.2'
 
   '@ts-morph/common@0.25.0':
     resolution: {integrity: sha512-kMnZz+vGGHi4GoHnLmMhGNjm44kGtKUXGnOvrKmMwAuvNjM/PgKVGfUnL7IDvK7Jb2QQ82jq3Zmp04Gy+r3Dkg==}
@@ -4028,6 +4133,10 @@ packages:
   cookie@1.0.2:
     resolution: {integrity: sha512-9Kr/j4O16ISv8zBBhJoi4bXOYNTkFLOqSL3UDB0njXxCXNezjeyVrJyGOWtgfs/q2km1gwBcfH8q1yEGoMYunA==}
     engines: {node: '>=18'}
+
+  copy-anything@3.0.5:
+    resolution: {integrity: sha512-yCEafptTtb4bk7GLEQoM8KVJpxAfdBJYaXyzQEgQQQgYrZiDp8SJmGKlYza6CYjEDNstAdNdKA3UuoULlEbS6w==}
+    engines: {node: '>=12.13'}
 
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
@@ -5776,6 +5885,10 @@ packages:
     engines: {node: '>=12.0'}
     peerDependencies:
       postcss: ^8.3.3
+
+  superjson@2.2.2:
+    resolution: {integrity: sha512-5JRxVqC8I8NuOUjzBbvVJAKNM8qoVuH0O77h4WInc/qC2q5IreqKxYwgkga3PfA22OayK2ikceb/B26dztPl+Q==}
+    engines: {node: '>=16'}
 
   supports-color@10.2.2:
     resolution: {integrity: sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g==}
@@ -8147,6 +8260,21 @@ snapshots:
       '@opentelemetry/semantic-conventions': 1.34.0
       hono: 4.7.7
 
+  '@hono/trpc-server@0.4.0(@trpc/server@11.5.1(typescript@5.7.3))(hono@4.7.7)':
+    dependencies:
+      '@trpc/server': 11.5.1(typescript@5.7.3)
+      hono: 4.7.7
+
+  '@hono/trpc-server@0.4.0(@trpc/server@11.5.1(typescript@5.8.3))(hono@4.7.7)':
+    dependencies:
+      '@trpc/server': 11.5.1(typescript@5.8.3)
+      hono: 4.7.7
+
+  '@hono/trpc-server@0.4.0(@trpc/server@11.5.1(typescript@5.9.2))(hono@4.7.7)':
+    dependencies:
+      '@trpc/server': 11.5.1(typescript@5.9.2)
+      hono: 4.7.7
+
   '@hono/zod-validator@0.4.3(hono@4.7.7)(zod@3.24.3)':
     dependencies:
       hono: 4.7.7
@@ -9336,11 +9464,12 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 2.0.1(@opentelemetry/api@1.9.0)
 
-  '@origan/control-api@file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(ws@8.18.3)':
+  '@origan/control-api@file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(typescript@5.7.3)(ws@8.18.3)':
     dependencies:
       '@aws-sdk/client-s3': 3.855.0
       '@hono/node-server': 1.14.1(hono@4.7.7)
       '@hono/otel': 0.2.1(hono@4.7.7)
+      '@hono/trpc-server': 0.4.0(@trpc/server@11.5.1(typescript@5.7.3))(hono@4.7.7)
       '@hono/zod-validator': 0.4.3(hono@4.7.7)(zod@3.24.4)
       '@kubernetes/client-node': 1.2.0(ws@8.18.3)
       '@loglayer/plugin-opentelemetry': 2.1.0
@@ -9357,6 +9486,7 @@ snapshots:
       '@opentelemetry/sdk-trace-base': 2.0.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/semantic-conventions': 1.34.0
       '@origan/nats': file:shared/nats
+      '@trpc/server': 11.5.1(typescript@5.7.3)
       '@types/pg': 8.15.4
       dockerode: 4.0.6
       dotenv: 16.5.0
@@ -9369,6 +9499,7 @@ snapshots:
       pg: 8.15.1
       pino: 9.7.0
       pino-pretty: 13.0.0
+      superjson: 2.2.2
       tmp-promise: 3.0.3
       unzipper: 0.12.3
       ws: 8.18.3
@@ -9406,6 +9537,157 @@ snapshots:
       - sql.js
       - sqlite3
       - supports-color
+      - typescript
+
+  '@origan/control-api@file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(typescript@5.8.3)(ws@8.18.3)':
+    dependencies:
+      '@aws-sdk/client-s3': 3.855.0
+      '@hono/node-server': 1.14.1(hono@4.7.7)
+      '@hono/otel': 0.2.1(hono@4.7.7)
+      '@hono/trpc-server': 0.4.0(@trpc/server@11.5.1(typescript@5.8.3))(hono@4.7.7)
+      '@hono/zod-validator': 0.4.3(hono@4.7.7)(zod@3.24.4)
+      '@kubernetes/client-node': 1.2.0(ws@8.18.3)
+      '@loglayer/plugin-opentelemetry': 2.1.0
+      '@loglayer/transport-pino': 2.2.0(pino@9.7.0)
+      '@octokit/app': 15.1.6
+      '@octokit/rest': 21.1.1
+      '@octokit/types': 14.0.0
+      '@octokit/webhooks-methods': 5.1.1
+      '@octokit/webhooks-types': 7.6.1
+      '@opentelemetry/auto-instrumentations-node': 0.60.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(encoding@0.1.13)
+      '@opentelemetry/exporter-trace-otlp-proto': 0.202.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/resources': 2.0.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-node': 0.202.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-trace-base': 2.0.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/semantic-conventions': 1.34.0
+      '@origan/nats': file:shared/nats
+      '@trpc/server': 11.5.1(typescript@5.8.3)
+      '@types/pg': 8.15.4
+      dockerode: 4.0.6
+      dotenv: 16.5.0
+      drizzle-kit: 0.31.1
+      drizzle-orm: 0.43.1(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(gel@2.1.0)(pg@8.15.1)
+      hono: 4.7.7
+      jsonwebtoken: 9.0.2
+      loglayer: 6.4.2
+      nanoid: 3.3.11
+      pg: 8.15.1
+      pino: 9.7.0
+      pino-pretty: 13.0.0
+      superjson: 2.2.2
+      tmp-promise: 3.0.3
+      unzipper: 0.12.3
+      ws: 8.18.3
+      zod: 3.24.4
+    transitivePeerDependencies:
+      - '@aws-sdk/client-rds-data'
+      - '@cloudflare/workers-types'
+      - '@electric-sql/pglite'
+      - '@libsql/client'
+      - '@libsql/client-wasm'
+      - '@neondatabase/serverless'
+      - '@op-engineering/op-sqlite'
+      - '@opentelemetry/api'
+      - '@opentelemetry/core'
+      - '@planetscale/database'
+      - '@prisma/client'
+      - '@tidbcloud/serverless'
+      - '@types/better-sqlite3'
+      - '@types/sql.js'
+      - '@vercel/postgres'
+      - '@xata.io/client'
+      - aws-crt
+      - bare-buffer
+      - better-sqlite3
+      - bun-types
+      - encoding
+      - expo-sqlite
+      - gel
+      - knex
+      - kysely
+      - mysql2
+      - pg-native
+      - postgres
+      - prisma
+      - sql.js
+      - sqlite3
+      - supports-color
+      - typescript
+
+  '@origan/control-api@file:packages/control-api(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(gel@2.1.0)(typescript@5.9.2)(ws@8.18.3)':
+    dependencies:
+      '@aws-sdk/client-s3': 3.855.0
+      '@hono/node-server': 1.14.1(hono@4.7.7)
+      '@hono/otel': 0.2.1(hono@4.7.7)
+      '@hono/trpc-server': 0.4.0(@trpc/server@11.5.1(typescript@5.9.2))(hono@4.7.7)
+      '@hono/zod-validator': 0.4.3(hono@4.7.7)(zod@3.24.4)
+      '@kubernetes/client-node': 1.2.0(ws@8.18.3)
+      '@loglayer/plugin-opentelemetry': 2.1.0
+      '@loglayer/transport-pino': 2.2.0(pino@9.7.0)
+      '@octokit/app': 15.1.6
+      '@octokit/rest': 21.1.1
+      '@octokit/types': 14.0.0
+      '@octokit/webhooks-methods': 5.1.1
+      '@octokit/webhooks-types': 7.6.1
+      '@opentelemetry/auto-instrumentations-node': 0.60.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(encoding@0.1.13)
+      '@opentelemetry/exporter-trace-otlp-proto': 0.202.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/resources': 2.0.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-node': 0.202.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-trace-base': 2.0.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/semantic-conventions': 1.34.0
+      '@origan/nats': file:shared/nats
+      '@trpc/server': 11.5.1(typescript@5.9.2)
+      '@types/pg': 8.15.4
+      dockerode: 4.0.6
+      dotenv: 16.5.0
+      drizzle-kit: 0.31.1
+      drizzle-orm: 0.43.1(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(gel@2.1.0)(pg@8.15.1)
+      hono: 4.7.7
+      jsonwebtoken: 9.0.2
+      loglayer: 6.4.2
+      nanoid: 3.3.11
+      pg: 8.15.1
+      pino: 9.7.0
+      pino-pretty: 13.0.0
+      superjson: 2.2.2
+      tmp-promise: 3.0.3
+      unzipper: 0.12.3
+      ws: 8.18.3
+      zod: 3.24.4
+    transitivePeerDependencies:
+      - '@aws-sdk/client-rds-data'
+      - '@cloudflare/workers-types'
+      - '@electric-sql/pglite'
+      - '@libsql/client'
+      - '@libsql/client-wasm'
+      - '@neondatabase/serverless'
+      - '@op-engineering/op-sqlite'
+      - '@opentelemetry/api'
+      - '@opentelemetry/core'
+      - '@planetscale/database'
+      - '@prisma/client'
+      - '@tidbcloud/serverless'
+      - '@types/better-sqlite3'
+      - '@types/sql.js'
+      - '@vercel/postgres'
+      - '@xata.io/client'
+      - aws-crt
+      - bare-buffer
+      - better-sqlite3
+      - bun-types
+      - encoding
+      - expo-sqlite
+      - gel
+      - knex
+      - kysely
+      - mysql2
+      - pg-native
+      - postgres
+      - prisma
+      - sql.js
+      - sqlite3
+      - supports-color
+      - typescript
 
   '@origan/nats@file:shared/nats':
     dependencies:
@@ -10396,10 +10678,63 @@ snapshots:
 
   '@tanstack/query-core@5.74.4': {}
 
+  '@tanstack/query-devtools@5.87.3': {}
+
+  '@tanstack/react-query-devtools@5.87.4(@tanstack/react-query@5.74.4(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@tanstack/query-devtools': 5.87.3
+      '@tanstack/react-query': 5.74.4(react@19.1.0)
+      react: 19.1.0
+
   '@tanstack/react-query@5.74.4(react@19.1.0)':
     dependencies:
       '@tanstack/query-core': 5.74.4
       react: 19.1.0
+
+  '@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3)':
+    dependencies:
+      '@trpc/server': 11.5.1(typescript@5.7.3)
+      typescript: 5.7.3
+
+  '@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3)':
+    dependencies:
+      '@trpc/server': 11.5.1(typescript@5.8.3)
+      typescript: 5.8.3
+
+  '@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.9.2))(typescript@5.9.2)':
+    dependencies:
+      '@trpc/server': 11.5.1(typescript@5.9.2)
+      typescript: 5.9.2
+
+  '@trpc/react-query@11.5.1(@tanstack/react-query@5.74.4(react@19.1.0))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3))(@trpc/server@11.5.1(typescript@5.7.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.7.3)':
+    dependencies:
+      '@tanstack/react-query': 5.74.4(react@19.1.0)
+      '@trpc/client': 11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3)
+      '@trpc/server': 11.5.1(typescript@5.7.3)
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+      typescript: 5.7.3
+
+  '@trpc/server@11.5.1(typescript@5.7.3)':
+    dependencies:
+      typescript: 5.7.3
+
+  '@trpc/server@11.5.1(typescript@5.8.3)':
+    dependencies:
+      typescript: 5.8.3
+
+  '@trpc/server@11.5.1(typescript@5.9.2)':
+    dependencies:
+      typescript: 5.9.2
+
+  '@trpc/tanstack-react-query@11.5.1(@tanstack/react-query@5.74.4(react@19.1.0))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3))(@trpc/server@11.5.1(typescript@5.8.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)':
+    dependencies:
+      '@tanstack/react-query': 5.74.4(react@19.1.0)
+      '@trpc/client': 11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3)
+      '@trpc/server': 11.5.1(typescript@5.8.3)
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+      typescript: 5.8.3
 
   '@ts-morph/common@0.25.0':
     dependencies:
@@ -11073,6 +11408,10 @@ snapshots:
   confbox@0.1.8: {}
 
   cookie@1.0.2: {}
+
+  copy-anything@3.0.5:
+    dependencies:
+      is-what: 4.1.16
 
   core-util-is@1.0.3: {}
 
@@ -12832,6 +13171,10 @@ snapshots:
   sugarss@4.0.1(postcss@8.5.3):
     dependencies:
       postcss: 8.5.3
+
+  superjson@2.2.2:
+    dependencies:
+      copy-anything: 3.0.5
 
   supports-color@10.2.2: {}
 

@@ -1,9 +1,7 @@
-import { stat, writeFile } from "node:fs/promises";
+import { readFile, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
-import type { InferResponseType } from "hono/client";
-import { type baseClient, getAuthenticatedClient } from "../libs/client.js";
+import { trpc } from "../libs/trpc-client.js";
 import type { OriganConfig } from "../types.js";
-import { ProgressBar } from "../utils/cli.js";
 import {
   cleanDirectory,
   collectFiles,
@@ -18,9 +16,7 @@ import {
 } from "../utils/origan.js";
 import type { Route, RouteConfig } from "../utils/path.js";
 import { createRouteFromFile } from "../utils/path.js";
-import { uploadFormWithProgress } from "../utils/upload.js";
 import { bundleApiRoute, createDeploymentArchive } from "../utils/zip.js";
-import { getAccessToken } from "./auth.service.js";
 import { getProjectByRef } from "./project.service.js";
 
 interface ConfigJson {
@@ -56,50 +52,35 @@ async function uploadArchive(
   const stats = await stat(archivePath);
   log.info(`Total size: ${(stats.size / 1024).toFixed(2)} KB`);
 
-  const client = await getAuthenticatedClient();
-  const token = await getAccessToken();
-  if (!token) {
-    throw new Error("No access token found. Please log in.");
+  // Read the zip file
+  const zipBuffer = await readFile(archivePath);
+
+  // Create FormData
+  const formData = new FormData();
+  formData.append("projectRef", projectRef);
+  formData.append("config", JSON.stringify(origanConfig));
+  if (trackName) {
+    formData.append("trackName", trackName);
   }
 
-  const deployUrl = client.deployments.create.$url().toString();
+  // Create a File from the buffer
+  const zipFile = new File([zipBuffer], "bundle.zip", {
+    type: "application/zip",
+  });
+  formData.append("bundle", zipFile);
 
-  const progressBar = new ProgressBar();
+  log.info("Uploading to server...");
 
-  const formFields = [
-    { fieldName: "projectRef", value: projectRef },
-    { fieldName: "config", value: JSON.stringify(origanConfig) },
-    ...(trackName ? [{ fieldName: "trackName", value: trackName }] : []),
-  ];
-
-  const response = await uploadFormWithProgress(
-    deployUrl,
-    {
-      Authorization: `Bearer ${token}`,
-    },
-    formFields,
-    [
-      {
-        fieldName: "bundle",
-        path: archivePath,
-        fileName: "bundle.zip",
-        contentType: "application/zip",
-      },
-    ],
-    (percentage) => {
-      progressBar.update(percentage);
-    },
-  );
-
-  progressBar.finish();
-  const parsedResponse = JSON.parse(response) as InferResponseType<
-    typeof baseClient.deployments.create.$post
-  >;
-  if ("error" in parsedResponse) {
-    throw new Error(`Failed to upload deployment: ${parsedResponse.error}`);
+  try {
+    const result = await trpc.deployments.create.mutate(formData);
+    log.info("Deployment uploaded successfully");
+    return result;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to upload deployment: ${error.message}`);
+    }
+    throw new Error("Failed to upload deployment");
   }
-
-  return parsedResponse;
 }
 
 export async function deploy(trackName?: string): Promise<void> {
@@ -237,7 +218,7 @@ export async function deploy(trackName?: string): Promise<void> {
     log.info("\nDeployment URLs:");
 
     for (const domain of deploymentDetails.domains) {
-      log.success(`- ${domain.url}`);
+      log.success(`- https://${domain.name}`);
     }
 
     // Clean up deployment directories
@@ -252,39 +233,10 @@ export async function deploy(trackName?: string): Promise<void> {
 }
 
 export async function getDeployments(projectRef: string) {
-  const client = await getAuthenticatedClient();
-  const response = await client.projects[":reference"].$get({
-    param: {
-      reference: projectRef,
-    },
-  });
-
-  const data = await response.json();
-
-  if ("error" in data) {
-    throw new Error(
-      `Failed to fetch deployments: ${(data as { error: string }).error}`,
-    );
-  }
-
+  const data = await trpc.projects.get.query({ reference: projectRef });
   return data.deployments;
 }
 
 export async function getDeploymentByRef(deploymentRef: string) {
-  const client = await getAuthenticatedClient();
-  const response = await client.deployments["by-ref"][":ref"].$get({
-    param: {
-      ref: deploymentRef,
-    },
-  });
-
-  const data = await response.json();
-
-  if ("error" in data) {
-    throw new Error(
-      `Failed to fetch deployments: ${(data as { error: string }).error}`,
-    );
-  }
-
-  return data;
+  return await trpc.deployments.getByRef.query({ ref: deploymentRef });
 }
