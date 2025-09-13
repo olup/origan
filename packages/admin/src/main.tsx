@@ -1,13 +1,13 @@
-import { createTheme, MantineProvider } from "@mantine/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "@fontsource/fira-code/400.css";
 import "./index.css";
 import "@mantine/core/styles.css";
-import App from "./App";
+import { AppWithTheme } from "./components/AppWithTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { OrganizationProvider } from "./contexts/OrganizationContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 const queryClient = new QueryClient();
 const rootElement = document.getElementById("root");
@@ -16,30 +16,16 @@ if (!rootElement) {
   throw new Error("Root element not found");
 }
 
-const mantineTheme = createTheme({
-  fontFamily: "Fira Code, sans-serif",
-  defaultRadius: "sm",
-
-  components: {
-    Button: {
-      defaultProps: {
-        variant: "outline",
-        color: "black",
-      },
-    },
-  },
-});
-
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <OrganizationProvider>
-          <MantineProvider theme={mantineTheme}>
-            <App />
-          </MantineProvider>
-        </OrganizationProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <OrganizationProvider>
+            <AppWithTheme />
+          </OrganizationProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 );

@@ -9,7 +9,11 @@ import { eq, sql } from "drizzle-orm";
 import { env } from "../../config.js";
 import { getLogger } from "../../instrumentation.js";
 import { db } from "../../libs/db/index.js";
-import { buildSchema, type buildStatusEnum } from "../../libs/db/schema.js";
+import {
+  buildSchema,
+  type buildStatusEnum,
+  deploymentSchema,
+} from "../../libs/db/schema.js";
 
 interface LogBatch {
   buildId: string;
@@ -168,12 +172,45 @@ export class BuildEventsDatabaseConsumer {
         updateData.buildEndedAt = new Date();
       }
 
+      // Update build status
       await db
         .update(buildSchema)
         .set(updateData)
         .where(eq(buildSchema.id, buildId));
 
       log.info(`Updated build ${buildId} status to ${status} in database`);
+
+      // Also update the deployment status based on build status
+      // Find the deployment associated with this build
+      const [deployment] = await db
+        .select({ id: deploymentSchema.id })
+        .from(deploymentSchema)
+        .where(eq(deploymentSchema.buildId, buildId))
+        .limit(1);
+
+      if (deployment?.id) {
+        let deploymentStatus: "building" | "error" | null = null;
+
+        // Map build status to deployment status
+        if (status === "in_progress") {
+          deploymentStatus = "building";
+        } else if (status === "failed") {
+          deploymentStatus = "error";
+        }
+        // Note: "completed" build doesn't change deployment status here
+        // as it will be set to "deploying" or "success" by deployment.service.ts
+
+        if (deploymentStatus) {
+          await db
+            .update(deploymentSchema)
+            .set({ status: deploymentStatus })
+            .where(eq(deploymentSchema.id, deployment.id));
+
+          log.info(
+            `Updated deployment ${deployment.id} status to ${deploymentStatus}`,
+          );
+        }
+      }
     } catch (error) {
       log
         .withError(error)

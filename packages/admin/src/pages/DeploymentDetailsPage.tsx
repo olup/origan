@@ -153,7 +153,6 @@ export const DeploymentDetailsPage = () => {
         <Box>
           <Button
             variant="subtle"
-            color="black"
             leftSection={<ArrowLeftIcon size="1rem" />}
             onClick={() =>
               navigate(`/projects/${deployment?.project.reference}`)

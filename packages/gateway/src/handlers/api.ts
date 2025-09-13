@@ -2,6 +2,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { envConfig } from "../config/index.js";
 import type { Config } from "../types/config.js";
 
+const STREAM_TIMEOUT_MS = 10000; // 10 seconds max for all streaming connections
+
 export async function handleApiRoute(
   req: IncomingMessage,
   res: ServerResponse,
@@ -52,16 +54,82 @@ export async function handleApiRoute(
       body,
     });
 
-    // Forward response headers
-    for (const [key, value] of response.headers.entries()) {
-      res.setHeader(key, value);
+    // Check if response has a streamable body
+    if (response.body) {
+      console.log("Streaming response detected, starting stream");
+
+      // Forward all response headers except those Node.js manages
+      const responseHeaders: Record<string, string> = {};
+      for (const [key, value] of response.headers.entries()) {
+        const lowerKey = key.toLowerCase();
+        // Skip headers that Node.js handles automatically
+        if (
+          lowerKey !== "content-encoding" &&
+          lowerKey !== "transfer-encoding"
+        ) {
+          responseHeaders[key] = value;
+        }
+      }
+
+      // Add streaming optimization headers
+      responseHeaders["X-Accel-Buffering"] = "no"; // Disable nginx buffering
+
+      res.writeHead(response.status, responseHeaders);
+
+      // Set up timeout for streaming
+      const timeoutId = setTimeout(() => {
+        console.log(
+          `Stream timeout reached (${STREAM_TIMEOUT_MS}ms), closing stream`,
+        );
+        res.end();
+      }, STREAM_TIMEOUT_MS);
+
+      // Handle client disconnect
+      req.on("close", () => {
+        console.log("Client disconnected from stream");
+        clearTimeout(timeoutId);
+      });
+
+      try {
+        // Stream the response as binary data
+        const reader = response.body.getReader();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log("Stream completed");
+            break;
+          }
+
+          // Handle as binary data - works for both text and binary streams
+          const buffer = Buffer.from(value);
+
+          // Write chunk to response with backpressure handling
+          if (!res.write(buffer)) {
+            // Wait for drain event if buffer is full
+            await new Promise((resolve) => res.once("drain", resolve));
+          }
+        }
+      } catch (streamError) {
+        console.error("Error during streaming:", streamError);
+      } finally {
+        clearTimeout(timeoutId);
+        res.end();
+      }
+    } else {
+      // Non-streaming response (fallback for responses without body)
+      // Forward response headers
+      for (const [key, value] of response.headers.entries()) {
+        res.setHeader(key, value);
+      }
+
+      res.removeHeader("Content-Encoding");
+      res.removeHeader("Content-Length");
+
+      res.writeHead(response.status);
+      res.end(Buffer.from(await response.arrayBuffer()));
     }
 
-    res.removeHeader("Content-Encoding");
-    res.removeHeader("Content-Length");
-
-    res.writeHead(response.status);
-    res.end(Buffer.from(await response.arrayBuffer()));
     return true;
   } catch (error) {
     console.error("Error calling runner API:", error);
