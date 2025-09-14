@@ -1,15 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
-import { LRUCache } from "lru-cache";
 import type { Config } from "../types/config.js";
 import { getContentType } from "../utils/content-type.js";
-import { fetchFromS3 } from "../utils/s3.js";
-
-// Cache static files with a max of 500MB
-const staticFileCache = new LRUCache<string, Buffer>({
-  maxSize: 500 * 1024 * 1024, // 500MB
-  sizeCalculation: (value) => value.length,
-});
+import { streamFromS3 } from "../utils/s3.js";
 
 export async function handleStaticFile(
   req: IncomingMessage,
@@ -81,21 +75,12 @@ async function tryServeFile(
     return false;
   }
 
-  const cacheKey = `${deploymentId}:${filePath}`;
-  let buffer = await fetchFromS3(`deployments/${deploymentId}/app/${filePath}`);
+  const s3Response = await streamFromS3(
+    `deployments/${deploymentId}/app/${filePath}`,
+  );
 
-  if (!buffer) {
-    const fetchedBuffer = await fetchFromS3(
-      `deployments/${deploymentId}/app/${filePath}`,
-    );
-
-    if (!fetchedBuffer) {
-      return false;
-    }
-
-    buffer = fetchedBuffer;
-    // Cache the file content since deployments are immutable
-    staticFileCache.set(cacheKey, fetchedBuffer);
+  if (!s3Response) {
+    return false;
   }
 
   const contentType = contentTypeOverride ?? getContentType(filePath);
@@ -105,17 +90,31 @@ async function tryServeFile(
     acceptEncoding.includes("gzip") &&
     /^(text\/|application\/(javascript|json))/i.test(contentType);
 
+  const headers: Record<string, string> = {
+    "Content-Type": contentType,
+  };
+
+  // Add cache headers
+  if (s3Response.etag) {
+    headers.ETag = s3Response.etag;
+  }
+  if (s3Response.lastModified) {
+    headers["Last-Modified"] = s3Response.lastModified.toUTCString();
+  }
+  // Cache for 1 hour for immutable deployments
+  headers["Cache-Control"] = "public, max-age=3600";
+
   if (shouldGzip) {
+    headers["Content-Encoding"] = "gzip";
+    res.writeHead(200, headers);
     const gzipped = createGzip();
-    res.writeHead(200, {
-      "Content-Type": contentType,
-      "Content-Encoding": "gzip",
-    });
-    gzipped.pipe(res);
-    gzipped.end(buffer);
+    await pipeline(s3Response.stream, gzipped, res);
   } else {
-    res.writeHead(200, { "Content-Type": contentType });
-    res.end(buffer);
+    if (s3Response.contentLength) {
+      headers["Content-Length"] = s3Response.contentLength.toString();
+    }
+    res.writeHead(200, headers);
+    await pipeline(s3Response.stream, res);
   }
 
   return true;

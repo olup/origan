@@ -1,3 +1,4 @@
+import type { Readable } from "node:stream";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { envConfig } from "../config/index.js";
 
@@ -12,8 +13,8 @@ export const s3Client = new S3Client({
   },
 });
 
-// Function to fetch file from S3
-export async function fetchFromS3(key: string) {
+// Function to stream file from S3
+export async function streamFromS3(key: string) {
   try {
     const command = new GetObjectCommand({
       Bucket: envConfig.bucketName,
@@ -22,17 +23,18 @@ export async function fetchFromS3(key: string) {
 
     const response = await s3Client.send(command);
     if (!response.Body) {
-      throw new Error("No response body");
+      return null;
     }
 
-    // Convert Readable to Buffer
-    const chunks: Buffer[] = [];
-    for await (const chunk of response.Body as AsyncIterable<Buffer>) {
-      chunks.push(chunk);
-    }
-    return Buffer.concat(chunks);
+    return {
+      stream: response.Body as Readable,
+      contentLength: response.ContentLength,
+      contentType: response.ContentType,
+      etag: response.ETag,
+      lastModified: response.LastModified,
+    };
   } catch (error) {
-    console.error("Error fetching file from S3:", error);
+    console.error("Error streaming file from S3:", error);
     return null;
   }
 }

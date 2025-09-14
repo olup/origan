@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, useCallback, useContext } from "react";
-import { trpc } from "../utils/trpc";
+import { trpc, trpcClient } from "../utils/trpc";
 
 interface User {
   username: string;
@@ -23,8 +23,8 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const doLogin = useCallback(async () => {
     // Get login URL from tRPC query
-    const loginData = await trpc.auth.login.query({ type: "web" });
-    window.location.href = loginData.authorizationUrl;
+    const loginData = await trpcClient.auth.login.query({ type: "web" });
+    window.location.href = loginData.authUrl;
   }, []);
 
   const getUserQuery = trpc.auth.me.useQuery(undefined, {

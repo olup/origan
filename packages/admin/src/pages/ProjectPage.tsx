@@ -228,7 +228,6 @@ export const ProjectPage = () => {
                   rel="noopener noreferrer"
                   radius="sm"
                   variant="outline"
-                  color="black"
                   leftSection={
                     <GithubIcon style={{ height: "10px", width: "auto" }} />
                   }
@@ -242,7 +241,7 @@ export const ProjectPage = () => {
 
         {/* Tab Navigation */}
         <Box>
-          <Group gap={0} style={{ borderBottom: "1px solid #e9ecef" }}>
+          <Group gap={0}>
             <TabLink
               href={`/projects/${projectReference}`}
               isActive={activeTab === "deployments"}
