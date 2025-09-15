@@ -114,6 +114,12 @@ function App() {
               <Route path="/deployments/:reference">
                 <DeploymentDetailsPage />
               </Route>
+              <Route path="/deployments/:reference/build">
+                <DeploymentDetailsPage />
+              </Route>
+              <Route path="/deployments/:reference/logs">
+                <DeploymentDetailsPage />
+              </Route>
             </Switch>
           </Router>
         </Box>

@@ -55,4 +55,4 @@ FROM ghcr.io/supabase/edge-runtime:v1.67.4 AS runner
 COPY --from=build app/packages/runner /app
 WORKDIR /app
 EXPOSE 9000
-CMD ["start", "--main-service", "/app/functions/supervisor"]
+CMD ["start", "--main-service", "/app/functions/supervisor", "--event-worker", "/app/functions/event-worker"]

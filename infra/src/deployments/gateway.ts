@@ -30,7 +30,7 @@ export async function deployGateway(
     imageName: "gateway",
     tag: imageTag, // Unique tag for each deployment
     context: "../", // Monorepo root
-    dockerfile: "build/docker/prod.Dockerfile",
+    dockerfile: "build/docker/prod-optimized.Dockerfile",
     target: "gateway", // Target the 'gateway' stage in multistage build
     platforms: ["linux/amd64"],
     buildArgs: {

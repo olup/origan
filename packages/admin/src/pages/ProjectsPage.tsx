@@ -9,6 +9,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { useQuery } from "@tanstack/react-query";
 import { FolderIcon, RocketIcon } from "lucide-react";
 import { useLocation } from "wouter";
 import { useOrganization } from "../contexts/OrganizationContext";
@@ -18,9 +19,11 @@ export const ProjectsPage = () => {
   const [, navigate] = useLocation();
   const { selectedOrganization } = useOrganization();
 
-  const projects = trpc.projects.list.useQuery(
-    { organizationReference: selectedOrganization?.reference ?? "" },
-    { enabled: !!selectedOrganization },
+  const projects = useQuery(
+    trpc.projects.list.queryOptions(
+      { organizationReference: selectedOrganization?.reference ?? "" },
+      { enabled: !!selectedOrganization },
+    ),
   );
 
   return (

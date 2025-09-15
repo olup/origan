@@ -1,12 +1,14 @@
 import type { AppRouter } from "@origan/control-api/src/trpc/router";
 import { QueryClient } from "@tanstack/react-query";
 import {
+  createTRPCClient,
   httpBatchLink,
   httpLink,
+  httpSubscriptionLink,
   splitLink,
   TRPCClientError,
 } from "@trpc/client";
-import { createTRPCReact } from "@trpc/react-query";
+import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import superjson from "superjson";
 import { getConfig } from "../config";
 
@@ -102,9 +104,6 @@ const authenticatedFetch: typeof fetch = async (input, init) => {
   return response;
 };
 
-// Create tRPC React Query client
-export const trpc = createTRPCReact<AppRouter>();
-
 // Perform token refresh
 async function performTokenRefresh(): Promise<boolean> {
   try {
@@ -137,22 +136,46 @@ async function performTokenRefresh(): Promise<boolean> {
   }
 }
 
-// Create tRPC client with split link for FormData support
-export const trpcClient = trpc.createClient({
+// Create tRPC client with split link for FormData and subscription support
+export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     splitLink({
-      condition: (op) => isNonJsonSerializable(op.input),
-      // Use regular httpLink for FormData (no batching)
-      true: httpLink({
+      condition: (op) => op.type === "subscription",
+      // Use SSE link for subscriptions
+      true: httpSubscriptionLink({
         url: `${getApiUrl()}/trpc`,
-        fetch: authenticatedFetch,
-      }),
-      // Use batch link for regular JSON requests
-      false: httpBatchLink({
-        url: `${getApiUrl()}/trpc`,
-        fetch: authenticatedFetch,
         transformer: superjson,
+        eventSourceOptions: () => ({
+          headers: {
+            authorization: state.accessToken
+              ? `Bearer ${state.accessToken}`
+              : undefined,
+          },
+          withCredentials: true,
+        }),
+      }),
+      // Use split link for queries/mutations
+      false: splitLink({
+        condition: (op) => isNonJsonSerializable(op.input),
+        // Use regular httpLink for FormData (no batching)
+        true: httpLink({
+          url: `${getApiUrl()}/trpc`,
+          fetch: authenticatedFetch,
+          transformer: superjson,
+        }),
+        // Use batch link for regular JSON requests
+        false: httpBatchLink({
+          url: `${getApiUrl()}/trpc`,
+          fetch: authenticatedFetch,
+          transformer: superjson,
+        }),
       }),
     }),
   ],
+});
+
+// Create tRPC proxy with TanStack React Query integration
+export const trpc = createTRPCOptionsProxy<AppRouter>({
+  client: trpcClient,
+  queryClient,
 });

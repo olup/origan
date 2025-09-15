@@ -19,7 +19,7 @@ export async function deployBuilder(
     imageName: "builder",
     tag: tag, // Unique tag for each deployment
     context: "../", // Monorepo root
-    dockerfile: "build/docker/prod.Dockerfile",
+    dockerfile: "build/docker/prod-optimized.Dockerfile",
     target: "builder", // Target the 'builder' stage in multistage build
     platforms: ["linux/amd64"],
     buildArgs: {

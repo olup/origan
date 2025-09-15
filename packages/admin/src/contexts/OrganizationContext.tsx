@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   createContext,
   type ReactNode,
@@ -34,9 +35,11 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const [selectedOrganization, setSelectedOrganization] =
     useState<Organization | null>(null);
 
-  const organizationsQuery = trpc.organizations.list.useQuery(undefined, {
-    enabled: !!user,
-  });
+  const organizationsQuery = useQuery(
+    trpc.organizations.list.queryOptions(undefined, {
+      enabled: !!user,
+    }),
+  );
 
   // Auto-select first organization when organizations load
   useEffect(() => {

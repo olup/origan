@@ -1,5 +1,5 @@
-import { resolve } from "https://deno.land/std/path/mod.ts";
-import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
+import { resolve } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { GetObjectCommand, S3Client } from "npm:@aws-sdk/client-s3";
 import { startCleanupInterval } from "./cleanup.ts";
 
@@ -62,7 +62,10 @@ console.log("main function started");
 // Start the cleanup interval for worker directories
 startCleanupInterval(WORKERS_PATH);
 
-serve(async (req: Request) => {
+const port = 9000;
+console.log(`Starting HTTP server on port ${port}`);
+
+const handler = async (req: Request) => {
   // const get function path on s3 from header
   const headers = req.headers;
   const functionPath = headers.get("x-origan-function-path");
@@ -149,12 +152,18 @@ serve(async (req: Request) => {
   console.log(`Worker path: ${workerPath}`);
 
   try {
+    // Add function path to environment variables so it's available in the worker
+    const envVarsWithPath = [
+      ...envVars,
+      ["ORIGAN_FUNCTION_PATH", functionPath] as [string, string],
+    ];
+    
     const worker = await EdgeRuntime.userWorkers.create({
       servicePath: workerPath,
       memoryLimitMb,
       workerTimeoutMs,
       noModuleCache,
-      envVars,
+      envVars: envVarsWithPath,
     });
 
     console.log("Worker created successfully");
@@ -183,4 +192,6 @@ serve(async (req: Request) => {
       headers: { "Content-Type": "application/json" },
     });
   }
-});
+};
+
+serve(handler, { port });

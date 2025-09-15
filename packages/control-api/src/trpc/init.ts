@@ -13,6 +13,13 @@ const t = initTRPC.context<Context>().create({
     },
   }),
   isDev: process.env.NODE_ENV !== "production",
+  sse: {
+    maxDurationMs: 30000, // 30 seconds
+    ping: {
+      enabled: true,
+      intervalMs: 5000, // Send ping every 5 seconds
+    },
+  },
 });
 
 export const router = t.router;

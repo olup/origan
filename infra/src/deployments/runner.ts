@@ -28,7 +28,7 @@ export async function deployRunner(
     imageName: "runner",
     tag: imageTag, // Unique tag for each deployment
     context: "../", // Monorepo root
-    dockerfile: "build/docker/prod.Dockerfile",
+    dockerfile: "build/docker/prod-optimized.Dockerfile",
     target: "runner", // Target the 'runner' stage in multistage build
     platforms: ["linux/amd64"],
     buildArgs: {

@@ -3,6 +3,14 @@ import * as nkeys from "jsr:@nats-io/nkeys";
 import * as nats from "jsr:@nats-io/transport-deno";
 import { Buffer } from "node:buffer";
 
+async function sha1(message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-1", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 const natsServer = Deno.env.get("EVENTS_NATS_SERVER");
 if (!natsServer) {
   console.error("EVENTS_NATS_SERVER is not set");
@@ -42,25 +50,29 @@ for await (const data of eventManager) {
     console.dir(data, { depth: Number.POSITIVE_INFINITY });
     continue;
   }
-  // XXX: Find a better way to map a service_path or execution_id to the metadata of a deployment.
-  // Some possibilities:
-  // - We keep inject the information each time a request comes in, like we do now, and we
-  // maybe find a better way than the service_path to identify the deployment.
-  // - WorkerPath is a hash, we can store that somewhere and do the matching ourselves. The problem
-  // is that we can't publish to NATS with a path that can allow to get the logs of every
-  // deployments of a project, or of everything of a single deployment.
-  // FIXME: This is also missing the function path, which isn't ideal
-  const deploymentsPath = data.metadata.service_path.split("/");
-  const deploymentId = deploymentsPath[deploymentsPath.length - 2];
-  const projectId = deploymentsPath[deploymentsPath.length - 3];
+  // Extract metadata from service_path
+  const pathParts = data.metadata.service_path.split("/");
+  const deploymentId = pathParts[pathParts.length - 2];
+  const projectId = pathParts[pathParts.length - 3];
+  
+  // Extract function path from the last part of service_path (hash)
+  // The actual function path needs to be passed through metadata
+  // For now, we'll use the hash from the path as the function identifier
+  const functionHash = pathParts[pathParts.length - 1];
+  
+  // TODO: Get the actual function path from metadata when available
+  // For now, we'll include the hash in the message
+  const functionPath = data.metadata.function_path || `function-${functionHash}`;
 
   if (data.event_type === "Log") {
-    const topic = `logs.${projectId}.${deploymentId}`;
+    // Include function hash in topic for filtering
+    const topic = `logs.${projectId}.${deploymentId}.${functionHash}`;
     try {
       const message = {
         timestamp: data.timestamp,
-        msg: data.event.msg,
+        message: data.event.msg,
         level: data.event.level,
+        functionPath: functionPath,  // Include clear text function path
       };
       console.log(`Publishing log to ${topic}:`, message);
       await js.publish(topic, JSON.stringify(message));

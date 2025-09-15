@@ -11,9 +11,10 @@ import {
   Title,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { trpc } from "../utils/trpc";
+import { queryClient, trpc } from "../utils/trpc";
 
 interface Environment {
   id: string;
@@ -89,20 +90,30 @@ const EnvironmentVariables = ({
 }) => {
   const [isAdding, setIsAdding] = useState(false);
 
-  const utils = trpc.useUtils();
+  const setVariablesMutation = useMutation(
+    trpc.environments.setVariables.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: trpc.environments.listByProject.queryOptions({
+            projectReference,
+          }).queryKey,
+        });
+        setIsAdding(false);
+      },
+    }),
+  );
 
-  const setVariablesMutation = trpc.environments.setVariables.useMutation({
-    onSuccess: () => {
-      utils.environments.listByProject.invalidate({ projectReference });
-      setIsAdding(false);
-    },
-  });
-
-  const deleteVariableMutation = trpc.environments.unsetVariable.useMutation({
-    onSuccess: () => {
-      utils.environments.listByProject.invalidate({ projectReference });
-    },
-  });
+  const deleteVariableMutation = useMutation(
+    trpc.environments.unsetVariable.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: trpc.environments.listByProject.queryOptions({
+            projectReference,
+          }).queryKey,
+        });
+      },
+    }),
+  );
 
   const handleAddVariable = (key: string, value: string) => {
     setVariablesMutation.mutate({
@@ -205,10 +216,11 @@ const EnvironmentVariables = ({
 export const EnvironmentManager = ({
   projectReference,
 }: EnvironmentManagerProps) => {
-  const { data: environmentsResponse, isLoading } =
-    trpc.environments.listByProject.useQuery({
+  const { data: environmentsResponse, isLoading } = useQuery(
+    trpc.environments.listByProject.queryOptions({
       projectReference,
-    });
+    }),
+  );
 
   if (isLoading) {
     return <Text>Loading environments...</Text>;

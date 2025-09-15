@@ -11,28 +11,6 @@ overrides:
 importers:
 
   .:
-    dependencies:
-      '@hono/trpc-server':
-        specifier: ^0.4.0
-        version: 0.4.0(@trpc/server@11.5.1(typescript@5.8.3))(hono@4.7.7)
-      '@tanstack/react-query':
-        specifier: ^5
-        version: 5.74.4(react@19.1.0)
-      '@tanstack/react-query-devtools':
-        specifier: ^5
-        version: 5.87.4(@tanstack/react-query@5.74.4(react@19.1.0))(react@19.1.0)
-      '@trpc/client':
-        specifier: ^11
-        version: 11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3)
-      '@trpc/server':
-        specifier: ^11
-        version: 11.5.1(typescript@5.8.3)
-      '@trpc/tanstack-react-query':
-        specifier: ^11
-        version: 11.5.1(@tanstack/react-query@5.74.4(react@19.1.0))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3))(@trpc/server@11.5.1(typescript@5.8.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)
-      superjson:
-        specifier: ^2.2.2
-        version: 2.2.2
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.0.5
@@ -86,8 +64,14 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.69.0
         version: 5.74.4(react@19.1.0)
-      '@trpc/react-query':
-        specifier: ^11.5.1
+      '@tanstack/react-query-devtools':
+        specifier: ^5
+        version: 5.87.4(@tanstack/react-query@5.74.4(react@19.1.0))(react@19.1.0)
+      '@trpc/client':
+        specifier: ^11
+        version: 11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3)
+      '@trpc/tanstack-react-query':
+        specifier: ^11
         version: 11.5.1(@tanstack/react-query@5.74.4(react@19.1.0))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3))(@trpc/server@11.5.1(typescript@5.7.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.7.3)
       hono:
         specifier: 4.7.7
@@ -101,6 +85,9 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.1.0(react@19.1.0)
+      superjson:
+        specifier: ^2.2.2
+        version: 2.2.2
       wouter:
         specifier: ^3.7.0
         version: 3.7.0(react@19.1.0)
@@ -342,7 +329,7 @@ importers:
         specifier: workspace:*
         version: link:../../shared/nats
       '@trpc/server':
-        specifier: ^11
+        specifier: ^11.5.1
         version: 11.5.1(typescript@5.8.3)
       '@types/pg':
         specifier: ^8.15.4
@@ -438,9 +425,6 @@ importers:
       hono:
         specifier: 4.7.7
         version: 4.7.7
-      lru-cache:
-        specifier: ^11.1.0
-        version: 11.1.0
       superjson:
         specifier: ^2.2.2
         version: 2.2.2
@@ -3491,16 +3475,6 @@ packages:
     resolution: {integrity: sha512-7I6JJ1I1lxv3S87ht3FAIZi0XxQa7hnQ9K+Oo5BH7cGO8ZtWe9Ftq6ItdkuDfpsnsRPcR2h158AMWbNs/iptqg==}
     peerDependencies:
       '@trpc/server': 11.5.1
-      typescript: '>=5.7.2'
-
-  '@trpc/react-query@11.5.1':
-    resolution: {integrity: sha512-Y+e0Lp7na1LAjoYqtHVjxpfayOuvvnuchS723b4dsI/V0h3irBuI+bx38S3m7RgaIh/L1av1SldFrKIauk+r/A==}
-    peerDependencies:
-      '@tanstack/react-query': ^5.80.3
-      '@trpc/client': 11.5.1
-      '@trpc/server': 11.5.1
-      react: '>=18.2.0'
-      react-dom: '>=18.2.0'
       typescript: '>=5.7.2'
 
   '@trpc/server@11.5.1':
@@ -10706,15 +10680,6 @@ snapshots:
       '@trpc/server': 11.5.1(typescript@5.9.2)
       typescript: 5.9.2
 
-  '@trpc/react-query@11.5.1(@tanstack/react-query@5.74.4(react@19.1.0))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3))(@trpc/server@11.5.1(typescript@5.7.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.7.3)':
-    dependencies:
-      '@tanstack/react-query': 5.74.4(react@19.1.0)
-      '@trpc/client': 11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3)
-      '@trpc/server': 11.5.1(typescript@5.7.3)
-      react: 19.1.0
-      react-dom: 19.1.0(react@19.1.0)
-      typescript: 5.7.3
-
   '@trpc/server@11.5.1(typescript@5.7.3)':
     dependencies:
       typescript: 5.7.3
@@ -10727,14 +10692,14 @@ snapshots:
     dependencies:
       typescript: 5.9.2
 
-  '@trpc/tanstack-react-query@11.5.1(@tanstack/react-query@5.74.4(react@19.1.0))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3))(@trpc/server@11.5.1(typescript@5.8.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)':
+  '@trpc/tanstack-react-query@11.5.1(@tanstack/react-query@5.74.4(react@19.1.0))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3))(@trpc/server@11.5.1(typescript@5.7.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.7.3)':
     dependencies:
       '@tanstack/react-query': 5.74.4(react@19.1.0)
-      '@trpc/client': 11.5.1(@trpc/server@11.5.1(typescript@5.8.3))(typescript@5.8.3)
-      '@trpc/server': 11.5.1(typescript@5.8.3)
+      '@trpc/client': 11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3)
+      '@trpc/server': 11.5.1(typescript@5.7.3)
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
-      typescript: 5.8.3
+      typescript: 5.7.3
 
   '@ts-morph/common@0.25.0':
     dependencies:

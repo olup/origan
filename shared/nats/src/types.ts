@@ -23,6 +23,7 @@ export interface DeploymentLogEvent {
   message: string;
   projectId: string;
   deploymentId: string;
+  functionPath?: string;
 }
 
 export interface NatsConfig {

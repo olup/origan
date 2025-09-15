@@ -9,8 +9,8 @@ export const subjects = {
     logs: (buildId = "*") => `builds.${buildId}.logs`,
   },
   deployments: {
-    logs: (projectId: string, deploymentId: string) =>
-      `logs.${projectId}.${deploymentId}`,
+    logs: (projectId: string, deploymentId: string, functionHash = "*") =>
+      `logs.${projectId}.${deploymentId}.${functionHash}`,
   },
 } as const;
 

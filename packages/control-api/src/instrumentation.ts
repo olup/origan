@@ -47,6 +47,7 @@ export function getLogger() {
 export type Env = {
   Variables: {
     log: ILogLayer;
+    requestId?: string;
   };
 };
 

@@ -1,7 +1,15 @@
 import { serve } from "@hono/node-server";
-import { getLogger } from "./instrumentation.js";
-import api from "./routers/index.js";
+import { otel } from "@hono/otel";
+import { trpcServer } from "@hono/trpc-server";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { requestId } from "hono/request-id";
+import { env } from "./config.js";
+import { getLogger, loggerMiddleware } from "./instrumentation.js";
+import { githubRouter } from "./routers/github.js";
 import { startBuildEventsConsumer } from "./service/build/index.js";
+import { createContext } from "./trpc/context.js";
+import { appRouter } from "./trpc/router.js";
 
 const log = getLogger();
 
@@ -16,7 +24,39 @@ await startBuildEventsConsumer({
 
 log.info("Build events consumer started");
 
+// Create Hono app with TRPC
+const app = new Hono()
+  .use(requestId())
+  .use(otel())
+  .use(loggerMiddleware)
+  .use(
+    cors({
+      origin: [env.ORIGAN_ADMIN_PANEL_URL],
+      credentials: true,
+    }),
+  )
+  .get("/.healthz", (c) => c.json({ message: "OK" }))
+  .route("/github", githubRouter)
+  .use(
+    "/trpc/*",
+    trpcServer({
+      router: appRouter,
+      createContext: async (_opts, c) => {
+        const ctx = await createContext({ c });
+        // Return as plain object for TRPC
+        return {
+          userId: ctx.userId,
+          db: ctx.db,
+          honoCtx: ctx.honoCtx,
+        };
+      },
+      onError({ error, path }) {
+        console.error(`Error in tRPC handler on path '${path}':`, error);
+      },
+    }),
+  );
+
 serve({
-  fetch: api.fetch,
+  fetch: app.fetch,
   port: port,
 });

@@ -52,7 +52,6 @@
     "@opentelemetry/sdk-trace-base": "^2.0.1",
     "@opentelemetry/semantic-conventions": "^1.34.0",
     "@origan/nats": "workspace:*",
-    "@trpc/server": "^11",
     "@types/pg": "^8.15.4",
     "dockerode": "^4.0.6",
     "dotenv": "^16.5.0",
@@ -68,7 +67,8 @@
     "superjson": "^2.2.2",
     "tmp-promise": "^3.0.3",
     "unzipper": "^0.12.3",
-    "zod": "^3.24.3"
+    "zod": "^3.24.3",
+    "@trpc/server": "^11.5.1"
   },
   "devDependencies": {
     "@types/dockerode": "^3.3.38",

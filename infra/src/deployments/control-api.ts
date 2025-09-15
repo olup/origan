@@ -99,7 +99,7 @@ export async function deployControlApi(
     imageName: "control-api",
     tag: imageTag, // Unique tag for each deployment
     context: "../", // Monorepo root (origan)
-    dockerfile: "build/docker/prod.Dockerfile", // Dockerfile path relative to context
+    dockerfile: "build/docker/prod-optimized.Dockerfile", // Dockerfile path relative to context
     target: "control-api", // Target the 'control-api' stage in multistage build
     platforms: ["linux/amd64"], // Build for x86_64 architecture
     buildArgs: {

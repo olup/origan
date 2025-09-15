@@ -1,5 +1,6 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext } from "react";
-import { trpc, trpcClient } from "../utils/trpc";
+import { queryClient, trpc } from "../utils/trpc";
 
 interface User {
   username: string;
@@ -23,20 +24,26 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const doLogin = useCallback(async () => {
     // Get login URL from tRPC query
-    const loginData = await trpcClient.auth.login.query({ type: "web" });
+    const loginData = await queryClient.fetchQuery(
+      trpc.auth.login.queryOptions({ type: "web" }),
+    );
     window.location.href = loginData.authUrl;
   }, []);
 
-  const getUserQuery = trpc.auth.me.useQuery(undefined, {
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
+  const getUserQuery = useQuery(
+    trpc.auth.me.queryOptions(undefined, {
+      retry: false,
+      refetchOnWindowFocus: false,
+    }),
+  );
 
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSettled: () => {
-      window.location.href = "/";
-    },
-  });
+  const logoutMutation = useMutation(
+    trpc.auth.logout.mutationOptions({
+      onSettled: () => {
+        window.location.href = "/";
+      },
+    }),
+  );
 
   const doLogout = useCallback(async () => {
     try {

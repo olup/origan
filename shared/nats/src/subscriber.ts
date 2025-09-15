@@ -49,10 +49,16 @@ export class Subscriber {
     handler: (log: DeploymentLogEvent, msg: Msg) => Promise<void>,
     projectId: string,
     deploymentId: string,
+    functionHash?: string,
     queueGroup?: string,
   ): Promise<Subscription> {
     try {
-      const subject = subjects.deployments.logs(projectId, deploymentId);
+      const subject = subjects.deployments.logs(
+        projectId,
+        deploymentId,
+        functionHash,
+      );
+      console.log(`Subscribing to NATS topic: ${subject}`);
       const subscription = queueGroup
         ? await this.client.subscribe(subject, { queue: queueGroup })
         : await this.client.subscribe(subject);

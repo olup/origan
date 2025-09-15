@@ -8,7 +8,7 @@ import { AppWithTheme } from "./components/AppWithTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { OrganizationProvider } from "./contexts/OrganizationContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { queryClient, trpc, trpcClient } from "./utils/trpc";
+import { queryClient } from "./utils/trpc";
 
 const rootElement = document.getElementById("root");
 
@@ -18,16 +18,14 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <AuthProvider>
-            <OrganizationProvider>
-              <AppWithTheme />
-            </OrganizationProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </trpc.Provider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <OrganizationProvider>
+            <AppWithTheme />
+          </OrganizationProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   </React.StrictMode>,
 );

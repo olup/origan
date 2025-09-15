@@ -11,6 +11,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronDownIcon, ExternalLinkIcon, GithubIcon } from "lucide-react";
 import { Link, Route, useLocation, useParams } from "wouter";
 import { EnvironmentManager } from "../components/EnvironmentManager";
@@ -36,9 +37,11 @@ const DeploymentsList = ({
   projectReference: string;
 }) => {
   const [, navigate] = useLocation();
-  const { data: deployments } = trpc.deployments.listByProject.useQuery({
-    projectRef: projectReference,
-  });
+  const { data: deployments } = useQuery(
+    trpc.deployments.listByProject.queryOptions({
+      projectRef: projectReference,
+    }),
+  );
 
   if (!deployments || !deployments.length) {
     return <Text c="dimmed">No deployments yet</Text>;
@@ -198,9 +201,11 @@ export const ProjectPage = () => {
   const [location] = useLocation();
   const projectReference = params?.reference;
 
-  const { data: project } = trpc.projects.get.useQuery(
-    { reference: projectReference || "" },
-    { enabled: Boolean(projectReference) },
+  const { data: project } = useQuery(
+    trpc.projects.get.queryOptions(
+      { reference: projectReference || "" },
+      { enabled: Boolean(projectReference) },
+    ),
   );
 
   if (!projectReference || !project) return null;

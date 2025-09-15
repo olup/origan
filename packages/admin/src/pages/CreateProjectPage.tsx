@@ -14,6 +14,7 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { useForm, zodResolver } from "@mantine/form";
+import { useQuery } from "@tanstack/react-query";
 import {
   ChevronDown,
   ChevronRight,
@@ -77,16 +78,19 @@ export const CreateProjectPage = () => {
     refetch: onRefreshRepos,
     error: reposError,
     isError: hasReposError,
-  } = trpc.github.listRepos.useQuery(undefined, {
-    enabled: !!user,
-    retry: false,
-  });
+  } = useQuery(
+    trpc.github.listRepos.queryOptions(undefined, {
+      enabled: !!user,
+      retry: false,
+    }),
+  );
 
-  const { data: branches, refetch: onRefreshBranches } =
-    trpc.github.getBranches.useQuery(
+  const { data: branches, refetch: onRefreshBranches } = useQuery(
+    trpc.github.getBranches.queryOptions(
       { githubRepositoryId: form.values.repoId || 0 },
       { enabled: form.values.repoId !== null },
-    );
+    ),
+  );
 
   const { mutateAsync: createProject, isPending: isLoadingCreateProject } =
     useCreateProjectWithGithubConfiguration();

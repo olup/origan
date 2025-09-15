@@ -1,6 +1,7 @@
 declare interface EventMetadata {
   service_path?: string;
   execution_id?: string;
+  function_path?: string;
 }
 
 declare interface EventBoot {
