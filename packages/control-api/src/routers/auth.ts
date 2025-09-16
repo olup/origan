@@ -36,7 +36,9 @@ const generateTokens = async (
   await db.insert(refreshTokenSchema).values({
     userId,
     tokenHash: hashedToken,
-    expiresAt: sql`CURRENT_TIMESTAMP + INTERVAL '${REFRESH_TOKEN_EXPIRY_DAYS} days'`,
+    expiresAt: sql.raw(
+      `CURRENT_TIMESTAMP + INTERVAL '${REFRESH_TOKEN_EXPIRY_DAYS} days'`,
+    ),
   });
 
   return { accessToken, refreshToken };
