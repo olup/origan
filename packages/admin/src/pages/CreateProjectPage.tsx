@@ -148,11 +148,9 @@ export const CreateProjectPage = () => {
 
   console.log(form.values);
 
-  // Check if we have a 404 error indicating GitHub app is not installed
-  const isGithubAppNotInstalled =
-    hasReposError &&
-    reposError &&
-    (reposError as Error & { status?: number })?.status === 404;
+  // Check if we have a repos error indicating GitHub app is not installed
+  // TODO : we should have a better error from the api
+  const isGithubAppNotInstalled = hasReposError && reposError;
 
   if (isGithubAppNotInstalled) {
     return (

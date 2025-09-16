@@ -14,10 +14,10 @@ const t = initTRPC.context<Context>().create({
   }),
   isDev: process.env.NODE_ENV !== "production",
   sse: {
-    maxDurationMs: 30000, // 30 seconds
+    maxDurationMs: 10 * 60 * 1000, // 10 minutes
     ping: {
       enabled: true,
-      intervalMs: 5000, // Send ping every 5 seconds
+      intervalMs: 15000, // Send ping every 15 seconds
     },
   },
 });

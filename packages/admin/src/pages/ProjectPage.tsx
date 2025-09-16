@@ -103,7 +103,7 @@ const DeploymentsList = ({
                         <Menu.Item
                           key={domain.name}
                           component="a"
-                          href={domain.name}
+                          href={`https://${domain.name}`}
                           target="_blank"
                           leftSection={<ExternalLinkIcon size={14} />}
                         >

@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { envConfig } from "../config/index.js";
 import type { Config } from "../types/config.js";
 
-const STREAM_TIMEOUT_MS = 10000; // 10 seconds max for all streaming connections
+const STREAM_TIMEOUT_MS = 60 * 1000; // 60 seconds max for all streaming connections
 
 export async function handleApiRoute(
   req: IncomingMessage,

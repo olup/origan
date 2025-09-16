@@ -1,4 +1,3 @@
-import { jetstream } from "jsr:@nats-io/jetstream";
 import * as nkeys from "jsr:@nats-io/nkeys";
 import * as nats from "jsr:@nats-io/transport-deno";
 import { Buffer } from "node:buffer";
@@ -32,8 +31,10 @@ if (natsAuth) {
 
 const nc = await nats.connect({ servers: [natsServer], ...credsArgs });
 console.log(`Connected to NATS server ${natsServer}`);
-console.log("Connecting to JetStream");
-const js = jetstream(nc);
+
+// For now, use regular NATS publish instead of JetStream
+// JetStream requires stream configuration which might not be set up
+console.log("Using regular NATS publishing");
 
 const eventManager = new globalThis.EventManager();
 
@@ -64,9 +65,10 @@ for await (const data of eventManager) {
   // For now, we'll include the hash in the message
   const functionPath = data.metadata.function_path || `function-${functionHash}`;
 
+  // Handle different event types
+  const topic = `logs.${projectId}.${deploymentId}.${functionHash}`;
+  
   if (data.event_type === "Log") {
-    // Include function hash in topic for filtering
-    const topic = `logs.${projectId}.${deploymentId}.${functionHash}`;
     try {
       const message = {
         timestamp: data.timestamp,
@@ -75,13 +77,56 @@ for await (const data of eventManager) {
         functionPath: functionPath,  // Include clear text function path
       };
       console.log(`Publishing log to ${topic}:`, message);
-      await js.publish(topic, JSON.stringify(message));
-      // TODO: Capture acknoledgement, to make sure that when exiting, everything has been properly
-      // sent.
+      // Use regular NATS publish instead of JetStream
+      nc.publish(topic, JSON.stringify(message));
+    } catch (e) {
+      console.error("Error publishing to NATS:", e);
+    }
+  } else if (data.event_type === "BootFailure") {
+    // Handle boot failures as error logs
+    try {
+      const message = {
+        timestamp: data.timestamp,
+        message: `Function boot failed: ${data.event.msg}`,
+        level: "error",
+        functionPath: functionPath,
+      };
+      console.log(`Publishing boot failure to ${topic}:`, message);
+      nc.publish(topic, JSON.stringify(message));
+    } catch (e) {
+      console.error("Error publishing to NATS:", e);
+    }
+  } else if (data.event_type === "UncaughtException") {
+    // Handle uncaught exceptions
+    try {
+      const message = {
+        timestamp: data.timestamp,
+        message: `Uncaught exception: ${data.event.exception}`,
+        level: "error",
+        functionPath: functionPath,
+      };
+      console.log(`Publishing exception to ${topic}:`, message);
+      nc.publish(topic, JSON.stringify(message));
+    } catch (e) {
+      console.error("Error publishing to NATS:", e);
+    }
+  } else if (data.event_type === "WorkerRequestCancelled") {
+    // Handle request cancellation
+    try {
+      const message = {
+        timestamp: data.timestamp,
+        message: `Request cancelled: ${data.event.reason}`,
+        level: "warn",
+        functionPath: functionPath,
+      };
+      console.log(`Publishing cancellation to ${topic}:`, message);
+      nc.publish(topic, JSON.stringify(message));
     } catch (e) {
       console.error("Error publishing to NATS:", e);
     }
   }
+  
+  // Log all events for debugging
   console.dir(data, { depth: Number.POSITIVE_INFINITY });
 }
 

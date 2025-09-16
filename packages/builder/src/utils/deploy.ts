@@ -61,15 +61,61 @@ async function bundleApiRoute(
 
   await logger.info(`Bundling API route ${route.urlPath} from ${entryPoint}`);
 
+  // Plugin to handle process.env and avoid double node: prefixing
+  const nodeCompatPlugin: esbuild.Plugin = {
+    name: "node-compat",
+    setup(build) {
+      // Handle bare Node.js imports (without node: prefix)
+      build.onResolve(
+        {
+          filter:
+            /^(fs|path|crypto|stream|buffer|util|url|querystring|events|assert|process|child_process|cluster|dgram|dns|domain|http|https|net|os|readline|repl|string_decoder|tls|tty|v8|vm|zlib|worker_threads|perf_hooks)(\/.*)?$/,
+        },
+        (args) => {
+          // Only add node: prefix if not already present
+          if (!args.path.startsWith("node:")) {
+            return {
+              path: `node:${args.path}`,
+              external: true,
+            };
+          }
+          return {
+            path: args.path,
+            external: true,
+          };
+        },
+      );
+
+      // Already prefixed imports should just be marked as external
+      build.onResolve({ filter: /^node:/ }, (args) => {
+        return {
+          path: args.path,
+          external: true,
+        };
+      });
+    },
+  };
+
   const bundled = await esbuild.build({
     entryPoints: [entryPoint],
-    external: [],
     bundle: true,
-    platform: "node",
-    target: "node18",
+    platform: "neutral", // Use neutral platform for Deno/Edge Runtime
+    target: "es2022",
     format: "esm",
     write: false,
     minify: true,
+    plugins: [nodeCompatPlugin],
+    // Define process.env as a global for compatibility
+    define: {
+      "process.env": "process.env",
+      "global.process.env": "process.env",
+    },
+    // Inject a shim for process if needed
+    banner: {
+      js: `import process from "node:process";
+globalThis.process = process;
+`,
+    },
   });
 
   if (!bundled.outputFiles || bundled.outputFiles.length === 0) {

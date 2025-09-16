@@ -8,8 +8,12 @@ import {
   Stack,
   Text,
   Title,
+  useMantineColorScheme,
 } from "@mantine/core";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "wouter";
+import { trpc } from "../../utils/trpc";
 
 // Format duration between two dates as "X min Y sec" or "X hr Y min Z sec" if hours > 0
 function formatDuration(startDate: Date, endDate: Date): string {
@@ -24,50 +28,42 @@ function formatDuration(startDate: Date, endDate: Date): string {
   return `${minutes} min ${seconds} sec`;
 }
 
-function getLogColor(level: string) {
+function getLogColor(level: string, isDark: boolean) {
   switch (level) {
     case "info":
-      return "white";
+      return isDark ? "white" : "dark";
     case "error":
       return "red";
     case "warn":
       return "orange";
     default:
-      return "gray";
+      return isDark ? "gray" : "dark.3";
   }
 }
 
-interface DeploymentData {
-  reference: string;
-  status: string;
-  project: { reference: string };
-  domains?: Array<{ id: string; name: string }>;
-  build?: {
-    commitSha: string;
-    createdAt: string;
-    buildStartedAt?: string;
-    buildEndedAt?: string;
-    status: string;
-    logs: Array<{ level: string; message: string }>;
-  };
-}
+export const BuildTab = () => {
+  const params = useParams();
+  const reference = params?.reference;
+  const { colorScheme } = useMantineColorScheme();
 
-export const BuildTab = ({ deployment }: { deployment: DeploymentData }) => {
+  const { data: deployment } = useQuery(
+    trpc.deployments.getByRef.queryOptions(
+      { ref: reference || "" },
+      {
+        enabled: Boolean(reference),
+        refetchInterval: (query) => {
+          const data = query.state.data;
+          if (!data || "error" in data) return false;
+          if (data.status === "success" || data.status === "error")
+            return false;
+          return 1000;
+        },
+      },
+    ),
+  );
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const prevLogsLength = useRef(0);
-
-  // Refetch on interval when deployment is active
-  useEffect(() => {
-    if (!deployment || "error" in deployment) return;
-    if (deployment.status === "success" || deployment.status === "error")
-      return;
-
-    const interval = setInterval(() => {
-      // Parent component should handle refetch
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [deployment]);
 
   // Get the ScrollArea viewport element
   const getViewport = useCallback(() => {
@@ -175,7 +171,7 @@ export const BuildTab = ({ deployment }: { deployment: DeploymentData }) => {
                   onScrollPositionChange={handleScroll}
                 >
                   <Box
-                    bg="dark"
+                    bg={colorScheme === "dark" ? "dark" : "gray.0"}
                     p="md"
                     style={{
                       fontFamily: "monospace",
@@ -188,7 +184,7 @@ export const BuildTab = ({ deployment }: { deployment: DeploymentData }) => {
                           <Box
                             // biome-ignore lint/suspicious/noArrayIndexKey: no other way to make a key
                             key={index}
-                            c={getLogColor(log.level)}
+                            c={getLogColor(log.level, colorScheme === "dark")}
                           >
                             {log.message}
                           </Box>

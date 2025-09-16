@@ -13,7 +13,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon, Hammer, Terminal } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLocation, useParams } from "wouter";
+import { Route, Switch, useLocation, useParams } from "wouter";
 import { BuildTab } from "../components/deployment/BuildTab";
 import { LogsTab } from "../components/deployment/LogsTab";
 import { trpc } from "../utils/trpc";
@@ -135,19 +135,38 @@ export const DeploymentDetailsPage = () => {
             <Tabs.Tab value="build" leftSection={<Hammer size={16} />}>
               Build
             </Tabs.Tab>
-            <Tabs.Tab value="logs" leftSection={<Terminal size={16} />}>
-              Logs
-            </Tabs.Tab>
+            {/* Only show Logs tab when deployment is successful */}
+            {deployment.status === "success" && (
+              <Tabs.Tab value="logs" leftSection={<Terminal size={16} />}>
+                Logs
+              </Tabs.Tab>
+            )}
           </Tabs.List>
-
-          <Tabs.Panel value="build" pt="md">
-            <BuildTab deployment={deployment} />
-          </Tabs.Panel>
-
-          <Tabs.Panel value="logs" pt="md">
-            <LogsTab deployment={deployment} />
-          </Tabs.Panel>
         </Tabs>
+
+        <Box pt="md">
+          <Switch>
+            <Route path="/deployments/:reference/logs">
+              {deployment.status === "success" ? (
+                <LogsTab />
+              ) : (
+                <Card withBorder padding="xl">
+                  <Stack align="center" gap="md">
+                    <Text c="dimmed">
+                      Logs will be available once the deployment is successful
+                    </Text>
+                  </Stack>
+                </Card>
+              )}
+            </Route>
+            <Route path="/deployments/:reference/build">
+              <BuildTab />
+            </Route>
+            <Route path="/deployments/:reference">
+              <BuildTab />
+            </Route>
+          </Switch>
+        </Box>
       </Stack>
     </Container>
   );

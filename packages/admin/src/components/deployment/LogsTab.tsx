@@ -8,20 +8,22 @@ import {
   Stack,
   Text,
   Title,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "wouter";
 import { trpcClient } from "../../utils/trpc";
 
-function getLogColor(level: string) {
+function getLogColor(level: string, isDark: boolean) {
   switch (level) {
     case "info":
-      return "white";
+      return isDark ? "white" : "dark";
     case "error":
       return "red";
     case "warn":
       return "orange";
     default:
-      return "gray";
+      return isDark ? "gray" : "dark.3";
   }
 }
 
@@ -32,22 +34,11 @@ interface LogEntry {
   functionPath?: string;
 }
 
-interface DeploymentData {
-  reference: string;
-  status: string;
-  project: { reference: string };
-  domains?: Array<{ id: string; name: string }>;
-  build?: {
-    commitSha: string;
-    createdAt: string;
-    buildStartedAt?: string;
-    buildEndedAt?: string;
-    status: string;
-    logs: Array<{ level: string; message: string }>;
-  };
-}
+export const LogsTab = () => {
+  const params = useParams();
+  const reference = params?.reference;
+  const { colorScheme } = useMantineColorScheme();
 
-export const LogsTab = ({ deployment }: { deployment: DeploymentData }) => {
   const [isListening, setIsListening] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -103,7 +94,7 @@ export const LogsTab = ({ deployment }: { deployment: DeploymentData }) => {
       // Subscribe to logs
       setIsListening(true);
       const subscription = trpcClient.logs.stream.subscribe(
-        { deploymentRef: deployment.reference },
+        { deploymentRef: reference || "" },
         {
           onData: (log) => {
             setLogs((prev) => [...prev, log]);
@@ -114,6 +105,7 @@ export const LogsTab = ({ deployment }: { deployment: DeploymentData }) => {
             subscriptionRef.current = null;
           },
           onComplete: () => {
+            console.log("Log subscription completed");
             setIsListening(false);
             subscriptionRef.current = null;
           },
@@ -163,7 +155,7 @@ export const LogsTab = ({ deployment }: { deployment: DeploymentData }) => {
               onScrollPositionChange={handleScroll}
             >
               <Box
-                bg="dark"
+                bg={colorScheme === "dark" ? "dark" : "gray.0"}
                 p="md"
                 style={{
                   fontFamily: "monospace",
@@ -173,17 +165,34 @@ export const LogsTab = ({ deployment }: { deployment: DeploymentData }) => {
               >
                 {logs.length > 0 ? (
                   logs.map((log, index) => (
-                    <Box key={`${log.timestamp}-${index}`}>
-                      <Group gap="xs" wrap="nowrap">
-                        <Text c="dimmed" size="xs">
+                    <Box
+                      key={`${log.timestamp}-${index}`}
+                      pb="xs"
+                      mb="xs"
+                      style={{
+                        borderBottom:
+                          index < logs.length - 1
+                            ? colorScheme === "dark"
+                              ? "1px solid rgba(255, 255, 255, 0.1)"
+                              : "1px solid rgba(0, 0, 0, 0.1)"
+                            : "none",
+                      }}
+                    >
+                      <Group gap="xs" wrap="nowrap" align="flex-start">
+                        <Text c="dimmed" size="xs" style={{ flexShrink: 0 }}>
                           [{new Date(log.timestamp).toLocaleTimeString()}]
                         </Text>
                         {log.functionPath && (
-                          <Text c="cyan" size="xs">
+                          <Text c="cyan" size="xs" style={{ flexShrink: 0 }}>
                             {log.functionPath}
                           </Text>
                         )}
-                        <Text c={getLogColor(log.level)}>{log.message}</Text>
+                        <Text
+                          c={getLogColor(log.level, colorScheme === "dark")}
+                          style={{ wordBreak: "break-word" }}
+                        >
+                          {log.message}
+                        </Text>
                       </Group>
                     </Box>
                   ))
