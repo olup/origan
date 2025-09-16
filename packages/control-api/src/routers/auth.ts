@@ -44,6 +44,32 @@ const generateTokens = async (
 
 export const authRouter = new Hono();
 
+// Start OAuth flow - Direct REST endpoint
+authRouter.get("/login", async (c) => {
+  const type = c.req.query("type") || "web";
+  const sessionId = c.req.query("sessionId");
+
+  const stateObject: z.infer<typeof oauthStateSchema> = {
+    provider: "github",
+    type: type as "cli" | "web",
+    sessionId,
+  };
+
+  const state = Buffer.from(JSON.stringify(stateObject)).toString("base64");
+
+  const params = new URLSearchParams({
+    client_id: env.GITHUB_CLIENT_ID,
+    redirect_uri: `${env.ORIGAN_API_URL}/auth/github/callback`,
+    scope: "read:user user:email",
+    state,
+  });
+
+  const authUrl = `https://github.com/login/oauth/authorize?${params.toString()}`;
+
+  // Redirect directly to GitHub OAuth
+  return c.redirect(authUrl);
+});
+
 // GitHub OAuth callback - Direct REST endpoint
 authRouter.get("/github/callback", async (c) => {
   const log = getLogger();

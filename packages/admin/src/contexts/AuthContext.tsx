@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext } from "react";
-import { queryClient, trpc } from "../utils/trpc";
+import { getConfig } from "../config";
+import { trpc } from "../utils/trpc";
 
 interface User {
   username: string;
@@ -23,11 +24,9 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const doLogin = useCallback(async () => {
-    // Get login URL from tRPC query
-    const loginData = await queryClient.fetchQuery(
-      trpc.auth.login.queryOptions({ type: "web" }),
-    );
-    window.location.href = loginData.authUrl;
+    // Directly navigate to the auth login endpoint
+    const config = getConfig();
+    window.location.href = `${config.apiUrl}/auth/login?type=web`;
   }, []);
 
   const getUserQuery = useQuery(
