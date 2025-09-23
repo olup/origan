@@ -12,8 +12,16 @@ import {
   Title,
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDownIcon, ExternalLinkIcon, GithubIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  ExternalLinkIcon,
+  GithubIcon,
+  Globe2Icon,
+  RocketIcon,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { Link, Route, useLocation, useParams } from "wouter";
+import { DeployModal } from "../components/DeployModal";
 import { EnvironmentManager } from "../components/EnvironmentManager";
 import { trpc } from "../utils/trpc";
 
@@ -200,6 +208,7 @@ export const ProjectPage = () => {
   const params = useParams();
   const [location] = useLocation();
   const projectReference = params?.reference;
+  const [deployModalOpened, setDeployModalOpened] = useState(false);
 
   const { data: project } = useQuery(
     trpc.projects.get.queryOptions(
@@ -207,6 +216,27 @@ export const ProjectPage = () => {
       { enabled: Boolean(projectReference) },
     ),
   );
+
+  const { data: deployments } = useQuery(
+    trpc.deployments.listByProject.queryOptions({
+      projectRef: projectReference || "",
+    }),
+  );
+
+  // Find the latest prod deployment with domains
+  const prodDeploymentUrl = useMemo(() => {
+    if (!deployments) return null;
+
+    const prodDeployment = deployments.find(
+      (d) => d.track?.name === "prod" && d.domains && d.domains.length > 0,
+    );
+
+    if (prodDeployment && prodDeployment.domains.length > 0) {
+      return `https://${prodDeployment.domains[0].name}`;
+    }
+
+    return null;
+  }, [deployments]);
 
   if (!projectReference || !project) return null;
 
@@ -219,7 +249,31 @@ export const ProjectPage = () => {
       <Stack gap="xl">
         <Card withBorder padding="xl">
           <Stack>
-            <Title order={2}>{project.name}</Title>
+            <Group justify="space-between">
+              <Title order={2}>{project.name}</Title>
+              <Group>
+                {prodDeploymentUrl && (
+                  <Button
+                    variant="outline"
+                    component="a"
+                    href={prodDeploymentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    leftSection={<Globe2Icon size={16} />}
+                  >
+                    View Site
+                  </Button>
+                )}
+                {project.githubConfig && (
+                  <Button
+                    onClick={() => setDeployModalOpened(true)}
+                    leftSection={<RocketIcon size={16} />}
+                  >
+                    Deploy
+                  </Button>
+                )}
+              </Group>
+            </Group>
             <Group>
               <Text c="dimmed">Project Reference:</Text>
               <Text>{project.reference}</Text>
@@ -270,6 +324,16 @@ export const ProjectPage = () => {
           {() => <ProjectSettings projectReference={projectReference} />}
         </Route>
       </Stack>
+
+      {/* Deploy Modal */}
+      {project.githubConfig && (
+        <DeployModal
+          opened={deployModalOpened}
+          onClose={() => setDeployModalOpened(false)}
+          projectReference={projectReference}
+          githubRepositoryId={project.githubConfig.githubRepositoryId}
+        />
+      )}
     </Container>
   );
 };

@@ -19,10 +19,10 @@
     "accessKeyId": "GK0684f53fd1eba93dc30c9669",
     "secretAccessKey": "642d30e93bec6bb7336126a2abdc8d1972a292a93a40557c05e5dc797a4ce8e3",
     "cleanupOrphaned": true,
-    "contentHash": "39c73ea8955fe42a",
+    "contentHash": "6ddfcf4865269c92",
     "websiteUrl": "https://s3.platform.origan.dev/origan-landing",
-    "filesUploaded": 40,
-    "deployedAt": 1757926378287
+    "filesUploaded": 58,
+    "deployedAt": 1758201890506
   },
   "props": {
     "sourceDir": "../packages/landing/out",
@@ -31,6 +31,6 @@
     "accessKeyId": "GK0684f53fd1eba93dc30c9669",
     "secretAccessKey": "642d30e93bec6bb7336126a2abdc8d1972a292a93a40557c05e5dc797a4ce8e3",
     "cleanupOrphaned": true,
-    "contentHash": "39c73ea8955fe42a"
+    "contentHash": "6ddfcf4865269c92"
   }
 }

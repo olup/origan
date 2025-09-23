@@ -1,9 +1,10 @@
 import { createTheme, MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import App from "../App";
 import { useTheme } from "../contexts/ThemeContext";
 
 const mantineTheme = createTheme({
-  fontFamily: "Fira Code, sans-serif",
+  fontFamily: "'Space Mono', monospace",
   defaultRadius: "sm",
   components: {
     Button: {
@@ -35,6 +36,7 @@ export function AppWithTheme() {
       defaultColorScheme={colorScheme}
       forceColorScheme={colorScheme}
     >
+      <Notifications />
       <App />
     </MantineProvider>
   );

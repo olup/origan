@@ -9,7 +9,7 @@ import {
   Menu,
   Text,
 } from "@mantine/core";
-import { ChevronDown, LogOut, Moon, Sprout, Sun, User } from "lucide-react";
+import { ChevronDown, LogOut, Moon, Sun, User } from "lucide-react";
 import { Route, Router, Switch, useLocation } from "wouter";
 import { OrganizationSwitcher } from "./components/OrganizationSwitcher";
 import { useAuth } from "./contexts/AuthContext";
@@ -43,12 +43,17 @@ function App() {
           <Group h="100%" align="center">
             <Flex
               align="center"
+              gap="xs"
               style={{ cursor: "pointer" }}
               onClick={() => setLocation("/")}
             >
-              <Sprout color="green" style={{ height: 20 }} />
+              <img
+                src="/logo.svg"
+                alt="origan.dev"
+                style={{ height: 24, width: "auto" }}
+              />
               <Text size="lg" fw={600}>
-                Origan
+                origan.dev
               </Text>
             </Flex>
             <OrganizationSwitcher />

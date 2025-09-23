@@ -1,11 +1,15 @@
+import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { getLogger } from "../../instrumentation.js";
 import { db } from "../../libs/db/index.js";
 import { organizationSchema, projectSchema } from "../../libs/db/schema.js";
 import {
   projectCreateSchema,
   projectUpdateSchema,
 } from "../../schemas/project.js";
+import { triggerBuildTask } from "../../service/build/index.js";
+import { getRepoBranches } from "../../service/github.service.js";
 import {
   createProjectWithProdTrack,
   getProjects,
@@ -178,5 +182,80 @@ export const projectsRouter = router({
 
       await removeProjectGithubConfig(project.id, project.organizationId);
       return { success: true };
+    }),
+
+  // Trigger a manual deployment for a specific branch
+  triggerDeploy: protectedProcedure
+    .input(
+      z.object({
+        projectRef: z.string().min(1),
+        branch: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const log = getLogger();
+
+      // Get the project with GitHub config
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, input.projectRef),
+        with: {
+          githubConfig: {
+            with: {
+              githubAppInstallation: true,
+            },
+          },
+        },
+      });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Project not found: ${input.projectRef}`,
+        });
+      }
+
+      if (!project.githubConfig) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "GitHub integration not configured for this project",
+        });
+      }
+
+      if (!project.githubConfig.githubAppInstallation) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "GitHub App not installed for this project",
+        });
+      }
+
+      // Get the latest commit SHA for the selected branch
+      const branches = await getRepoBranches(
+        project.githubConfig.githubAppInstallation.githubInstallationId,
+        project.githubConfig.githubRepositoryId,
+      );
+
+      const selectedBranch = branches.find((b) => b.name === input.branch);
+      if (!selectedBranch || !selectedBranch.commit?.sha) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Branch not found or has no commits: ${input.branch}`,
+        });
+      }
+
+      log.info(
+        `Manually triggering deployment for project ${project.name} on branch ${input.branch} at commit ${selectedBranch.commit.sha}`,
+      );
+
+      // Trigger the build task
+      const buildReference = await triggerBuildTask(
+        project.id,
+        input.branch,
+        selectedBranch.commit.sha,
+      );
+
+      return {
+        success: true,
+        buildReference,
+      };
     }),
 });

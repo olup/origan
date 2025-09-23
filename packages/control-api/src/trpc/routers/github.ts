@@ -186,6 +186,7 @@ export const githubRouter = router({
 
       const branches = githubBranches.map((branch) => ({
         name: branch.name,
+        commitSha: branch.commit?.sha,
       }));
 
       return branches;

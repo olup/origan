@@ -15,7 +15,7 @@
     "Symbol(alchemy::ResourceSeq)": 16,
     "registryUrl": "registry.platform.origan.dev",
     "imageName": "control-api",
-    "tag": "1758013319612",
+    "tag": "1758201890513",
     "context": "../",
     "dockerfile": "build/docker/prod-optimized.Dockerfile",
     "target": "control-api",
@@ -24,16 +24,16 @@
     ],
     "buildArgs": {
       "NODE_ENV": "production",
-      "BUILD_VERSION": "1758013319612"
+      "BUILD_VERSION": "1758201890513"
     },
     "push": true,
-    "fullImageUrl": "registry.platform.origan.dev/control-api:1758013319612",
-    "digest": "sha256:1aaf28a84448f9418ae652b6654970b853456b92d2ede323c1f49e2fd7bcfbc7"
+    "fullImageUrl": "registry.platform.origan.dev/control-api:1758201890513",
+    "digest": "sha256:1112d56747d988bd63a1075ff10fc7d05ea040ad71937c4c395207c64552074a"
   },
   "props": {
     "registryUrl": "registry.platform.origan.dev",
     "imageName": "control-api",
-    "tag": "1758013319612",
+    "tag": "1758201890513",
     "context": "../",
     "dockerfile": "build/docker/prod-optimized.Dockerfile",
     "target": "control-api",
@@ -42,7 +42,7 @@
     ],
     "buildArgs": {
       "NODE_ENV": "production",
-      "BUILD_VERSION": "1758013319612"
+      "BUILD_VERSION": "1758201890513"
     },
     "push": true
   }

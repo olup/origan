@@ -1,9 +1,11 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "@fontsource/fira-code/400.css";
+import "@fontsource/space-mono/400.css";
+import "@fontsource/space-mono/700.css";
 import "./index.css";
 import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
 import { AppWithTheme } from "./components/AppWithTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { OrganizationProvider } from "./contexts/OrganizationContext";

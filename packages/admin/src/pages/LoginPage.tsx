@@ -1,4 +1,4 @@
-import { Button, Container, Flex } from "@mantine/core";
+import { Button, Container, Flex, Text } from "@mantine/core";
 import { GithubIcon } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -10,9 +10,19 @@ export function LoginPage() {
         align="center"
         justify="center"
         direction="column"
-        gap="md"
+        gap="xl"
         w="100%"
       >
+        <Flex align="center" direction="column" gap="xs">
+          <img
+            src="/logo.svg"
+            alt="origan.dev"
+            style={{ height: 48, width: "auto" }}
+          />
+          <Text size="xl" fw={600}>
+            origan.dev
+          </Text>
+        </Flex>
         <Button
           variant="filled"
           color="dark"
