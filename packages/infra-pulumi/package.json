@@ -1,0 +1,33 @@
+{
+  "name": "@origan/infra-pulumi",
+  "version": "1.0.0",
+  "description": "Origan infrastructure using Pulumi",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "deploy": "pulumi up",
+    "preview": "pulumi preview",
+    "destroy": "pulumi destroy",
+    "stack:init": "pulumi stack init",
+    "stack:select": "pulumi stack select",
+    "dev": "pulumi up --stack dev",
+    "prod": "pulumi up --stack prod"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3.0.0",
+    "@pulumi/kubernetes": "^4.0.0",
+    "@pulumi/docker": "^4.0.0",
+    "@pulumi/aws": "^6.0.0",
+    "@pulumi/command": "^1.0.0",
+    "@aws-sdk/client-s3": "^3.0.0",
+    "mime-types": "^2.1.35",
+    "@types/mime-types": "^2.1.4",
+    "glob": "^10.3.0",
+    "@types/glob": "^8.1.0"
+  }
+}

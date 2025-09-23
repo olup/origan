@@ -1,0 +1,12 @@
+config:
+  origan:environment: dev
+  origan:postgresPassword:
+    secure: AAABAOjKqN0wZGV2LXBhc3N3b3Jk  # Replace with actual encrypted password
+  origan:garageEndpoint: http://localhost:3900  # Local Garage instance
+  origan:garageAccessKey:
+    secure: AAABAOjKcXVpY2stYWNjZXNz  # Replace with actual encrypted key
+  origan:garageSecretKey:
+    secure: AAABAOjKc2VjcmV0LWtleQ==  # Replace with actual encrypted secret
+  origan:domainName: origan.local
+  origan:registryEndpoint: localhost:5000  # Local registry
+  origan:kubeconfig: ~/.kube/config
