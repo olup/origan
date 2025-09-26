@@ -2,57 +2,41 @@ import * as pulumi from "@pulumi/pulumi";
 import * as kubernetes from "@pulumi/kubernetes";
 import { k8sProvider } from "../providers.js";
 import { namespaceName_ } from "./namespace.js";
-import { natsConfig, resourceName, labels } from "../config.js";
+import { resourceName, labels } from "../config.js";
 
 // NATS ConfigMap for JetStream configuration
 const natsConfigMap = new kubernetes.core.v1.ConfigMap("nats-config", {
   metadata: {
     name: resourceName("nats-config"),
     namespace: namespaceName_,
-    labels: labels,
+    labels: {
+      ...labels,
+      component: "nats",
+    },
   },
   data: {
     "nats.conf": `
-      port: 4222
-      monitor_port: 8222
-      
-      jetstream {
-        store_dir: /data/jetstream
-        max_mem: 1G
-        max_file: 10G
-      }
-      
-      cluster {
-        name: origan-nats
-        port: 6222
-      }
+port: 4222
+monitor_port: 8222
+
+jetstream {
+  store_dir: /data/jetstream
+  max_mem: 1G
+  max_file: 10G
+}
     `,
   },
 }, { provider: k8sProvider });
 
-// NATS PVC for JetStream storage
-const natsPVC = new kubernetes.core.v1.PersistentVolumeClaim("nats-pvc", {
-  metadata: {
-    name: resourceName("nats-pvc"),
-    namespace: namespaceName_,
-    labels: labels,
-  },
-  spec: {
-    accessModes: ["ReadWriteOnce"],
-    resources: {
-      requests: {
-        storage: natsConfig.storageSize,
-      },
-    },
-  },
-}, { provider: k8sProvider });
-
-// NATS StatefulSet
+// NATS StatefulSet with persistent storage
 const natsStatefulSet = new kubernetes.apps.v1.StatefulSet("nats", {
   metadata: {
     name: resourceName("nats"),
     namespace: namespaceName_,
-    labels: labels,
+    labels: {
+      ...labels,
+      component: "nats",
+    },
   },
   spec: {
     serviceName: resourceName("nats"),
@@ -73,20 +57,10 @@ const natsStatefulSet = new kubernetes.apps.v1.StatefulSet("nats", {
       spec: {
         containers: [{
           name: "nats",
-          image: `nats:${natsConfig.version}`,
+          image: "nats:2.10-alpine",
           ports: [
-            {
-              containerPort: 4222,
-              name: "client",
-            },
-            {
-              containerPort: 6222,
-              name: "cluster",
-            },
-            {
-              containerPort: 8222,
-              name: "monitor",
-            },
+            { containerPort: 4222, name: "client" },
+            { containerPort: 8222, name: "monitor" },
           ],
           command: ["nats-server"],
           args: ["-c", "/etc/nats/nats.conf"],
@@ -96,13 +70,23 @@ const natsStatefulSet = new kubernetes.apps.v1.StatefulSet("nats", {
               mountPath: "/etc/nats",
             },
             {
-              name: "data",
+              name: "jetstream",
               mountPath: "/data",
             },
           ],
+          resources: {
+            requests: {
+              memory: "128Mi",
+              cpu: "50m",
+            },
+            limits: {
+              memory: "256Mi",
+              cpu: "100m",
+            },
+          },
           livenessProbe: {
             httpGet: {
-              path: "/",
+              path: "/healthz",
               port: 8222,
             },
             initialDelaySeconds: 10,
@@ -110,29 +94,34 @@ const natsStatefulSet = new kubernetes.apps.v1.StatefulSet("nats", {
           },
           readinessProbe: {
             httpGet: {
-              path: "/",
+              path: "/healthz",
               port: 8222,
             },
             initialDelaySeconds: 5,
             periodSeconds: 5,
           },
         }],
-        volumes: [
-          {
-            name: "config",
-            configMap: {
-              name: natsConfigMap.metadata.name,
-            },
+        volumes: [{
+          name: "config",
+          configMap: {
+            name: natsConfigMap.metadata.name,
           },
-          {
-            name: "data",
-            persistentVolumeClaim: {
-              claimName: natsPVC.metadata.name,
-            },
-          },
-        ],
+        }],
       },
     },
+    volumeClaimTemplates: [{
+      metadata: {
+        name: "jetstream",
+      },
+      spec: {
+        accessModes: ["ReadWriteOnce"],
+        resources: {
+          requests: {
+            storage: "2Gi",
+          },
+        },
+      },
+    }],
   },
 }, { provider: k8sProvider });
 
@@ -141,7 +130,10 @@ const natsService = new kubernetes.core.v1.Service("nats-service", {
   metadata: {
     name: resourceName("nats"),
     namespace: namespaceName_,
-    labels: labels,
+    labels: {
+      ...labels,
+      component: "nats",
+    },
   },
   spec: {
     selector: {
@@ -149,26 +141,14 @@ const natsService = new kubernetes.core.v1.Service("nats-service", {
       component: "nats",
     },
     ports: [
-      {
-        port: 4222,
-        targetPort: 4222,
-        name: "client",
-      },
-      {
-        port: 6222,
-        targetPort: 6222,
-        name: "cluster",
-      },
-      {
-        port: 8222,
-        targetPort: 8222,
-        name: "monitor",
-      },
+      { port: 4222, targetPort: 4222, name: "client" },
+      { port: 8222, targetPort: 8222, name: "monitor" },
     ],
     type: "ClusterIP",
   },
-}, { provider: k8sProvider });
+}, { provider: k8sProvider, dependsOn: [natsStatefulSet] });
 
 // Export connection details
 export const natsEndpoint = pulumi.interpolate`nats://${natsService.metadata.name}.${namespaceName_}.svc.cluster.local:4222`;
 export const natsMonitorEndpoint = pulumi.interpolate`http://${natsService.metadata.name}.${namespaceName_}.svc.cluster.local:8222`;
+export const natsServiceName = natsService.metadata.name;

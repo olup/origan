@@ -1,6 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
-import { adminUrl } from "../config.js";
+import { landingUrl } from "../config.js";
 
 // For now, we just export the URL
 // The actual serving will be configured separately
-export const adminPanelUrl = pulumi.interpolate`https://${adminUrl}`;
+export const landingPageUrl = pulumi.interpolate`https://${landingUrl}`;

@@ -1,29 +1,3 @@
 name: origan-infrastructure
 description: Origan platform infrastructure
 runtime: nodejs
-config:
-  origan:environment:
-    description: The deployment environment (dev, staging, prod)
-    default: dev
-  origan:postgresPassword:
-    description: PostgreSQL password
-    secret: true
-    default: postgres
-  origan:garageEndpoint:
-    description: Garage S3-compatible endpoint
-    default: https://s3.platform.origan.dev
-  origan:garageAccessKey:
-    description: Garage access key ID
-    secret: true
-  origan:garageSecretKey:
-    description: Garage secret access key
-    secret: true
-  origan:domainName:
-    description: Base domain name for the platform
-    default: origan.dev
-  origan:registryEndpoint:
-    description: Docker registry endpoint
-    default: registry.origan.dev
-  origan:kubeconfig:
-    description: Path to kubeconfig file
-    default: ~/.kube/config

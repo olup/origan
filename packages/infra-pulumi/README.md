@@ -68,6 +68,24 @@ pulumi config set origan:domainName origan.dev
 pulumi config set origan:garageEndpoint https://s3.platform.origan.dev
 ```
 
+#### Testing Alongside Existing Deployment
+
+To deploy a test instance alongside an existing deployment without conflicts:
+
+```bash
+# Use a different namespace prefix (default: origan-pulumi)
+pulumi config set origan:namespacePrefix origan-test
+
+# This will create:
+# - Namespace: origan-test-dev (instead of origan-dev)
+# - No conflicts with existing origan-dev namespace
+```
+
+To deploy alongside the existing Alchemy deployment:
+1. Keep the default `namespacePrefix` as "origan-pulumi" (avoids conflict with "origan")
+2. Deploy normally - resources will be isolated in the new namespace
+3. Services will use the same domain names but be served from the new namespace
+
 ### Deploy Infrastructure
 
 Preview changes:

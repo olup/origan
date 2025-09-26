@@ -20,15 +20,19 @@ export const dockerProvider = new docker.Provider("docker", {
 });
 
 // AWS provider configured for Garage (S3-compatible)
-export const garageProvider = new aws.Provider("garage", {
-  endpoints: [{
-    s3: garageEndpoint,
-  }],
-  accessKey: garageAccessKey?.apply(key => key || process.env.GARAGE_ACCESS_KEY || ""),
-  secretKey: garageSecretKey?.apply(key => key || process.env.GARAGE_SECRET_KEY || ""),
-  region: "us-east-1", // Garage doesn't care about region
-  s3UsePathStyle: true, // Required for S3-compatible services
-  skipCredentialsValidation: true,
-  skipRequestingAccountId: true,
-  skipMetadataApiCheck: true,
-});
+// TODO: Fix smithy error
+// export const garageProvider = new aws.Provider("garage", {
+//   endpoints: [{
+//     s3: garageEndpoint,
+//   }],
+//   accessKey: garageAccessKey?.apply(key => key || process.env.GARAGE_ACCESS_KEY || ""),
+//   secretKey: garageSecretKey?.apply(key => key || process.env.GARAGE_SECRET_KEY || ""),
+//   region: "us-east-1", // Garage doesn't care about region
+//   s3UsePathStyle: true, // Required for S3-compatible services
+//   skipCredentialsValidation: true,
+//   skipRequestingAccountId: true,
+//   skipMetadataApiCheck: true,
+// });
+
+// Temporary placeholder
+export const garageProvider = null;

@@ -2,36 +2,37 @@ import * as pulumi from "@pulumi/pulumi";
 import * as kubernetes from "@pulumi/kubernetes";
 import { k8sProvider } from "../providers.js";
 import { namespaceName_ } from "./namespace.js";
-import { dbConfig, resourceName, labels } from "../config.js";
+import { resourceName, labels, postgresPassword, dbConfig } from "../config.js";
+
+// PostgreSQL ConfigMap
+const postgresConfigMap = new kubernetes.core.v1.ConfigMap("postgres-config", {
+  metadata: {
+    name: resourceName("postgres-config"),
+    namespace: namespaceName_,
+    labels: {
+      ...labels,
+      component: "postgres",
+    },
+  },
+  data: {
+    POSTGRES_DB: dbConfig.name,
+    POSTGRES_USER: dbConfig.user,
+    PGDATA: "/var/lib/postgresql/data/pgdata",
+  },
+}, { provider: k8sProvider });
 
 // PostgreSQL Secret
 const postgresSecret = new kubernetes.core.v1.Secret("postgres-secret", {
   metadata: {
     name: resourceName("postgres-secret"),
     namespace: namespaceName_,
-    labels: labels,
+    labels: {
+      ...labels,
+      component: "postgres",
+    },
   },
   stringData: {
-    "POSTGRES_DB": dbConfig.name,
-    "POSTGRES_USER": dbConfig.user,
-    "POSTGRES_PASSWORD": dbConfig.password.apply(p => p),
-  },
-}, { provider: k8sProvider });
-
-// PostgreSQL PVC
-const postgresPVC = new kubernetes.core.v1.PersistentVolumeClaim("postgres-pvc", {
-  metadata: {
-    name: resourceName("postgres-pvc"),
-    namespace: namespaceName_,
-    labels: labels,
-  },
-  spec: {
-    accessModes: ["ReadWriteOnce"],
-    resources: {
-      requests: {
-        storage: dbConfig.storageSize,
-      },
-    },
+    POSTGRES_PASSWORD: postgresPassword,
   },
 }, { provider: k8sProvider });
 
@@ -40,7 +41,10 @@ const postgresStatefulSet = new kubernetes.apps.v1.StatefulSet("postgres", {
   metadata: {
     name: resourceName("postgres"),
     namespace: namespaceName_,
-    labels: labels,
+    labels: {
+      ...labels,
+      component: "postgres",
+    },
   },
   spec: {
     serviceName: resourceName("postgres"),
@@ -61,44 +65,67 @@ const postgresStatefulSet = new kubernetes.apps.v1.StatefulSet("postgres", {
       spec: {
         containers: [{
           name: "postgres",
-          image: `postgres:${dbConfig.version}`,
+          image: `postgres:${dbConfig.version}-alpine`,
           ports: [{
             containerPort: 5432,
             name: "postgres",
           }],
-          envFrom: [{
-            secretRef: {
-              name: postgresSecret.metadata.name,
+          envFrom: [
+            {
+              configMapRef: {
+                name: postgresConfigMap.metadata.name,
+              },
             },
-          }],
+            {
+              secretRef: {
+                name: postgresSecret.metadata.name,
+              },
+            },
+          ],
           volumeMounts: [{
             name: "postgres-storage",
             mountPath: "/var/lib/postgresql/data",
-            subPath: "postgres",
           }],
+          resources: {
+            requests: {
+              memory: "256Mi",
+              cpu: "100m",
+            },
+            limits: {
+              memory: "512Mi",
+              cpu: "200m",
+            },
+          },
           livenessProbe: {
             exec: {
-              command: ["pg_isready", "-U", dbConfig.user],
+              command: ["pg_isready", "-U", dbConfig.user, "-d", dbConfig.name],
             },
             initialDelaySeconds: 30,
             periodSeconds: 10,
           },
           readinessProbe: {
             exec: {
-              command: ["pg_isready", "-U", dbConfig.user],
+              command: ["pg_isready", "-U", dbConfig.user, "-d", dbConfig.name],
             },
             initialDelaySeconds: 5,
             periodSeconds: 5,
           },
         }],
-        volumes: [{
-          name: "postgres-storage",
-          persistentVolumeClaim: {
-            claimName: postgresPVC.metadata.name,
-          },
-        }],
       },
     },
+    volumeClaimTemplates: [{
+      metadata: {
+        name: "postgres-storage",
+      },
+      spec: {
+        accessModes: ["ReadWriteOnce"],
+        resources: {
+          requests: {
+            storage: dbConfig.storageSize,
+          },
+        },
+      },
+    }],
   },
 }, { provider: k8sProvider });
 
@@ -107,7 +134,10 @@ const postgresService = new kubernetes.core.v1.Service("postgres-service", {
   metadata: {
     name: resourceName("postgres"),
     namespace: namespaceName_,
-    labels: labels,
+    labels: {
+      ...labels,
+      component: "postgres",
+    },
   },
   spec: {
     selector: {
@@ -121,9 +151,10 @@ const postgresService = new kubernetes.core.v1.Service("postgres-service", {
     }],
     type: "ClusterIP",
   },
-}, { provider: k8sProvider });
+}, { provider: k8sProvider, dependsOn: [postgresStatefulSet] });
 
 // Export connection details
 export const postgresEndpoint = pulumi.interpolate`${postgresService.metadata.name}.${namespaceName_}.svc.cluster.local:5432`;
-export const postgresConnectionString = pulumi.secret(pulumi.interpolate`postgresql://${dbConfig.user}:${dbConfig.password}@${postgresEndpoint}/${dbConfig.name}`);
+export const postgresConnectionString = pulumi.interpolate`postgresql://${dbConfig.user}:${postgresPassword}@${postgresService.metadata.name}.${namespaceName_}.svc.cluster.local:5432/${dbConfig.name}`;
+export const postgresServiceName = postgresService.metadata.name;
 export const postgresSecretName = postgresSecret.metadata.name;

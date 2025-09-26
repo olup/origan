@@ -3,7 +3,14 @@ import * as kubernetes from "@pulumi/kubernetes";
 import * as docker from "@pulumi/docker";
 import { k8sProvider, dockerProvider } from "../providers.js";
 import { namespaceName_ } from "../core/namespace.js";
-import { deploymentBucketName, internalGarageEndpoint } from "../core/storage.js";
+import { 
+  deploymentBucketName, 
+  garageEndpointInternal,
+  garageAccessKeyValue,
+  garageSecretKeyValue,
+} from "../core/garage.js";
+import { runnerEndpoint } from "./runner.js";
+import { controlApiServiceName } from "./control-api.js";
 import { 
   resourceName, 
   labels, 
@@ -18,8 +25,9 @@ import {
 export const gatewayImage = new docker.Image("gateway-image", {
   imageName: pulumi.interpolate`${registryEndpoint}/origan/gateway:${imageTag}`,
   build: {
-    context: "../gateway",
-    dockerfile: "../gateway/Dockerfile",
+    context: "../../", // Monorepo root
+    dockerfile: "../../build/docker/prod-optimized.Dockerfile",
+    target: "gateway", // Use gateway stage from multi-stage build
     platform: "linux/amd64",
   },
   skipPush: false,
@@ -39,8 +47,10 @@ const gatewayConfig = new kubernetes.core.v1.ConfigMap("gateway-config", {
     NODE_ENV: "production",
     PORT: "8080",
     BUCKET_NAME: deploymentBucketName,
-    BUCKET_ENDPOINT: internalGarageEndpoint,
-    CONTROL_API_URL: pulumi.interpolate`http://${resourceName("control-api")}.${namespaceName_}.svc.cluster.local`,
+    BUCKET_URL: garageEndpointInternal,
+    BUCKET_REGION: "garage",
+    CONTROL_API_URL: pulumi.interpolate`http://${controlApiServiceName}.${namespaceName_}.svc.cluster.local:3001`,
+    RUNNER_URL: runnerEndpoint,
   },
 }, { provider: k8sProvider });
 
@@ -55,8 +65,8 @@ const gatewaySecret = new kubernetes.core.v1.Secret("gateway-secret", {
     },
   },
   stringData: {
-    BUCKET_ACCESS_KEY: garageAccessKey?.apply(k => k || "") || "",
-    BUCKET_SECRET_KEY: garageSecretKey?.apply(k => k || "") || "",
+    BUCKET_ACCESS_KEY: garageAccessKeyValue || "",
+    BUCKET_SECRET_KEY: garageSecretKeyValue?.apply(k => k || "") || "",
   },
 }, { provider: k8sProvider });
 
@@ -71,7 +81,7 @@ const gatewayDeployment = new kubernetes.apps.v1.Deployment("gateway", {
     },
   },
   spec: {
-    replicas: 2,
+    replicas: 1,
     selector: {
       matchLabels: {
         ...labels,
@@ -159,7 +169,7 @@ const gatewayService = new kubernetes.core.v1.Service("gateway-service", {
     }],
     type: "ClusterIP",
   },
-}, { provider: k8sProvider });
+}, { provider: k8sProvider, dependsOn: [gatewayDeployment] });
 
 // Wildcard Ingress for user deployments
 const gatewayIngress = new kubernetes.networking.v1.Ingress("gateway-ingress", {

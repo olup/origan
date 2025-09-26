@@ -8,8 +8,9 @@ import { builderImageTag, registryEndpoint } from "../config.js";
 export const builderImage = new docker.Image("builder-image", {
   imageName: pulumi.interpolate`${registryEndpoint}/origan/builder:${builderImageTag}`,
   build: {
-    context: "../builder",
-    dockerfile: "../builder/Dockerfile",
+    context: "../../", // Monorepo root
+    dockerfile: "../../build/docker/prod-optimized.Dockerfile",
+    target: "builder", // Use builder stage from multi-stage build
     platform: "linux/amd64",
   },
   skipPush: false,

@@ -4,18 +4,22 @@ import * as docker from "@pulumi/docker";
 import * as crypto from "crypto";
 import { k8sProvider, dockerProvider } from "../providers.js";
 import { namespaceName_ } from "../core/namespace.js";
-import { postgresEndpoint, postgresConnectionString } from "../core/database.js";
+import { postgresConnectionString } from "../core/database.js";
 import { natsEndpoint } from "../core/nats.js";
-import { deploymentBucketName, internalGarageEndpoint } from "../core/storage.js";
+import { 
+  deploymentBucketName, 
+  garageEndpointInternal,
+  garageAccessKeyValue,
+  garageSecretKeyValue,
+} from "../core/garage.js";
+import { registryEndpointInternal } from "../core/registry.js";
+import { builderImageUrl } from "./builder.js";
 import { 
   resourceName, 
   labels, 
   apiUrl, 
   imageTag, 
-  builderImageTag,
   registryEndpoint,
-  garageAccessKey,
-  garageSecretKey,
 } from "../config.js";
 
 // Create ServiceAccount for control-api
@@ -83,11 +87,12 @@ const clusterRoleBinding = new kubernetes.rbac.v1.ClusterRoleBinding("control-ap
 export const controlApiImage = new docker.Image("control-api-image", {
   imageName: pulumi.interpolate`${registryEndpoint}/origan/control-api:${imageTag}`,
   build: {
-    context: "../control-api",
-    dockerfile: "../control-api/Dockerfile",
+    context: "../../", // Monorepo root
+    dockerfile: "../../build/docker/prod-optimized.Dockerfile",
+    target: "control-api", // Use control-api stage from multi-stage build
     platform: "linux/amd64",
   },
-  skipPush: false, // Set to true for local development
+  skipPush: false,
 }, { provider: dockerProvider });
 
 // Environment variables ConfigMap
@@ -103,12 +108,12 @@ const controlApiConfig = new kubernetes.core.v1.ConfigMap("control-api-config", 
   data: {
     NODE_ENV: "production",
     PORT: "3001",
-    NATS_URL: natsEndpoint,
     BUCKET_NAME: deploymentBucketName,
-    BUCKET_ENDPOINT: internalGarageEndpoint,
-    BUILDER_IMAGE: pulumi.interpolate`${registryEndpoint}/origan/builder:${builderImageTag}`,
-    BUILDER_NAMESPACE: namespaceName_,
     KUBERNETES_MODE: "in-cluster",
+    ORIGAN_DEPLOY_DOMAIN: "origan.app",
+    ORIGAN_API_URL: `https://${apiUrl}`,
+    ORIGAN_ADMIN_PANEL_URL: "https://admin.origan.dev",
+    DATABASE_RUN_MIGRATIONS: "true",
   },
 }, { provider: k8sProvider });
 
@@ -124,12 +129,19 @@ const controlApiSecret = new kubernetes.core.v1.Secret("control-api-secret", {
   },
   stringData: {
     DATABASE_URL: postgresConnectionString,
-    BUCKET_ACCESS_KEY: garageAccessKey?.apply(k => k || "") || "",
-    BUCKET_SECRET_KEY: garageSecretKey?.apply(k => k || "") || "",
+    EVENTS_NATS_SERVER: natsEndpoint,
+    BUCKET_URL: garageEndpointInternal,
+    BUCKET_ACCESS_KEY: garageAccessKeyValue || "",
+    BUCKET_SECRET_KEY: garageSecretKeyValue?.apply(k => k || "") || "",
+    BUCKET_REGION: "garage",
     JWT_SECRET: crypto.randomBytes(32).toString("hex"),
+    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID || "",
+    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET || "",
     GITHUB_APP_ID: process.env.GITHUB_APP_ID || "",
-    GITHUB_APP_PRIVATE_KEY: process.env.GITHUB_APP_PRIVATE_KEY || "",
+    GITHUB_APP_PRIVATE_KEY_BASE64: process.env.GITHUB_APP_PRIVATE_KEY_BASE64 || "",
     GITHUB_WEBHOOK_SECRET: process.env.GITHUB_WEBHOOK_SECRET || "",
+    DOCKER_REGISTRY: registryEndpointInternal,
+    BUILDER_IMAGE: builderImageUrl,
   },
 }, { provider: k8sProvider });
 
@@ -144,7 +156,7 @@ const controlApiDeployment = new kubernetes.apps.v1.Deployment("control-api", {
     },
   },
   spec: {
-    replicas: 2,
+    replicas: 1,
     selector: {
       matchLabels: {
         ...labels,
@@ -233,7 +245,7 @@ const controlApiService = new kubernetes.core.v1.Service("control-api-service", 
     }],
     type: "ClusterIP",
   },
-}, { provider: k8sProvider });
+}, { provider: k8sProvider, dependsOn: [controlApiDeployment] });
 
 // Ingress
 const controlApiIngress = new kubernetes.networking.v1.Ingress("control-api-ingress", {
