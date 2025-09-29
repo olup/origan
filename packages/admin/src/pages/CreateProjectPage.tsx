@@ -212,6 +212,7 @@ export const CreateProjectPage = () => {
                       value: repo.id.toString(),
                       label: repo.name,
                     }))}
+                    searchable
                     clearable
                     value={form.values.repoId?.toString()}
                     onChange={(v) =>

@@ -12,14 +12,15 @@
 *.md
 
 # Own folders
-**/dist
-infra
+# Note: We need dist and out for nginx-static build
+# **/dist
+# infra
 example
 example-deployment
 packages/cli
 **/.workers-data
 scripts
-landing
+# landing
 
 # TS incremental build
 **/tsconfig.tsbuildinfo
