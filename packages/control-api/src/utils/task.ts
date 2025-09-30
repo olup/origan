@@ -195,7 +195,12 @@ export class KubernetesTaskRunner implements TaskRunner {
     const k8sBatchV1Api = kc.makeApiClient(k8s.BatchV1Api);
 
     // Use origan namespace where all our resources are deployed
-    const namespace = "origan";
+    const namespace = env.K8S_NAMESPACE || process.env.K8S_NAMESPACE;
+    if (!namespace) {
+      throw new Error(
+        "K8S_NAMESPACE environment variable is required when APP_ENV=production",
+      );
+    }
     const jobName = `${namePrefix}-${taskId.substring(0, 8)}-${Date.now()}`;
 
     const jobManifest: k8s.V1Job = {

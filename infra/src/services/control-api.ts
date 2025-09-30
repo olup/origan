@@ -150,6 +150,7 @@ const controlApiSecret = new kubernetes.core.v1.Secret("control-api-secret", {
     GITHUB_WEBHOOK_SECRET: githubWebhookSecret,
     DOCKER_REGISTRY: registryEndpointInternal,
     BUILDER_IMAGE: builderImageUrl,
+    K8S_NAMESPACE: namespaceName_,
   },
 }, { provider: k8sProvider });
 
