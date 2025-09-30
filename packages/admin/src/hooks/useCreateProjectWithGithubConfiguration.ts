@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { trpc } from "../utils/trpc";
+import { trpcClient } from "../utils/trpc";
 
 type CreateProjectWithGithubConfigurationInput = {
   projectName: string;
@@ -20,12 +20,12 @@ export const useCreateProjectWithGithubConfiguration = () =>
       projectRootPath,
       organizationReference,
     }: CreateProjectWithGithubConfigurationInput) => {
-      const project = await trpc.projects.create.mutate({
+      const project = await trpcClient.projects.create.mutate({
         name: projectName,
         organizationReference,
       });
 
-      await trpc.projects.setGithubConfig.mutate({
+      await trpcClient.projects.setGithubConfig.mutate({
         reference: project.reference,
         githubRepositoryId: repoId,
         githubRepositoryFullName: repoName,

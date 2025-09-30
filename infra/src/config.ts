@@ -59,7 +59,7 @@ export const labels = {
 export const adminUrl = `admin.${domainName}`;
 export const apiUrl = `api.${domainName}`;
 export const landingUrl = `hello.${domainName}`;
-export const gatewayUrl = `*.${domainName}`;
+export const gatewayUrl = `*.origan.app`; // User deployments on .app domain
 
 // Resource naming helper
 export const resourceName = (name: string) => `${name}-${environment}`;

@@ -45,12 +45,16 @@ const gatewayConfig = new kubernetes.core.v1.ConfigMap("gateway-config", {
   },
   data: {
     NODE_ENV: "production",
-    PORT: "8080",
+    PORT: "7777",
+    ORIGAN_DEPLOY_DOMAIN: "origan.app",
+    CONTROL_API_URL: pulumi.interpolate`http://${controlApiServiceName}.${namespaceName_}.svc.cluster.local:80`,
+    RUNNER_URL: runnerEndpoint,
     BUCKET_NAME: deploymentBucketName,
     BUCKET_URL: garageEndpointInternal,
     BUCKET_REGION: "garage",
-    CONTROL_API_URL: pulumi.interpolate`http://${controlApiServiceName}.${namespaceName_}.svc.cluster.local:3001`,
-    RUNNER_URL: runnerEndpoint,
+    HAS_TLS_SERVER: "true", // Gateway handles TLS termination for wildcard domain
+    TLS_CERT_FILE: "/etc/tls/tls.crt", // Mounted from wildcard-tls secret
+    TLS_KEY_FILE: "/etc/tls/tls.key", // Mounted from wildcard-tls secret
   },
 }, { provider: k8sProvider });
 
@@ -96,13 +100,26 @@ const gatewayDeployment = new kubernetes.apps.v1.Deployment("gateway", {
         },
       },
       spec: {
+        volumes: [{
+          name: "tls-certs",
+          secret: {
+            secretName: "wildcard-tls", // Manual secret with *.origan.app certificate
+            optional: true, // Don't fail if secret doesn't exist yet
+          },
+        }],
         containers: [{
           name: "gateway",
           image: gatewayImage.imageName,
-          ports: [{
-            containerPort: 8080,
-            name: "http",
-          }],
+          ports: [
+            {
+              containerPort: 7777,
+              name: "http",
+            },
+            {
+              containerPort: 7778,
+              name: "https",
+            },
+          ],
           envFrom: [
             {
               configMapRef: {
@@ -115,6 +132,11 @@ const gatewayDeployment = new kubernetes.apps.v1.Deployment("gateway", {
               },
             },
           ],
+          volumeMounts: [{
+            name: "tls-certs",
+            mountPath: "/etc/tls",
+            readOnly: true,
+          }],
           resources: {
             requests: {
               memory: "128Mi",
@@ -128,18 +150,18 @@ const gatewayDeployment = new kubernetes.apps.v1.Deployment("gateway", {
           livenessProbe: {
             httpGet: {
               path: "/health",
-              port: 8080,
+              port: 7777,
             },
-            initialDelaySeconds: 20,
-            periodSeconds: 10,
+            initialDelaySeconds: 30,
+            periodSeconds: 30,
           },
           readinessProbe: {
             httpGet: {
               path: "/health",
-              port: 8080,
+              port: 7777,
             },
             initialDelaySeconds: 10,
-            periodSeconds: 5,
+            periodSeconds: 10,
           },
         }],
       },
@@ -164,14 +186,16 @@ const gatewayService = new kubernetes.core.v1.Service("gateway-service", {
     },
     ports: [{
       port: 80,
-      targetPort: 8080,
+      targetPort: 7777,
       name: "http",
     }],
     type: "ClusterIP",
   },
 }, { provider: k8sProvider, dependsOn: [gatewayDeployment] });
 
-// Wildcard Ingress for user deployments
+// Wildcard Ingress for user deployments (*.origan.app)
+// NOTE: Gateway handles TLS termination itself using the wildcard-tls secret
+// This ingress just routes traffic to the gateway service
 const gatewayIngress = new kubernetes.networking.v1.Ingress("gateway-ingress", {
   metadata: {
     name: resourceName("gateway"),
@@ -182,14 +206,15 @@ const gatewayIngress = new kubernetes.networking.v1.Ingress("gateway-ingress", {
     },
     annotations: {
       "kubernetes.io/ingress.class": "traefik",
-      "cert-manager.io/cluster-issuer": "letsencrypt-prod",
+      // No cert-manager annotation - gateway handles TLS itself
     },
   },
   spec: {
-    tls: [{
-      hosts: [gatewayUrl],
-      secretName: resourceName("gateway-tls"),
-    }],
+    // No TLS section - gateway does TLS termination
+    // tls: [{
+    //   hosts: [gatewayUrl],
+    //   secretName: resourceName("gateway-tls"),
+    // }],
     rules: [{
       host: gatewayUrl,
       http: {
