@@ -36,10 +36,14 @@ export const queryClient = new QueryClient({
       staleTime: 60 * 1000, // 1 minute
       refetchOnWindowFocus: false,
       retry: (failureCount, error) => {
-        // Don't retry on 401 or 404
+        // Don't retry on 404
         if (error instanceof TRPCClientError) {
           const status = error.data?.httpStatus;
-          if (status === 401 || status === 404) {
+          if (status === 404) {
+            return false;
+          }
+          // Allow one retry for 401 (token refresh scenario)
+          if (status === 401 && failureCount >= 1) {
             return false;
           }
         }
