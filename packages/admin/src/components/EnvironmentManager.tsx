@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Badge,
+  Box,
   Button,
   Card,
   Group,
@@ -200,14 +201,16 @@ const EnvironmentVariables = ({
           onCancel={() => setIsAdding(false)}
         />
       ) : (
-        <Button
-          variant="outline"
-          size="xs"
-          leftSection={<Plus size={16} />}
-          onClick={() => setIsAdding(true)}
-        >
-          Add Variable
-        </Button>
+        <Box>
+          <Button
+            variant="outline"
+            size="xs"
+            leftSection={<Plus size={16} />}
+            onClick={() => setIsAdding(true)}
+          >
+            Add Variable
+          </Button>
+        </Box>
       )}
     </Stack>
   );

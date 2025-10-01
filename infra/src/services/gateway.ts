@@ -184,21 +184,53 @@ const gatewayService = new kubernetes.core.v1.Service("gateway-service", {
       ...labels,
       component: "gateway",
     },
-    ports: [{
-      port: 80,
-      targetPort: 7777,
-      name: "http",
-    }],
+    ports: [
+      {
+        port: 80,
+        targetPort: 7777,
+        name: "http",
+      },
+      {
+        port: 443,
+        targetPort: 7778,
+        name: "https",
+      },
+    ],
     type: "ClusterIP",
   },
 }, { provider: k8sProvider, dependsOn: [gatewayDeployment] });
 
-// Wildcard Ingress for user deployments (*.origan.app)
-// NOTE: Gateway handles TLS termination itself using the wildcard-tls secret
-// This ingress just routes traffic to the gateway service
-const gatewayIngress = new kubernetes.networking.v1.Ingress("gateway-ingress", {
+// TCP passthrough for HTTPS (gateway handles TLS termination)
+const gatewayIngressRouteTCP = new kubernetes.apiextensions.CustomResource("gateway-ingress-tcp", {
+  apiVersion: "traefik.io/v1alpha1",
+  kind: "IngressRouteTCP",
   metadata: {
-    name: resourceName("gateway"),
+    name: resourceName("gateway-tcp"),
+    namespace: namespaceName_,
+    labels: {
+      ...labels,
+      component: "gateway",
+    },
+  },
+  spec: {
+    entryPoints: ["websecure"],
+    routes: [{
+      match: `HostSNIRegexp(\`^.+\\.origan\\.app$\`)`,
+      services: [{
+        name: gatewayService.metadata.name,
+        port: 443,
+      }],
+    }],
+    tls: {
+      passthrough: true,
+    },
+  },
+}, { provider: k8sProvider });
+
+// HTTP ingress (redirect to HTTPS or handle HTTP)
+const gatewayIngressHTTP = new kubernetes.networking.v1.Ingress("gateway-ingress-http", {
+  metadata: {
+    name: resourceName("gateway-http"),
     namespace: namespaceName_,
     labels: {
       ...labels,
@@ -206,15 +238,9 @@ const gatewayIngress = new kubernetes.networking.v1.Ingress("gateway-ingress", {
     },
     annotations: {
       "kubernetes.io/ingress.class": "traefik",
-      // No cert-manager annotation - gateway handles TLS itself
     },
   },
   spec: {
-    // No TLS section - gateway does TLS termination
-    // tls: [{
-    //   hosts: [gatewayUrl],
-    //   secretName: resourceName("gateway-tls"),
-    // }],
     rules: [{
       host: gatewayUrl,
       http: {

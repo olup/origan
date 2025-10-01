@@ -152,7 +152,8 @@ export async function triggerBuildTask(
       EVENTS_NATS_SERVER: env.EVENTS_NATS_SERVER,
       EVENTS_NATS_NKEY_CREDS: env.EVENTS_NATS_NKEY_CREDS || "",
       DEPLOY_TOKEN: deployToken,
-      CONTROL_API_URL: "http://control-api:9999",
+      CONTROL_API_URL:
+        "http://control-api-prod.origan-pulumi-prod.svc.cluster.local",
       ...(Object.keys(buildEnvVars).length > 0 && {
         BUILD_ENV: JSON.stringify(buildEnvVars),
       }),

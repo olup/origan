@@ -136,6 +136,7 @@ const controlApiSecret = new kubernetes.core.v1.Secret("control-api-secret", {
     },
   },
   stringData: {
+    APP_ENV: "production",
     DATABASE_URL: postgresConnectionString,
     EVENTS_NATS_SERVER: natsEndpoint,
     BUCKET_URL: garageEndpointInternal,
