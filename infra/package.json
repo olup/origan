@@ -1,5 +1,5 @@
 {
-  "name": "@origan/infra-pulumi",
+  "name": "@origan/infra",
   "version": "1.0.0",
   "description": "Origan infrastructure using Pulumi",
   "type": "module",

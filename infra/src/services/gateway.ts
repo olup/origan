@@ -98,6 +98,9 @@ const gatewayDeployment = new kubernetes.apps.v1.Deployment("gateway", {
           ...labels,
           component: "gateway",
         },
+        annotations: {
+          "origan.dev/collect-logs": "true",
+        },
       },
       spec: {
         volumes: [{

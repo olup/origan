@@ -1,0 +1,5 @@
+- local develop mode with the cli (run frontend and backend on same port, watch backend, same experience)
+- Slack alert on deploy failure (and success ?)
+- Debug and handle error on deploy (the catch when trying to start a build ends in a sql error, and failure in the build service ends up in a fetch error)
+- Log with parseable
+- 

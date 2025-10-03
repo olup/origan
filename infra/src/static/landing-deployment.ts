@@ -58,8 +58,13 @@ const landingImage = new docker.Image("landing-nginx", {
     context: monorepoRoot,
     dockerfile: path.join(monorepoRoot, "docker/nginx-landing.Dockerfile"),
     platform: "linux/amd64",
+    args: {
+      CONTENT_HASH: landingHash,
+    },
   },
   skipPush: false, // Push to our registry
+}, {
+  replaceOnChanges: ["*"],
 });
 
 // Create landing nginx deployment
@@ -97,6 +102,10 @@ const landingDeployment = new kubernetes.apps.v1.Deployment("landing-nginx-serve
           name: "nginx",
           image: landingImage.imageName,
           imagePullPolicy: "Always",
+          env: [{
+            name: "CONTENT_HASH",
+            value: landingHash,
+          }],
           ports: [{
             name: "http",
             containerPort: 80,

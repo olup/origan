@@ -19,7 +19,7 @@
     "check": "turbo check",
     "clean": "turbo clean",
     "build:cli": "turbo build --filter=@origan/cli",
-    "deploy:infra": "pnpm --filter infra run deploy:alchemy"
+    "deploy:infra": "pnpm --filter infra run deploy"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.5",

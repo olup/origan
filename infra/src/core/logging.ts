@@ -67,7 +67,13 @@ const fluentbitConfig = new kubernetes.core.v1.ConfigMap("fluentbit-config", {
     },
   },
   data: {
-    "fluent-bit.conf": pulumi.interpolate`
+    "fluent-bit.conf": pulumi.all([parseableIngestEndpoint, parseableUsername, parseablePasswordValue]).apply(([endpoint, username, password]) => {
+      // Extract host and port from endpoint like "http://parseable.platform.svc.cluster.local:8000/api/v1/ingest"
+      const urlParts = endpoint.replace('http://', '').replace('/api/v1/ingest', '').split(':');
+      const host = urlParts[0];
+      const port = urlParts[1] || '80';
+      const authString = Buffer.from(`${username}:${password}`).toString('base64');
+      return `
 [SERVICE]
     Flush        5
     Daemon       off
@@ -100,20 +106,22 @@ const fluentbitConfig = new kubernetes.core.v1.ConfigMap("fluentbit-config", {
 [FILTER]
     Name    grep
     Match   kube.*
-    Regex   kubernetes_annotations_origan.dev/collect-logs true
+    Regex   kubernetes_annotations_origan_dev_collect-logs true
 
 [OUTPUT]
     Name              http
     Match             kube.*
-    Host              ${parseableIngestEndpoint.apply(e => e.replace('http://', '').replace('/api/v1/ingest', ''))}
-    Port              80
+    Host              ${host}
+    Port              ${port}
     URI               /api/v1/ingest
     Format            json
+    http_User         ${username}
+    http_Passwd       ${password}
     Header            X-P-Stream kubernetes
-    Header            Authorization Basic ${pulumi.interpolate`${Buffer.from(`${parseableUsername}:${parseablePasswordValue}`).toString('base64')}`}
     tls               off
     Retry_Limit       5
-`,
+`;
+    }),
     "parsers.conf": `
 [PARSER]
     Name        docker

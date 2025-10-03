@@ -58,8 +58,13 @@ const adminImage = new docker.Image("admin-nginx", {
     context: monorepoRoot,
     dockerfile: path.join(monorepoRoot, "docker/nginx-admin.Dockerfile"),
     platform: "linux/amd64",
+    args: {
+      CONTENT_HASH: adminHash,
+    },
   },
   skipPush: false, // Push to our registry
+}, {
+  replaceOnChanges: ["*"],
 });
 
 // Create admin nginx deployment
@@ -97,6 +102,10 @@ const adminDeployment = new kubernetes.apps.v1.Deployment("admin-nginx-server", 
           name: "nginx",
           image: adminImage.imageName,
           imagePullPolicy: "Always",
+          env: [{
+            name: "CONTENT_HASH",
+            value: adminHash,
+          }],
           ports: [{
             name: "http",
             containerPort: 80,

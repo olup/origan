@@ -179,6 +179,9 @@ const controlApiDeployment = new kubernetes.apps.v1.Deployment("control-api", {
           ...labels,
           component: "control-api",
         },
+        annotations: {
+          "origan.dev/collect-logs": "true",
+        },
       },
       spec: {
         serviceAccountName: serviceAccount.metadata.name,

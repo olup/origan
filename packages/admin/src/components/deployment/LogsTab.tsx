@@ -179,17 +179,24 @@ export const LogsTab = () => {
                       }}
                     >
                       <Group gap="xs" wrap="nowrap" align="flex-start">
-                        <Text c="dimmed" size="xs" style={{ flexShrink: 0 }}>
+                        <Text
+                          c="dimmed"
+                          size="xs"
+                          style={{
+                            flexShrink: 0,
+                            fontSize: "0.7rem",
+                            minWidth: "70px",
+                          }}
+                        >
                           [{new Date(log.timestamp).toLocaleTimeString()}]
                         </Text>
-                        {log.functionPath && (
-                          <Text c="cyan" size="xs" style={{ flexShrink: 0 }}>
-                            {log.functionPath}
-                          </Text>
-                        )}
                         <Text
                           c={getLogColor(log.level, colorScheme === "dark")}
-                          style={{ wordBreak: "break-word" }}
+                          style={{
+                            wordBreak: "break-word",
+                            flex: 1,
+                            fontSize: "0.7rem",
+                          }}
                         >
                           {log.message}
                         </Text>

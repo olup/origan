@@ -9,4 +9,4 @@ export const parseableUrl = "https://logs.platform.origan.dev"; // Assuming it's
 
 // These would need to be configured based on the platform's Parseable instance
 export const parseableUsername = "admin";
-export const parseablePasswordValue = pulumi.output("change-me"); // Get this from platform team
+export const parseablePasswordValue = pulumi.output("admin123"); // Password from platform Parseable
