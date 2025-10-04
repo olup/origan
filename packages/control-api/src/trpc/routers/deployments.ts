@@ -25,7 +25,7 @@ export const deploymentsRouter = router({
   // Create deployment with native FormData support
   create: protectedProcedure
     .input(z.instanceof(FormData))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const log = getLogger();
       const formData = input;
 

@@ -33,6 +33,10 @@ export const config = z
     // Axiom Token
     AXIOM_TOKEN: z.string().optional(),
     AXIOM_DATASET: z.string().optional(),
+
+    // ACME/SSL Configuration
+    ACME_ACCOUNT_KEY: z.string().optional(),
+    GATEWAY_HOSTNAME: z.string().optional(),
   })
   // derived values
   .transform((env) => ({

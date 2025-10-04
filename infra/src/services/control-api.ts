@@ -30,6 +30,9 @@ const githubClientSecret = config.getSecret("github.clientSecret") || "";
 const githubAppPrivateKey = config.getSecret("github.appPrivateKey") || "";
 const githubWebhookSecret = config.getSecret("github.webhookSecret") || "";
 
+// Get ACME configuration from Pulumi config (optional for now)
+const acmeAccountKey = config.getSecret("acme.accountKey") || pulumi.output("");
+
 // Create ServiceAccount for control-api
 const serviceAccount = new kubernetes.core.v1.ServiceAccount("control-api-sa", {
   metadata: {
@@ -122,6 +125,7 @@ const controlApiConfig = new kubernetes.core.v1.ConfigMap("control-api-config", 
     ORIGAN_API_URL: `https://${apiUrl}`,
     ORIGAN_ADMIN_PANEL_URL: "https://admin.origan.dev",
     DATABASE_RUN_MIGRATIONS: "true",
+    GATEWAY_HOSTNAME: "gateway.origan.app",
   },
 }, { provider: k8sProvider });
 
@@ -152,6 +156,7 @@ const controlApiSecret = new kubernetes.core.v1.Secret("control-api-secret", {
     DOCKER_REGISTRY: registryEndpointInternal,
     BUILDER_IMAGE: builderImageUrl,
     K8S_NAMESPACE: namespaceName_,
+    ACME_ACCOUNT_KEY: acmeAccountKey,
   },
 }, { provider: k8sProvider });
 

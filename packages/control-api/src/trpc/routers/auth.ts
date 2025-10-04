@@ -75,8 +75,8 @@ export const authRouter = router({
       return {
         status: "completed" as const,
         tokens: {
-          accessToken: session.accessToken!,
-          refreshToken: session.refreshToken!,
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
         },
       };
     }),

@@ -200,6 +200,13 @@ export const deploymentStatusEnum = pgEnum("deployment_status", [
   "canceled",
 ]);
 
+export const certificateStatusEnum = pgEnum("certificate_status", [
+  "none",
+  "pending",
+  "valid",
+  "error",
+]);
+
 export const deploymentSchema = pgTable(
   "deployment",
   {
@@ -267,6 +274,17 @@ export const domainSchema = pgTable("domain", {
     .references(() => projectSchema.id, { onDelete: "cascade" })
     .notNull(),
   trackId: uuid("track_id").references(() => trackSchema.id),
+  isCustom: boolean("is_custom").notNull().default(false),
+  certificateStatus: certificateStatusEnum("certificate_status")
+    .notNull()
+    .default("none"),
+  certificateIssuedAt: timestamp("certificate_issued_at", {
+    withTimezone: true,
+  }),
+  certificateExpiresAt: timestamp("certificate_expires_at", {
+    withTimezone: true,
+  }),
+  lastCertificateError: text("last_certificate_error"),
   ...timestamps,
 });
 

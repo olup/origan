@@ -162,6 +162,13 @@
       "when": 1754298207254,
       "tag": "0022_luxuriant_otto_octavius",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1759518694344,
+      "tag": "0023_solid_risque",
+      "breakpoints": true
     }
   ]
 }
