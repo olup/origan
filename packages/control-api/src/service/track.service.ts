@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
 import {
@@ -114,4 +114,17 @@ export async function getOrCreateTrack({
     track = await createTrack({ projectId, name, isSystem, environmentId });
   }
   return track;
+}
+
+/**
+ * Get all tracks for a project by project ID
+ */
+export async function getTracksForProject(projectId: string) {
+  return await db.query.trackSchema.findMany({
+    where: eq(trackSchema.projectId, projectId),
+    orderBy: [
+      desc(trackSchema.isSystem), // System tracks first (prod)
+      asc(trackSchema.name), // Then alphabetical
+    ],
+  });
 }

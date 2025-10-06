@@ -17,6 +17,7 @@ import {
   setProjectGithubConfig,
   updateProject,
 } from "../../service/project.service.js";
+import { getTracksForProject } from "../../service/track.service.js";
 import { protectedProcedure, router } from "../init.js";
 
 export const projectsRouter = router({
@@ -257,5 +258,30 @@ export const projectsRouter = router({
         success: true,
         buildReference,
       };
+    }),
+
+  // List tracks for a project
+  listTracks: protectedProcedure
+    .input(
+      z.object({
+        projectReference: z.string().min(1),
+      }),
+    )
+    .query(async ({ input }) => {
+      // Convert reference to ID
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, input.projectReference),
+      });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Project not found: ${input.projectReference}`,
+        });
+      }
+
+      // Call service with ID
+      const tracks = await getTracksForProject(project.id);
+      return tracks;
     }),
 });
