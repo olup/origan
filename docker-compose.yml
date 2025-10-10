@@ -1,6 +1,8 @@
 services:
   runner:
-    image: origan-runner
+    build:
+      context: .
+      dockerfile: docker/dev.runner.Dockerfile
     working_dir: /app/packages/runner
     environment:
       - BUCKET_URL=http://minio:9000
@@ -12,7 +14,8 @@ services:
       - EVENTS_NATS_SERVER=nats://nats:4222
     volumes:
       - runner_workers:/workers
-    command: -r -e ts,js --stop-timeout 2 -w . -- "edge-runtime start --port 8000 --ip 0.0.0.0 --main-service functions/supervisor --event-worker functions/event-worker"
+      - ./packages/runner:/app/packages/runner
+    command: ["start", "--port", "8000", "--ip", "0.0.0.0", "--main-service", "/app/packages/runner/functions/supervisor", "--event-worker", "/app/packages/runner/functions/event-worker"]
     networks:
       - origan-network
 
@@ -56,7 +59,9 @@ services:
     ports:
       - "4222:4222"
       - "8222:8222"
-    command: "-js"
+    command: ["-js", "-sd", "/data", "-m", "8222", "--store_dir", "/data/jetstream", "--max_file_store", "10GB"]
+    volumes:
+      - nats_data:/data
     networks:
       - origan-network
 
@@ -76,3 +81,4 @@ volumes:
   minio_data:
   postgres_data:
   runner_workers:
+  nats_data:

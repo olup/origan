@@ -10,7 +10,7 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
-import { Check, InfoCircle, Trash2, X } from "lucide-react";
+import { Check, Info, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
 interface DomainCardProps {
@@ -84,7 +84,7 @@ export function DomainCard({ domain, onDelete }: DomainCardProps) {
               </Text>
               {status.tooltip && (
                 <Tooltip label={status.tooltip} multiline w={300}>
-                  <InfoCircle size={14} style={{ cursor: "help" }} />
+                  <Info size={14} style={{ cursor: "help" }} />
                 </Tooltip>
               )}
             </Group>
