@@ -63,6 +63,21 @@ export async function getOrganizationByReference(reference: string) {
   return result[0];
 }
 
+export async function getOrganizationByReferenceWithMembership(
+  reference: string,
+) {
+  return db.query.organizationSchema.findFirst({
+    where: eq(organizationSchema.reference, reference),
+    with: {
+      memberships: {
+        with: {
+          user: true,
+        },
+      },
+    },
+  });
+}
+
 export async function getOrganizationMembers(organizationId: string) {
   return db
     .select({
