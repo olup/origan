@@ -164,9 +164,28 @@ export async function listInstallationRepositories(installationId: number) {
     const octokit =
       await githubAppInstance.getInstallationOctokit(installationId);
 
-    const response = await octokit.request("GET /installation/repositories");
+    // Fetch all repositories with pagination
+    const allRepositories = [];
+    let page = 1;
+    const perPage = 100; // Max allowed per page
 
-    return response.data.repositories;
+    while (true) {
+      const response = await octokit.request("GET /installation/repositories", {
+        per_page: perPage,
+        page,
+      });
+
+      allRepositories.push(...response.data.repositories);
+
+      // Break if we've fetched all repositories
+      if (response.data.repositories.length < perPage) {
+        break;
+      }
+
+      page++;
+    }
+
+    return allRepositories;
   } catch (error) {
     throw new Error(
       `Failed to list repositories for installation ID ${installationId}`,

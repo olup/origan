@@ -17,8 +17,6 @@ import {
   gatewayUrl,
   imageTag,
   registryEndpoint,
-  garageAccessKey,
-  garageSecretKey,
 } from "../config.js";
 
 // Build Docker image
@@ -204,6 +202,7 @@ const gatewayService = new kubernetes.core.v1.Service("gateway-service", {
 }, { provider: k8sProvider, dependsOn: [gatewayDeployment] });
 
 // TCP passthrough for HTTPS (gateway handles TLS termination)
+// Note: Using HostSNIRegexp with low priority to catch all domains after more specific routes
 const gatewayIngressRouteTCP = new kubernetes.apiextensions.CustomResource("gateway-ingress-tcp", {
   apiVersion: "traefik.io/v1alpha1",
   kind: "IngressRouteTCP",
@@ -218,7 +217,8 @@ const gatewayIngressRouteTCP = new kubernetes.apiextensions.CustomResource("gate
   spec: {
     entryPoints: ["websecure"],
     routes: [{
-      match: `HostSNIRegexp(\`^.+\\.origan\\.app$\`)`,
+      match: `HostSNIRegexp(\`.+\`)`, // Match all hostnames (Traefik v3)
+      priority: 1, // Low priority so it's matched last after specific routes
       services: [{
         name: gatewayService.metadata.name,
         port: 443,
@@ -231,6 +231,8 @@ const gatewayIngressRouteTCP = new kubernetes.apiextensions.CustomResource("gate
 }, { provider: k8sProvider });
 
 // HTTP ingress (redirect to HTTPS or handle HTTP)
+// Note: Using a catch-all rule to handle both *.origan.app and custom domains
+// This is necessary for ACME HTTP-01 challenge validation on custom domains
 const gatewayIngressHTTP = new kubernetes.networking.v1.Ingress("gateway-ingress-http", {
   metadata: {
     name: resourceName("gateway-http"),
@@ -241,26 +243,48 @@ const gatewayIngressHTTP = new kubernetes.networking.v1.Ingress("gateway-ingress
     },
     annotations: {
       "kubernetes.io/ingress.class": "traefik",
+      // Low priority so more specific routes (admin, api, etc.) are matched first
+      "traefik.ingress.kubernetes.io/router.priority": "1",
     },
   },
   spec: {
-    rules: [{
-      host: gatewayUrl,
-      http: {
-        paths: [{
-          path: "/",
-          pathType: "Prefix",
-          backend: {
-            service: {
-              name: gatewayService.metadata.name,
-              port: {
-                number: 80,
+    rules: [
+      // Specific rule for *.origan.app domains
+      {
+        host: gatewayUrl,
+        http: {
+          paths: [{
+            path: "/",
+            pathType: "Prefix",
+            backend: {
+              service: {
+                name: gatewayService.metadata.name,
+                port: {
+                  number: 80,
+                },
               },
             },
-          },
-        }],
+          }],
+        },
       },
-    }],
+      // Catch-all rule for custom domains (all paths including ACME challenges)
+      {
+        http: {
+          paths: [{
+            path: "/",
+            pathType: "Prefix",
+            backend: {
+              service: {
+                name: gatewayService.metadata.name,
+                port: {
+                  number: 80,
+                },
+              },
+            },
+          }],
+        },
+      },
+    ],
   },
 }, { provider: k8sProvider });
 

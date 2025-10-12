@@ -36,54 +36,56 @@ export function CustomDomainsManager({
   );
 
   // Add domain mutation
-  const addDomain = useMutation({
-    ...trpc.domains.addCustomDomain.mutationOptions(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: trpc.domains.listCustomDomains.getQueryKey({
-          projectReference,
-        }),
-      });
-      setDomain("");
-      setSelectedTrack(null);
-      notifications.show({
-        title: "Domain added",
-        message: "Certificate issuance has started",
-        color: "green",
-      });
-    },
-    onError: (error) => {
-      notifications.show({
-        title: "Failed to add domain",
-        message: error.message,
-        color: "red",
-      });
-    },
-  });
+  const addDomain = useMutation(
+    trpc.domains.addCustomDomain.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: trpc.domains.listCustomDomains.queryOptions({
+            projectReference,
+          }).queryKey,
+        });
+        setDomain("");
+        setSelectedTrack(null);
+        notifications.show({
+          title: "Domain added",
+          message: "Certificate issuance has started",
+          color: "green",
+        });
+      },
+      onError: (error) => {
+        notifications.show({
+          title: "Failed to add domain",
+          message: error.message,
+          color: "red",
+        });
+      },
+    }),
+  );
 
   // Remove domain mutation
-  const removeDomain = useMutation({
-    ...trpc.domains.removeCustomDomain.mutationOptions(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: trpc.domains.listCustomDomains.getQueryKey({
-          projectReference,
-        }),
-      });
-      notifications.show({
-        title: "Domain removed",
-        message: "Domain and certificate have been deleted",
-        color: "green",
-      });
-    },
-    onError: (error) => {
-      notifications.show({
-        title: "Failed to remove domain",
-        message: error.message,
-        color: "red",
-      });
-    },
-  });
+  const removeDomain = useMutation(
+    trpc.domains.removeCustomDomain.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: trpc.domains.listCustomDomains.queryOptions({
+            projectReference,
+          }).queryKey,
+        });
+        notifications.show({
+          title: "Domain removed",
+          message: "Domain and certificate have been deleted",
+          color: "green",
+        });
+      },
+      onError: (error) => {
+        notifications.show({
+          title: "Failed to remove domain",
+          message: error.message,
+          color: "red",
+        });
+      },
+    }),
+  );
 
   // Auto-refresh for pending certificates
   useInterval(() => {

@@ -14,43 +14,43 @@ export async function validateDnsPointsToGateway(
   try {
     log.info(`Validating DNS for custom domain: ${domain}`);
 
-    // Try to resolve CNAME record
+    // In development mode, skip CNAME validation
+    // This allows testing with localtest.me when control-api runs locally
+    if (env.APP_ENV === "development") {
+      log.info(`Skipping CNAME validation in development mode for: ${domain}`);
+      return true;
+    }
+
+    // For production, validate CNAME record
+    const targetDomain = env.ORIGAN_DEPLOY_DOMAIN;
+
     try {
       const cnameRecords = await dns.resolveCname(domain);
       log.info(`CNAME records for ${domain}:`, cnameRecords.join(", "));
 
-      // Check if any CNAME points to *.origan.app
-      const pointsToOrigan = cnameRecords.some((cname) =>
-        cname.toLowerCase().endsWith(`.${env.ORIGAN_DEPLOY_DOMAIN}`),
+      // Check if any CNAME points to *.origan.app (or DOMAIN_SUFFIX)
+      const pointsToGateway = cnameRecords.some((cname) =>
+        cname.toLowerCase().endsWith(`.${targetDomain}`),
       );
 
-      if (pointsToOrigan) {
+      if (pointsToGateway) {
         log.info(
-          `Domain ${domain} correctly points to *.${env.ORIGAN_DEPLOY_DOMAIN} via CNAME`,
+          `Domain ${domain} correctly points to *.${targetDomain} via CNAME`,
         );
         return true;
       }
 
       log.warn(
-        `Domain ${domain} has CNAME records but none point to *.${env.ORIGAN_DEPLOY_DOMAIN}`,
+        `Domain ${domain} has CNAME records but none point to *.${targetDomain}`,
       );
       return false;
     } catch {
       // No CNAME record found
-      log.warn(
-        `No CNAME found for ${domain} pointing to *.${env.ORIGAN_DEPLOY_DOMAIN}`,
-      );
+      log.warn(`No CNAME found for ${domain} pointing to *.${targetDomain}`);
       return false;
     }
   } catch (error) {
     log.error(`DNS validation failed for ${domain}:`, error as string);
     return false;
   }
-}
-
-/**
- * Get instructions for configuring DNS based on validation result.
- */
-export function getDnsInstructions(domain: string): string {
-  return `Please configure a CNAME record for '${domain}' pointing to any *.${env.ORIGAN_DEPLOY_DOMAIN} subdomain (e.g., gateway.${env.ORIGAN_DEPLOY_DOMAIN})`;
 }

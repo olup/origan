@@ -23,6 +23,7 @@ export const handleAcmeChallenge =
     // Get challenge from storage
     const challenge = await getChallenge(s3Client, bucketName, token);
     if (!challenge) {
+      console.log(`ACME challenge not found for token: ${token}`);
       res.writeHead(404);
       res.end("Not found");
       return true;

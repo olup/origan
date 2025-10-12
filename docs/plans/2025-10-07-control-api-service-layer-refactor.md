@@ -3,6 +3,17 @@
 **Date:** 2025-10-07
 **Status:** Planning
 **Priority:** High
+**Last Updated:** 2025-10-12 (Review incorporated)
+
+## Review Findings Incorporated
+
+The following review findings have been incorporated into this plan:
+
+1. **✅ No Separate Lookup Service**: The proposed `lookup.service.ts` would duplicate helpers already exposed in `organization.service.ts` (e.g., `getUserOrganizations()` at line 33) and `project.service.ts` (e.g., `getProject()` at line 61). Instead, we'll extend these existing services with membership-aware lookup methods.
+
+2. **✅ Token Hashing Security**: The auth router extraction must explicitly preserve the refresh token hashing semantics. The current implementation uses `hashToken()` at auth.ts:97 (before query) and auth.ts:177 (before revocation) to ensure tokens are never stored in plain text. This MUST be maintained in the service layer.
+
+3. **✅ Direct DB Access for Lightweight Lookups**: An open question about which routers need direct `db` access has been addressed. The github router (webhook handler) is the only legitimate case for minimal direct access. All other routers will have direct DB access eliminated through service layer methods. The ESLint rule will allow escape hatches with justification comments.
 
 ## Overview
 
@@ -102,11 +113,13 @@ Extend or add service modules where the routers still own core logic:
    - `validateRefreshToken(token)`
    - `revokeRefreshToken(token)`
    - `getUserById(userId)`
-   - Preserve the existing hashed refresh-token storage semantics (no plain-text tokens)
+   - **CRITICAL**: Preserve the existing hashed refresh-token storage semantics (no plain-text tokens). The current implementation uses `hashToken()` at auth.ts:97 before querying refreshTokenSchema - this MUST be maintained in the service layer to ensure tokens remain hashed at rest.
 
 2. **Organization / Project service helpers**
-   - Add any missing `getOrganizationByReference(...)` membership checks directly to `organization.service.ts`
-   - Add `getProjectByReference(...)` (and related helpers) to `project.service.ts`
+   - ✅ **UPDATED APPROACH**: The review correctly identified that `organization.service.ts` and `project.service.ts` already expose helpers like `getUserOrganizations()` (organization.service.ts:33) and `getProject()` (project.service.ts:61)
+   - Instead of creating a separate `lookup.service.ts`, extend the existing service methods:
+     - Add membership-aware `getOrganizationByReferenceWithMembership(reference, userId)` to organization.service.ts
+     - Extend `getProject()` to support more flexible lookups (already supports `reference` parameter)
    - Reuse these helpers across routers instead of introducing a standalone lookup service
 
 ### Phase 2: Refactor Routers (Priority Order)
@@ -135,8 +148,9 @@ Extend or add service modules where the routers still own core logic:
      - `createOrganization(name, creatorUserId)`
 
 4. **Environments Router**
-   - Consolidate project lookups into a helper method
-   - Consider adding `getProjectByReference()` to environment.service or use from project.service
+   - Remove direct project lookups from router
+   - Pass project reference/ID to environment service methods
+   - Have environment service call `project.service.getProject()` internally for validation (don't duplicate the project lookup logic)
 
 5. **Deployments Router**
    - Move remaining DB queries to `deployment.service.ts`
@@ -158,11 +172,12 @@ Extend or add service modules where the routers still own core logic:
 
 2. **Service Responsibilities:**
    - Business logic
-   - Database queries
+   - Database queries (for their own domain entities)
    - Data validation
    - Complex operations
    - Transaction management
    - Custom error throwing (with custom error classes)
+   - **Calling other services** - Services should reuse other service methods rather than duplicating database queries (e.g., `environment.service.ts` should call `project.service.getProject()` instead of doing its own project lookup)
 
 3. **Forbidden in Routers:**
    - Direct `db` imports
@@ -176,15 +191,15 @@ Extend or add service modules where the routers still own core logic:
 - [ ] Create `service/auth.service.ts`
 - [ ] Implement session management functions
 - [ ] Implement token validation functions
-- [ ] Add tests for auth service
-- [ ] Ensure refresh tokens remain hashed at rest (keep current schema semantics)
+- [ ] **CRITICAL**: Extract the token hashing logic from auth.ts:22-23 (`hashToken()`) and ensure refresh tokens remain hashed at rest throughout the entire flow (storage, validation, rotation) - reference current implementation at auth.ts:97 and auth.ts:177
+- [ ] Add tests for auth service, including explicit tests that tokens are never stored in plain text
 
 ### Task 2: Refactor Auth Router
 - [ ] Replace direct DB calls with auth service calls
 - [ ] Keep only cookie operations in router
 - [ ] Update error handling
 - [ ] Test authentication flows
-- [ ] Confirm hashed refresh-token storage/rotation still works end-to-end
+- [ ] **CRITICAL**: Confirm hashed refresh-token storage/rotation still works end-to-end - verify that the token hashing at auth.ts:97 (before lookup) and auth.ts:177 (before revocation) is preserved in the service layer
 
 ### Task 3: Enhance Organization Service
 - [ ] Add `getUserOrganizations()` wrapper if needed
@@ -208,14 +223,14 @@ Extend or add service modules where the routers still own core logic:
 - [ ] Test all project operations
 
 ### Task 7: Harden Shared Lookup Helpers
-- [ ] Extend `organization.service.ts` with membership-aware reference lookups reused by routers
-- [ ] Extend `project.service.ts` with reference-based helpers reused by routers
-- [ ] Drop the need for a standalone lookup service once helpers are in place
+- [ ] Extend `organization.service.ts` with membership-aware reference lookups reused by routers (e.g., `getOrganizationByReferenceWithMembership()`)
+- [ ] Verify `project.service.ts` already supports reference-based lookups via `getProject({ reference, organizationId })` at project.service.ts:61
+- [ ] ✅ **REVIEW FINDING INCORPORATED**: Do NOT create a standalone `lookup.service.ts` - reuse and extend existing helpers in organization.service.ts and project.service.ts instead
 
 ### Task 8: Refactor Remaining Routers
-- [ ] Environments router
-- [ ] Deployments router (remaining queries)
-- [ ] Logs router
+- [ ] Environments router - ensure it calls `project.service.getProject()` instead of duplicating project lookups
+- [ ] Deployments router (remaining queries) - ensure it calls `project.service.getProject()` instead of duplicating project lookups
+- [ ] Logs router - apply same pattern of service-to-service calls
 
 ### Task 9: Architecture Documentation
 - [ ] Document router patterns
@@ -267,9 +282,31 @@ Extend or add service modules where the routers still own core logic:
 
 **Total: 8-12 days** (1.5-2.5 weeks)
 
+## Open Questions & Resolutions
+
+### Question: Which routers still need direct `db` access for lightweight lookups?
+
+**Analysis**: After grepping the codebase, the following routers currently import `db`:
+- `projects.ts` - Multiple direct queries (high priority refactor)
+- `deployments.ts` - Some direct queries bypassing existing service
+- `auth.ts` - Session and token management (high priority refactor)
+- `github.ts` - Webhook handler (already delegates to github.service.ts, may need minimal db access for GitHub installation discovery)
+- `organizations.ts` - Organization CRUD with direct queries
+- `environments.ts` - Project lookups before service calls
+
+**Resolution**:
+- The github router is the only legitimate case where lightweight `db` access may be acceptable for GitHub installation discovery, as this is a webhook entry point that needs fast lookups
+- All other routers should have their direct `db` access eliminated through service layer methods
+- The proposed ESLint rule (Task 10) should allow an escape hatch (e.g., `// eslint-disable-next-line` with a comment justification) for the rare cases where direct access is truly necessary
+- When implementing the lint rule, we can use `overrides` to exclude specific files if needed, but preference is to eliminate all direct access
+
 ## Notes
 
 - The `deployment.service.ts`, `domain.service.ts`, `project.service.ts`, and `organization.service.ts` are already well-structured and serve as good examples
 - Consider whether authorization checks should be in services or routers (recommendation: keep in routers via middleware, but validate ownership in services)
 - Some project lookups could be optimized by accepting both reference and ID in service methods
 - Consider using a transaction helper pattern for complex operations spanning multiple tables
+- **Service-to-Service Calls**: Services should call other services for cross-domain lookups rather than duplicating database queries. For example:
+  - ✅ GOOD: `environment.service.ts` calls `project.service.getProject()` to validate project exists
+  - ❌ BAD: `environment.service.ts` does its own `db.query.projectSchema.findFirst()`
+  - This reduces duplication and ensures consistent validation logic across the codebase

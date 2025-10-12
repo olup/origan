@@ -81,6 +81,7 @@ export const natsConfig = {
   storageSize: "1Gi",
 };
 
-// Image tags
-export const imageTag = process.env.IMAGE_TAG || `${Date.now()}`;
-export const builderImageTag = `builder-${imageTag}`;
+// Image tags - use environment-based stable tags
+// Pulumi's docker.Image will automatically detect code changes via content hash
+export const imageTag = process.env.IMAGE_TAG || environment;
+export const builderImageTag = `builder-${environment}`;

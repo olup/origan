@@ -193,7 +193,7 @@ export const projectsRouter = router({
         branch: z.string().min(1),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const log = getLogger();
 
       // Get the project with GitHub config

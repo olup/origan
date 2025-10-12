@@ -1,12 +1,14 @@
 import { and, eq } from "drizzle-orm";
 import { getLogger } from "../instrumentation.js";
 import { db } from "../libs/db/index.js";
-import { domainSchema, projectSchema, trackSchema } from "../libs/db/schema.js";
-import { deleteCertificate, issueCertificate } from "./certificate.service.js";
 import {
-  getDnsInstructions,
-  validateDnsPointsToGateway,
-} from "./dns.service.js";
+  deploymentSchema,
+  domainSchema,
+  projectSchema,
+  trackSchema,
+} from "../libs/db/schema.js";
+import { deleteCertificate, issueCertificate } from "./certificate.service.js";
+import { validateDnsPointsToGateway } from "./dns.service.js";
 
 const log = getLogger();
 
@@ -69,13 +71,20 @@ export async function addCustomDomain(
   const dnsValid = await validateDnsPointsToGateway(domainName);
 
   if (!dnsValid) {
-    const instructions = getDnsInstructions(domainName);
     log.warn(`DNS validation failed for ${domainName}`);
-    throw new Error(`DNS validation failed. ${instructions}`);
+    throw new Error("DNS validation failed.");
   }
 
-  // DNS is valid, create domain and trigger certificate issuance
+  // DNS is valid, find the latest successful deployment for this track
   log.info(`DNS validated for ${domainName}, creating domain record`);
+
+  const latestDeployment = await db.query.deploymentSchema.findFirst({
+    where: and(
+      eq(deploymentSchema.trackId, track.id),
+      eq(deploymentSchema.status, "success"),
+    ),
+    orderBy: (deployments, { desc }) => [desc(deployments.createdAt)],
+  });
 
   const [domain] = await db
     .insert(domainSchema)
@@ -83,6 +92,7 @@ export async function addCustomDomain(
       name: domainName,
       projectId: track.projectId,
       trackId: track.id,
+      deploymentId: latestDeployment?.id, // Link to latest successful deployment if available
       isCustom: true,
       certificateStatus: "pending",
     })

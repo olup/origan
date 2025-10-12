@@ -30,8 +30,9 @@ const githubClientSecret = config.getSecret("github.clientSecret") || "";
 const githubAppPrivateKey = config.getSecret("github.appPrivateKey") || "";
 const githubWebhookSecret = config.getSecret("github.webhookSecret") || "";
 
-// Get ACME configuration from Pulumi config (optional for now)
+// Get ACME configuration from Pulumi config
 const acmeAccountKey = config.getSecret("acme.accountKey") || pulumi.output("");
+const acmeServerUrl = config.get("acme.serverUrl") || "https://acme-v02.api.letsencrypt.org/directory";
 
 // Create ServiceAccount for control-api
 const serviceAccount = new kubernetes.core.v1.ServiceAccount("control-api-sa", {
@@ -157,6 +158,7 @@ const controlApiSecret = new kubernetes.core.v1.Secret("control-api-secret", {
     BUILDER_IMAGE: builderImageUrl,
     K8S_NAMESPACE: namespaceName_,
     ACME_ACCOUNT_KEY: acmeAccountKey,
+    ACME_SERVER_URL: acmeServerUrl,
   },
 }, { provider: k8sProvider });
 
@@ -193,6 +195,7 @@ const controlApiDeployment = new kubernetes.apps.v1.Deployment("control-api", {
         containers: [{
           name: "control-api",
           image: controlApiImage.imageName,
+          imagePullPolicy: "Always",
           ports: [{
             containerPort: 3001,
             name: "http",

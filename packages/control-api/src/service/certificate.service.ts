@@ -9,29 +9,49 @@ import {
   deleteCertificate as deleteS3Certificate,
   storeCertificate,
 } from "../utils/s3-certificates.js";
-import { storeChallenge } from "../utils/s3-challenges.js";
+import { deleteChallenge, storeChallenge } from "../utils/s3-challenges.js";
 
 const log = getLogger();
+
+// Cache the ACME client instance to avoid re-initializing
+let cachedAcmeClient: acme.Client | null = null;
 
 /**
  * Get or create ACME client instance
  */
-function getAcmeClient(): acme.Client {
-  if (!env.ACME_ACCOUNT_KEY) {
-    throw new Error("ACME_ACCOUNT_KEY not configured");
+async function getAcmeClient(): Promise<acme.Client> {
+  if (cachedAcmeClient) {
+    return cachedAcmeClient;
+  }
+  if (!env.ACME_SERVER_URL || !env.ACME_ACCOUNT_KEY) {
+    throw new Error("ACME is not configured");
   }
 
-  // Parse the account key (PEM format)
   const accountKey = Buffer.from(env.ACME_ACCOUNT_KEY, "base64").toString(
     "utf-8",
   );
 
-  // Create ACME client for Let's Encrypt production
-  const client = new acme.Client({
-    directoryUrl: acme.directory.letsencrypt.production,
+  const clientOptions: acme.ClientOptions = {
+    directoryUrl: env.ACME_SERVER_URL,
     accountKey,
-  });
+  };
 
+  log.info(`Creating ACME client for: ${env.ACME_SERVER_URL}`);
+
+  const client = new acme.Client(clientOptions);
+
+  // Retrieve the account URL - createAccount is idempotent and returns existing account
+  try {
+    await client.createAccount({
+      termsOfServiceAgreed: true,
+    });
+    log.info("ACME account URL retrieved successfully");
+  } catch (error: any) {
+    log.error("Failed to retrieve ACME account URL", error);
+    throw new Error(`Failed to retrieve ACME account: ${error.message}`);
+  }
+
+  cachedAcmeClient = client;
   return client;
 }
 
@@ -51,7 +71,7 @@ export async function issueCertificate(domainName: string): Promise<void> {
       })
       .where(eq(domainSchema.name, domainName));
 
-    const client = getAcmeClient();
+    const client = await getAcmeClient();
 
     // Create a Certificate Signing Request (CSR)
     const [privateKey, csr] = await acme.crypto.createCsr({
@@ -100,11 +120,41 @@ export async function issueCertificate(domainName: string): Promise<void> {
       await client.waitForValidStatus(challenge);
 
       log.info(`Challenge validated for ${domainName}`);
+
+      // Clean up challenge from S3 after validation
+      await deleteChallenge(s3Client, env.BUCKET_NAME, challenge.token);
     }
 
     // Finalize order
     log.info(`Finalizing order for ${domainName}`);
     await client.finalizeOrder(order, csr);
+
+    // Wait for order to become valid (certificate to be issued)
+    log.info(`Waiting for order to be valid for ${domainName}`);
+    let attempts = 0;
+    const maxAttempts = 30; // 30 seconds max
+    while (attempts < maxAttempts) {
+      const orderStatus = await client.getOrder(order);
+
+      if (orderStatus.status === "valid") {
+        log.info(`Order is valid for ${domainName}`);
+        break;
+      }
+
+      if (orderStatus.status === "invalid") {
+        throw new Error(`Order became invalid for ${domainName}`);
+      }
+
+      // Wait 1 second before checking again
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      attempts++;
+    }
+
+    if (attempts >= maxAttempts) {
+      throw new Error(
+        `Order did not become valid within timeout for ${domainName}`,
+      );
+    }
 
     // Get certificate
     const cert = await client.getCertificate(order);

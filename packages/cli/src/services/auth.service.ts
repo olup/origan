@@ -65,8 +65,15 @@ export async function login(): Promise<void> {
     // Poll for completion
     const tokens = await pollSession(sessionId);
 
+    if (!tokens?.accessToken || !tokens?.refreshToken) {
+      throw new Error("Failed to retrieve authentication tokens.");
+    }
+
     // Save tokens
-    await saveTokens(tokens);
+    await saveTokens({
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    });
 
     // Fetch user's organizations and set the first one as current
     try {

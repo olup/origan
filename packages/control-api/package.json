@@ -23,7 +23,7 @@
   "scripts": {
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx src/index.ts",
+    "dev": "dotenvx run --env-file=.env -- tsx watch src/index.ts",
     "lint": "biome check .",
     "format": "biome format . --write",
     "check": "biome check --write .",
