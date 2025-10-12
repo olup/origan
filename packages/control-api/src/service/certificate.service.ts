@@ -47,8 +47,8 @@ async function getAcmeClient(): Promise<acme.Client> {
     });
     log.info("ACME account URL retrieved successfully");
   } catch (error: unknown) {
-    log.error("Failed to retrieve ACME account URL", error);
     const message = error instanceof Error ? error.message : "Unknown error";
+    log.withError(error).error("Failed to retrieve ACME account URL");
     throw new Error(`Failed to retrieve ACME account: ${message}`);
   }
 

@@ -10,19 +10,40 @@ import {
 // Polling interval for checking auth status (3 seconds)
 const POLLING_INTERVAL = 3000;
 
+type SessionTokens = {
+  accessToken: string;
+  refreshToken: string;
+};
+
+type InitializeSessionResponse = {
+  sessionId: string;
+  authUrl: string;
+  expiresIn: number;
+};
+
 /**
  * Initialize device flow authentication
  */
-async function initializeDeviceFlow() {
-  return await trpc.auth.initializeCLISession.mutate();
+async function initializeDeviceFlow(): Promise<InitializeSessionResponse> {
+  const data = await trpc.auth.initializeCLISession.mutate();
+
+  if (!data) {
+    throw new Error("Failed to initialize CLI session");
+  }
+
+  return data;
 }
 
 /**
  * Poll for session completion
  */
-async function pollSession(sessionId: string) {
+async function pollSession(sessionId: string): Promise<SessionTokens> {
   while (true) {
     const data = await trpc.auth.checkCLISession.query({ sessionId });
+
+    if (!data) {
+      throw new Error("Session not found or expired");
+    }
 
     if (data.status === "completed") {
       return data.tokens;
