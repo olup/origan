@@ -1,28 +1,25 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as kubernetes from "@pulumi/kubernetes";
-import * as docker from "@pulumi/docker";
-import { k8sProvider, dockerProvider } from "../providers.js";
+import { k8sProvider } from "../providers.js";
 import { namespaceName_ } from "../core/namespace.js";
 import { deploymentBucketName, garageEndpointInternal, garageAccessKeyValue, garageSecretKeyValue } from "../core/garage.js";
 import { natsEndpoint } from "../core/nats.js";
-import { 
-  resourceName, 
-  labels, 
-  imageTag, 
+import {
+  resourceName,
+  labels,
+  imageTag,
   registryEndpoint,
 } from "../config.js";
+import { buildxImage } from "../core/buildx-image.js";
 
-// Build Docker image
-export const runnerImage = new docker.Image("runner-image", {
+// Build Docker image via buildx push-only workflow
+export const runnerImage = buildxImage("runner-image", {
   imageName: pulumi.interpolate`${registryEndpoint}/origan/runner:${imageTag}`,
-  build: {
-    context: "..", // Monorepo root (from infra directory)
-    dockerfile: "../docker/prod-optimized.Dockerfile",
-    target: "runner", // Use runner stage from multi-stage build
-    platform: "linux/amd64",
-  },
-  skipPush: false,
-}, { provider: dockerProvider });
+  context: "..", // Monorepo root (from infra directory)
+  dockerfile: "../docker/prod-optimized.Dockerfile",
+  target: "runner", // Use runner stage from multi-stage build
+  platform: "linux/amd64",
+});
 
 // ConfigMap
 const runnerConfig = new kubernetes.core.v1.ConfigMap("runner-config", {
@@ -97,7 +94,7 @@ const runnerDeployment = new kubernetes.apps.v1.Deployment("runner", {
       spec: {
         containers: [{
           name: "runner",
-          image: runnerImage.imageName,
+          image: runnerImage.repoDigest,
           ports: [{
             containerPort: 9000,
             name: "http",
@@ -130,7 +127,7 @@ const runnerDeployment = new kubernetes.apps.v1.Deployment("runner", {
       },
     },
   },
-}, { provider: k8sProvider, dependsOn: [runnerImage] });
+}, { provider: k8sProvider, dependsOn: [runnerImage.buildResource] });
 
 // Service (internal only, accessed by gateway)
 const runnerService = new kubernetes.core.v1.Service("runner-service", {

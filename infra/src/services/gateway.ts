@@ -1,7 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as kubernetes from "@pulumi/kubernetes";
-import * as docker from "@pulumi/docker";
-import { k8sProvider, dockerProvider } from "../providers.js";
+import { k8sProvider } from "../providers.js";
 import { namespaceName_ } from "../core/namespace.js";
 import { 
   deploymentBucketName, 
@@ -11,25 +10,23 @@ import {
 } from "../core/garage.js";
 import { runnerEndpoint } from "./runner.js";
 import { controlApiServiceName } from "./control-api.js";
-import { 
-  resourceName, 
-  labels, 
+import {
+  resourceName,
+  labels,
   gatewayUrl,
   imageTag,
   registryEndpoint,
 } from "../config.js";
+import { buildxImage } from "../core/buildx-image.js";
 
-// Build Docker image
-export const gatewayImage = new docker.Image("gateway-image", {
+// Build Docker image via buildx push-only workflow
+export const gatewayImage = buildxImage("gateway-image", {
   imageName: pulumi.interpolate`${registryEndpoint}/origan/gateway:${imageTag}`,
-  build: {
-    context: "..", // Monorepo root (from infra directory)
-    dockerfile: "../docker/prod-optimized.Dockerfile",
-    target: "gateway", // Use gateway stage from multi-stage build
-    platform: "linux/amd64",
-  },
-  skipPush: false,
-}, { provider: dockerProvider });
+  context: "..", // Monorepo root (from infra directory)
+  dockerfile: "../docker/prod-optimized.Dockerfile",
+  target: "gateway", // Use gateway stage from multi-stage build
+  platform: "linux/amd64",
+});
 
 // ConfigMap
 const gatewayConfig = new kubernetes.core.v1.ConfigMap("gateway-config", {
@@ -110,7 +107,7 @@ const gatewayDeployment = new kubernetes.apps.v1.Deployment("gateway", {
         }],
         containers: [{
           name: "gateway",
-          image: gatewayImage.imageName,
+          image: gatewayImage.repoDigest,
           ports: [
             {
               containerPort: 7777,
@@ -168,7 +165,7 @@ const gatewayDeployment = new kubernetes.apps.v1.Deployment("gateway", {
       },
     },
   },
-}, { provider: k8sProvider, dependsOn: [gatewayImage] });
+}, { provider: k8sProvider, dependsOn: [gatewayImage.buildResource] });
 
 // Service
 const gatewayService = new kubernetes.core.v1.Service("gateway-service", {

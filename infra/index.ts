@@ -38,6 +38,7 @@ import {
   gatewayImage,
 } from "./src/services/gateway.js";
 import {
+  builderImage,
   builderImageUrl,
 } from "./src/services/builder.js";
 import {
@@ -111,20 +112,24 @@ export const infrastructure = {
     controlApi: {
       url: controlApiUrl,
       serviceName: controlApiServiceName,
-      image: controlApiImage.imageName,
+      imageDigest: controlApiImage.repoDigest,
+      imageTags: controlApiImage.allTags,
     },
     gateway: {
       serviceName: gatewayServiceName,
       wildcardDomain: gatewayWildcardDomain,
-      image: gatewayImage.imageName,
+      imageDigest: gatewayImage.repoDigest,
+      imageTags: gatewayImage.allTags,
     },
     builder: {
-      image: builderImageUrl,
+      imageDigest: builderImageUrl,
+      imageTags: builderImage.allTags,
     },
     runner: {
       service: runnerServiceName,
       endpoint: runnerEndpoint,
-      image: runnerImage.imageName,
+      imageDigest: runnerImage.repoDigest,
+      imageTags: runnerImage.allTags,
     },
   },
   

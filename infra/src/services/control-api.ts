@@ -1,8 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as kubernetes from "@pulumi/kubernetes";
-import * as docker from "@pulumi/docker";
 import * as crypto from "crypto";
-import { k8sProvider, dockerProvider } from "../providers.js";
+import { k8sProvider } from "../providers.js";
 import { namespaceName_ } from "../core/namespace.js";
 import { postgresConnectionString } from "../core/database.js";
 import { natsEndpoint } from "../core/nats.js";
@@ -14,13 +13,14 @@ import {
 } from "../core/garage.js";
 import { registryEndpointInternal } from "../core/registry.js";
 import { builderImageUrl } from "./builder.js";
-import { 
-  resourceName, 
-  labels, 
-  apiUrl, 
-  imageTag, 
+import {
+  resourceName,
+  labels,
+  apiUrl,
+  imageTag,
   registryEndpoint,
 } from "../config.js";
+import { buildxImage } from "../core/buildx-image.js";
 
 // Get GitHub configuration from Pulumi config
 const config = new pulumi.Config();
@@ -95,17 +95,14 @@ const clusterRoleBinding = new kubernetes.rbac.v1.ClusterRoleBinding("control-ap
   }],
 }, { provider: k8sProvider });
 
-// Build Docker image
-export const controlApiImage = new docker.Image("control-api-image", {
+// Build Docker image via buildx push-only workflow
+export const controlApiImage = buildxImage("control-api-image", {
   imageName: pulumi.interpolate`${registryEndpoint}/origan/control-api:${imageTag}`,
-  build: {
-    context: "..", // Monorepo root (from infra directory)
-    dockerfile: "../docker/prod-optimized.Dockerfile",
-    target: "control-api", // Use control-api stage from multi-stage build
-    platform: "linux/amd64",
-  },
-  skipPush: false,
-}, { provider: dockerProvider });
+  context: "..", // Monorepo root (from infra directory)
+  dockerfile: "../docker/prod-optimized.Dockerfile",
+  target: "control-api", // Use control-api stage from multi-stage build
+  platform: "linux/amd64",
+});
 
 // Environment variables ConfigMap
 const controlApiConfig = new kubernetes.core.v1.ConfigMap("control-api-config", {
@@ -194,7 +191,7 @@ const controlApiDeployment = new kubernetes.apps.v1.Deployment("control-api", {
         serviceAccountName: serviceAccount.metadata.name,
         containers: [{
           name: "control-api",
-          image: controlApiImage.imageName,
+          image: controlApiImage.repoDigest,
           imagePullPolicy: "Always",
           ports: [{
             containerPort: 3001,
@@ -242,7 +239,7 @@ const controlApiDeployment = new kubernetes.apps.v1.Deployment("control-api", {
       },
     },
   },
-}, { provider: k8sProvider, dependsOn: [controlApiImage] });
+}, { provider: k8sProvider, dependsOn: [controlApiImage.buildResource] });
 
 // Service
 const controlApiService = new kubernetes.core.v1.Service("control-api-service", {
