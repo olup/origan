@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { env } from "../../config.js";
 import { getLogger } from "../../instrumentation.js";
 import { db } from "../../libs/db/index.js";
@@ -22,7 +22,6 @@ import {
 import { generateGitHubInstallationToken } from "../github.service.js";
 import type { BranchRuleResolution } from "../github-branch-rule.service.js";
 import { resolveBranchRule } from "../github-branch-rule.service.js";
-import type { BuildLogEntry } from "./types.js";
 
 type TriggerBuildTaskOptions = {
   ruleResolution?: BranchRuleResolution | null;
@@ -165,8 +164,7 @@ export async function triggerBuildTask(
       EVENTS_NATS_SERVER: env.EVENTS_NATS_SERVER,
       EVENTS_NATS_NKEY_CREDS: env.EVENTS_NATS_NKEY_CREDS || "",
       DEPLOY_TOKEN: deployToken,
-      CONTROL_API_URL:
-        "http://control-api-prod.origan-pulumi-prod.svc.cluster.local",
+      CONTROL_API_URL: env.ORIGAN_API_URL,
       ...(Object.keys(buildEnvVars).length > 0 && {
         BUILD_ENV: JSON.stringify(buildEnvVars),
       }),
@@ -190,15 +188,17 @@ export async function triggerBuildTask(
         ? error.message
         : "Unknown error triggering build task";
 
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      level: "error" as const,
+      message: `Failed to trigger build task: ${errorMessage}`,
+    };
+
     await db
       .update(buildSchema)
       .set({
         status: "failed",
-        logs: sql`jsonb_build_array(${JSON.stringify({
-          timestamp: new Date().toISOString(),
-          level: "error",
-          message: `Failed to trigger build task: ${errorMessage}`,
-        } as BuildLogEntry)})`,
+        logs: [logEntry],
       })
       .where(eq(buildSchema.id, build.id));
 

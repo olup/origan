@@ -37,8 +37,10 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       return res.end(JSON.stringify({ error: "No host header found" }));
     }
 
-    // Remove port if present and replace domain
-    const domain = host.split(":")[0]; // Use full domain without port
+    // Use full host (including port if present) for lookup
+    // In dev: pr-1--project.localtest.me:7777
+    // In prod: pr-1--project.example.com (no port in Host header)
+    const domain = host;
 
     console.log("Domain:", domain);
 

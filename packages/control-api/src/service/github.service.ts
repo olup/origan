@@ -9,6 +9,7 @@ import {
   userSchema,
 } from "../libs/db/schema.js";
 import { githubAppInstance } from "../libs/github.js";
+import { sanitizeTrackName } from "../utils/track.js";
 import { triggerBuildTask } from "./build/index.js";
 import { resolveBranchRule } from "./github-branch-rule.service.js";
 
@@ -278,6 +279,143 @@ export async function handlePushEvent(payload: {
       .withError(error)
       .error(
         `Error handling push event for repository ${payload.repository.full_name}`,
+      );
+  }
+}
+
+type PullRequestEventPayload = {
+  action: string;
+  pull_request: {
+    number: number;
+    head: {
+      ref: string;
+      sha: string | null;
+    };
+    base: {
+      ref: string;
+    };
+  };
+  repository: {
+    id: number;
+    full_name: string;
+  };
+};
+
+export async function handlePullRequestEvent(payload: PullRequestEventPayload) {
+  const log = getLogger();
+
+  if (payload.action === "closed") {
+    log.info(
+      `Pull request #${payload.pull_request.number} for repository ${payload.repository.full_name} closed. TODO: implement preview teardown.`,
+    );
+    return;
+  }
+
+  const deployActions = new Set(["opened", "reopened", "synchronize"]);
+
+  if (!deployActions.has(payload.action)) {
+    log.info(
+      `Skipping pull_request action ${payload.action} for repository ${payload.repository.full_name}.`,
+    );
+    return;
+  }
+
+  const targetBranchName = payload.pull_request.base.ref;
+  const sourceBranchName = payload.pull_request.head.ref;
+  const commitSha = payload.pull_request.head.sha;
+  const githubRepositoryId = payload.repository.id;
+
+  if (!commitSha) {
+    log.info(
+      `Pull request #${payload.pull_request.number} missing head commit SHA. Skipping preview deployment.`,
+    );
+    return;
+  }
+
+  try {
+    const githubConfigWithProject = await db.query.githubConfigSchema.findFirst(
+      {
+        where: eq(githubConfigSchema.githubRepositoryId, githubRepositoryId),
+        with: {
+          project: true,
+          githubAppInstallation: true,
+        },
+      },
+    );
+
+    if (!githubConfigWithProject || !githubConfigWithProject.project) {
+      log.info(
+        `No project or GitHub configuration found for repository ID ${githubRepositoryId}.`,
+      );
+      return;
+    }
+
+    if (!githubConfigWithProject.githubAppInstallation) {
+      log.error(
+        `No GitHub App installation found for project ${githubConfigWithProject.project.name}`,
+      );
+      return;
+    }
+
+    const ruleResolution = await resolveBranchRule(
+      githubConfigWithProject.project.id,
+      targetBranchName,
+    );
+
+    if (!ruleResolution) {
+      log.info(
+        `Pull request #${payload.pull_request.number} targeting branch "${targetBranchName}" for project ${githubConfigWithProject.project.name} does not match any branch rule. Skipping preview deployment.`,
+      );
+      return;
+    }
+
+    if (!ruleResolution.rule.enablePreviews) {
+      log.info(
+        `Pull request #${payload.pull_request.number} targeting branch "${targetBranchName}" matched a rule with previews disabled. Skipping preview deployment.`,
+      );
+      return;
+    }
+
+    const prTrackName = sanitizeTrackName(`pr-${payload.pull_request.number}`);
+    const ruleResolutionForPr = { ...ruleResolution, trackName: prTrackName };
+
+    const buildReference = await triggerBuildTask(
+      githubConfigWithProject.project.id,
+      sourceBranchName,
+      commitSha,
+      { ruleResolution: ruleResolutionForPr },
+    );
+
+    if (buildReference?.error) {
+      log.error(
+        `Failed to trigger preview build for pull request #${payload.pull_request.number} on project ${githubConfigWithProject.project.name}: ${buildReference.error}`,
+      );
+      return;
+    }
+
+    log.info(
+      `Triggered preview deployment for pull request #${payload.pull_request.number} (branch ${sourceBranchName}) on project ${githubConfigWithProject.project.name}.`,
+    );
+  } catch (error) {
+    let extraDetails = "";
+    if (error && typeof error === "object") {
+      const maybeDbError = error as { query?: unknown; parameters?: unknown };
+      const fragments: string[] = [];
+      if (maybeDbError.query) {
+        fragments.push(`query=${String(maybeDbError.query)}`);
+      }
+      if (maybeDbError.parameters) {
+        fragments.push(`parameters=${JSON.stringify(maybeDbError.parameters)}`);
+      }
+      if (fragments.length > 0) {
+        extraDetails = ` (${fragments.join(", ")})`;
+      }
+    }
+
+    log
+      .withError(error)
+      .error(
+        `Error handling pull request event for repository ${payload.repository.full_name}${extraDetails}`,
       );
   }
 }

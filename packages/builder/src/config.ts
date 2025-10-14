@@ -26,6 +26,9 @@ export const BuildRunnerEnvSchema = z.object({
 
   // Environment variables for the build
   BUILD_ENV: z.string().optional(), // JSON string of environment variables
+
+  // Working directory for cloning (optional, defaults to /app for containers)
+  WORK_DIR: z.string().optional().default("/app"),
 });
 
 // Parse and validate the environment variables

@@ -1,5 +1,5 @@
+import { spawn } from "node:child_process";
 import * as k8s from "@kubernetes/client-node";
-import Dockerode from "dockerode";
 import { env } from "../config.js";
 import { getLogger } from "../instrumentation.js";
 
@@ -47,139 +47,70 @@ export interface TaskRunner {
   startTask: (params: TaskParams) => Promise<TaskDetails>;
 }
 
-export class DockerTaskRunner implements TaskRunner {
+export class LocalProcessTaskRunner implements TaskRunner {
   async startTask(params: TaskParams): Promise<TaskDetails> {
     const log = getLogger();
 
-    const {
-      taskId,
-      imageName,
-      env = {},
-      namePrefix = "origan-task",
-      resources,
-    } = params;
+    const { taskId, env: envVars = {}, resources } = params;
 
-    const containerId = `${namePrefix}-${taskId}`;
+    log.info(`[Local Process - ${taskId}] Starting builder task with tsx`);
 
-    log.info(`[Docker Task - ${taskId}] Starting task with image ${imageName}`);
+    const builderPath = "../builder";
+    const tsxCommand = "pnpm";
+    const tsxArgs = ["--filter", "@origan/builder", "dev"];
 
-    const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
-    let timeoutHandle: NodeJS.Timeout | null = null;
+    // Create a temporary work directory for this build
+    const tmpDir = `/tmp/origan-builds/${taskId}`;
 
-    try {
-      log.info(
-        `[Docker Task - ${taskId}] Creating container ${containerId} with image ${imageName}`,
-      );
+    const childProcess = spawn(tsxCommand, tsxArgs, {
+      cwd: builderPath,
+      env: {
+        ...process.env,
+        ...envVars,
+        WORK_DIR: tmpDir,
+      },
+      stdio: ["ignore", "inherit", "inherit"],
+      detached: false,
+    });
 
-      // Parse and convert resource constraints to Docker format
-      const hostConfig: Dockerode.HostConfig = {
-        // AutoRemove: true,
-        NetworkMode: "origan_origan-network",
-      };
+    log.info(
+      `[Local Process - ${taskId}] Process started with PID ${childProcess.pid}`,
+    );
 
-      if (resources) {
-        // Convert memory from Kubernetes format (e.g., 256Mi, 1Gi) to bytes for Docker
-        if (resources.memory) {
-          const memoryBytes = convertK8sResourceToBytes(resources.memory);
-          if (memoryBytes > 0) {
-            hostConfig.Memory = memoryBytes;
-          }
-        }
-
-        // Convert memory requests
-        if (resources.memoryRequests) {
-          const memoryReservation = convertK8sResourceToBytes(
-            resources.memoryRequests,
+    // Set timeout if specified
+    if (resources?.timeoutSeconds && resources.timeoutSeconds > 0) {
+      setTimeout(() => {
+        if (!childProcess.killed) {
+          log.info(
+            `[Local Process - ${taskId}] Task exceeded timeout of ${resources.timeoutSeconds}s, killing process.`,
           );
-          if (memoryReservation > 0) {
-            hostConfig.MemoryReservation = memoryReservation;
-          }
+          childProcess.kill("SIGTERM");
         }
-
-        // Convert CPU limits from Kubernetes format to Docker NanoCPUs format
-        if (resources.cpu) {
-          const nanoCpus = convertK8sCpuToNanoCpu(resources.cpu);
-          if (nanoCpus > 0) {
-            hostConfig.NanoCpus = nanoCpus;
-          }
-        }
-      }
-
-      // Convert env object to array format required by Docker
-      const envArray = Object.entries(env).map(
-        ([key, value]) => `${key}=${value}`,
-      );
-
-      const container = await docker.createContainer({
-        Image: imageName,
-        name: containerId,
-        Env: envArray,
-        HostConfig: hostConfig,
-        Labels: {
-          "origan.com/task-id": taskId,
-          "origan.com/created-at": new Date().toISOString(),
-          "app.kubernetes.io/name": namePrefix,
-          "app.kubernetes.io/component": "task-container",
-        },
-      });
-
-      await container.start();
-
-      log.info(
-        `[Docker Task - ${taskId}] Container ${containerId} (ID: ${container.id}) started.`,
-      );
-
-      // Set timeout if specified
-      if (resources?.timeoutSeconds && resources.timeoutSeconds > 0) {
-        timeoutHandle = setTimeout(async () => {
-          try {
-            log.info(
-              `[Docker Task - ${taskId}] Task exceeded timeout of ${resources.timeoutSeconds}s, stopping container.`,
-            );
-            await container.stop();
-          } catch (error) {
-            log
-              .withError(error)
-              .error(
-                `[Docker Task - ${taskId}] Failed to stop container that exceeded timeout:`,
-              );
-          }
-        }, resources.timeoutSeconds * 1000);
-      }
-
-      const startDetails: TaskDetails = {
-        id: taskId,
-        containerId: container.id,
-        startedAt: new Date().toISOString(),
-      };
-
-      // Start monitoring container status in background
-      container.wait().then(async (data: { StatusCode: number }) => {
-        // Clear timeout if it was set
-        if (timeoutHandle) {
-          clearTimeout(timeoutHandle);
-          timeoutHandle = null;
-        }
-
-        log.info(
-          `[Docker Task - ${taskId}] Container ${containerId} exited with status code ${data.StatusCode}.`,
-        );
-
-        // try {
-        //   await container.remove({ force: true });
-        // } catch (_error) {
-        //   log.info(
-        //     `[Docker Task - ${taskId}] Container already removed or not found`
-        //   );
-        // }
-      });
-
-      return startDetails;
-    } catch (error) {
-      throw new Error(`Failed to create Docker container ${containerId}`, {
-        cause: error,
-      });
+      }, resources.timeoutSeconds * 1000);
     }
+
+    // Handle process exit
+    childProcess.on("exit", (code, signal) => {
+      if (code !== null) {
+        log.info(
+          `[Local Process - ${taskId}] Process exited with code ${code}`,
+        );
+      } else if (signal) {
+        log.info(
+          `[Local Process - ${taskId}] Process killed by signal ${signal}`,
+        );
+      }
+    });
+
+    childProcess.on("error", (error) => {
+      log.withError(error).error(`[Local Process - ${taskId}] Process error`);
+    });
+
+    return {
+      id: taskId,
+      containerId: String(childProcess.pid),
+      startedAt: new Date().toISOString(),
+    };
   }
 }
 
@@ -280,40 +211,6 @@ export class KubernetesTaskRunner implements TaskRunner {
   }
 }
 
-// Helper functions to convert between K8s and Docker resource formats
-function convertK8sResourceToBytes(k8sResource: string): number {
-  const match = k8sResource.match(/^(\d+)(Ki|Mi|Gi|Ti|Pi|k|m|g|t|p)?$/i);
-  if (!match) return 0;
-
-  const value = Number.parseInt(match[1], 10);
-  const unit = (match[2] || "").toLowerCase();
-
-  const multipliers: Record<string, number> = {
-    ki: 1024,
-    mi: 1024 * 1024,
-    gi: 1024 * 1024 * 1024,
-    ti: 1024 * 1024 * 1024 * 1024,
-    pi: 1024 * 1024 * 1024 * 1024 * 1024,
-    k: 1000,
-    m: 1000 * 1000,
-    g: 1000 * 1000 * 1000,
-    t: 1000 * 1000 * 1000 * 1000,
-    p: 1000 * 1000 * 1000 * 1000 * 1000,
-    "": 1,
-  };
-
-  return value * (multipliers[unit] || 1);
-}
-
-function convertK8sCpuToNanoCpu(k8sCpu: string): number {
-  if (k8sCpu.endsWith("m")) {
-    // Convert millicores to nanocpus (1m = 1000000 nanocpus)
-    return Number.parseInt(k8sCpu.replace("m", ""), 10) * 1000000;
-  }
-  // Convert cores to nanocpus (1 core = 1000000000 nanocpus)
-  return Number.parseFloat(k8sCpu) * 1000000000;
-}
-
 export interface TaskOptions {
   taskId: string;
   imageName: string;
@@ -329,7 +226,7 @@ export async function triggerTask(options: TaskOptions): Promise<TaskDetails> {
   const taskRunner: TaskRunner =
     environment === "production"
       ? new KubernetesTaskRunner()
-      : new DockerTaskRunner();
+      : new LocalProcessTaskRunner();
 
   return taskRunner.startTask({
     taskId: options.taskId,

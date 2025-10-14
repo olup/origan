@@ -8,6 +8,7 @@ type ExecWithLogs = (command: string, logger: Logger) => Promise<string>;
 export async function executeBuild(
   execWithLogs: ExecWithLogs,
   logger: Logger,
+  workDir: string,
 ): Promise<BuildResult> {
   // ni will automatically detect the package manager
   await logger.info("Installing dependencies...");
@@ -21,9 +22,9 @@ export async function executeBuild(
   await execWithLogs("nr build", logger);
 
   // Find build output directory (usually 'dist' or 'build')
-  const distDir = existsSync(join("/app", "dist"))
-    ? join("/app", "dist")
-    : join("/app", "build");
+  const distDir = existsSync(join(workDir, "dist"))
+    ? join(workDir, "dist")
+    : join(workDir, "build");
 
   if (!existsSync(distDir)) {
     throw new Error(

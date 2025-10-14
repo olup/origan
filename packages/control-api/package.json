@@ -55,7 +55,6 @@
     "@trpc/server": "^11.5.1",
     "@types/pg": "^8.15.4",
     "acme-client": "^5.4.0",
-    "dockerode": "^4.0.6",
     "dotenv": "^16.5.0",
     "drizzle-kit": "0.31.1",
     "drizzle-orm": "0.43.1",
@@ -72,7 +71,6 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
-    "@types/dockerode": "^3.3.38",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20.17.30",
     "@types/unzipper": "^0.10.11",
