@@ -101,7 +101,7 @@ export async function getOrCreateTrack({
 }: {
   projectId: string;
   name: string;
-  isSystem: boolean;
+  isSystem?: boolean;
   environmentId?: string;
 }) {
   let track = await db.query.trackSchema.findFirst({
@@ -111,7 +111,31 @@ export async function getOrCreateTrack({
     ),
   });
   if (!track) {
-    track = await createTrack({ projectId, name, isSystem, environmentId });
+    track = await createTrack({
+      projectId,
+      name,
+      isSystem: isSystem ?? false,
+      environmentId,
+    });
+  } else {
+    const updates: Partial<typeof trackSchema.$inferInsert> = {};
+
+    if (environmentId && track.environmentId !== environmentId) {
+      updates.environmentId = environmentId;
+    }
+
+    if (typeof isSystem === "boolean" && track.isSystem !== isSystem) {
+      updates.isSystem = isSystem;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      const [updated] = await db
+        .update(trackSchema)
+        .set(updates)
+        .where(eq(trackSchema.id, track.id))
+        .returning();
+      track = updated ?? track;
+    }
   }
   return track;
 }

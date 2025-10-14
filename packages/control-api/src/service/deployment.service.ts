@@ -170,10 +170,14 @@ export async function initiateDeployment({
   projectRef,
   buildId,
   trackName,
+  environmentId,
+  isSystemTrack,
 }: {
   projectRef: string;
   buildId?: string;
   trackName?: string;
+  environmentId?: string;
+  isSystemTrack?: boolean;
 }) {
   const log = getLogger();
 
@@ -194,7 +198,8 @@ export async function initiateDeployment({
     ? await getOrCreateTrack({
         projectId: project.id,
         name: trackName,
-        isSystem: false,
+        isSystem: isSystemTrack,
+        environmentId,
       })
     : undefined;
 

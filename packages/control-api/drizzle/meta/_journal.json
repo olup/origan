@@ -169,6 +169,13 @@
       "when": 1759518694344,
       "tag": "0023_solid_risque",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1760388518672,
+      "tag": "0024_big_rictor",
+      "breakpoints": true
     }
   ]
 }

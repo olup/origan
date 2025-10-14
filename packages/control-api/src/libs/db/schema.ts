@@ -73,21 +73,6 @@ export const projectSchema = pgTable("project", {
   ...timestamps,
 });
 
-export const projectRelations = relations(projectSchema, ({ many, one }) => ({
-  deployments: many(deploymentSchema),
-  organization: one(organizationSchema, {
-    fields: [projectSchema.organizationId],
-    references: [organizationSchema.id],
-  }),
-  creator: one(userSchema, {
-    fields: [projectSchema.creatorId],
-    references: [userSchema.id],
-  }),
-  githubConfig: one(githubConfigSchema),
-  environments: many(environmentsSchema),
-  tracks: many(trackSchema),
-}));
-
 export const trackSchema = pgTable(
   "track",
   {
@@ -387,17 +372,58 @@ export const githubConfigSchema = pgTable("github_config", {
   githubAppInstallationId: uuid("github_app_installation_id")
     .references(() => githubAppInstallationSchema.id)
     .notNull(),
-  productionBranchName: text("production_branch_name")
-    .notNull()
-    .default("main"),
   projectRootPath: text("project_root_path").notNull().default(""),
   ...timestamps,
 });
 
 // GitHub config relations
+export const githubBranchRuleSchema = pgTable(
+  "github_branch_rule",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .references(() => projectSchema.id, { onDelete: "cascade" })
+      .notNull(),
+    githubConfigId: uuid("github_config_id")
+      .references(() => githubConfigSchema.id, { onDelete: "cascade" })
+      .notNull(),
+    branchPattern: text("branch_pattern").notNull(),
+    environmentId: uuid("environment_id")
+      .references(() => environmentsSchema.id, { onDelete: "cascade" })
+      .notNull(),
+    enablePreviews: boolean("enable_previews").notNull().default(false),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    ...timestamps,
+  },
+  (table) => ({
+    projectPatternIdx: uniqueIndex("github_branch_rule_project_pattern_idx").on(
+      table.projectId,
+      table.branchPattern,
+    ),
+  }),
+);
+
+export const githubBranchRuleRelations = relations(
+  githubBranchRuleSchema,
+  ({ one }) => ({
+    project: one(projectSchema, {
+      fields: [githubBranchRuleSchema.projectId],
+      references: [projectSchema.id],
+    }),
+    githubConfig: one(githubConfigSchema, {
+      fields: [githubBranchRuleSchema.githubConfigId],
+      references: [githubConfigSchema.id],
+    }),
+    environment: one(environmentsSchema, {
+      fields: [githubBranchRuleSchema.environmentId],
+      references: [environmentsSchema.id],
+    }),
+  }),
+);
+
 export const githubConfigRelations = relations(
   githubConfigSchema,
-  ({ one }) => ({
+  ({ one, many }) => ({
     project: one(projectSchema, {
       fields: [githubConfigSchema.projectId],
       references: [projectSchema.id],
@@ -406,8 +432,25 @@ export const githubConfigRelations = relations(
       fields: [githubConfigSchema.githubAppInstallationId],
       references: [githubAppInstallationSchema.id],
     }),
+    branchRules: many(githubBranchRuleSchema),
   }),
 );
+
+export const projectRelations = relations(projectSchema, ({ many, one }) => ({
+  deployments: many(deploymentSchema),
+  organization: one(organizationSchema, {
+    fields: [projectSchema.organizationId],
+    references: [organizationSchema.id],
+  }),
+  creator: one(userSchema, {
+    fields: [projectSchema.creatorId],
+    references: [userSchema.id],
+  }),
+  githubConfig: one(githubConfigSchema),
+  environments: many(environmentsSchema),
+  tracks: many(trackSchema),
+  githubBranchRules: many(githubBranchRuleSchema),
+}));
 
 export const buildStatusEnum = pgEnum("build_status", [
   "pending",

@@ -142,12 +142,12 @@ export const projectsRouter = router({
         reference: z.string().min(1),
         githubRepositoryId: z.number(),
         githubRepositoryFullName: z.string(),
-        productionBranchName: z.string(),
+        productionBranchName: z.string().min(1),
         projectRootPath: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { reference, ...githubData } = input;
+      const { reference, productionBranchName, ...githubData } = input;
 
       const project = await db.query.projectSchema.findFirst({
         where: eq(projectSchema.reference, reference),
@@ -162,6 +162,7 @@ export const projectsRouter = router({
         project.organizationId,
         ctx.userId, // Still need userId for GitHub installation lookup
         githubData,
+        productionBranchName,
       );
       return githubConfig;
     }),
@@ -248,15 +249,22 @@ export const projectsRouter = router({
       );
 
       // Trigger the build task
-      const buildReference = await triggerBuildTask(
+      const buildTaskResult = await triggerBuildTask(
         project.id,
         input.branch,
         selectedBranch.commit.sha,
       );
 
+      if (buildTaskResult?.error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: buildTaskResult.error,
+        });
+      }
+
       return {
         success: true,
-        buildReference,
+        buildReference: buildTaskResult,
       };
     }),
 

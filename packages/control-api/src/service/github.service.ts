@@ -10,6 +10,7 @@ import {
 } from "../libs/db/schema.js";
 import { githubAppInstance } from "../libs/github.js";
 import { triggerBuildTask } from "./build/index.js";
+import { resolveBranchRule } from "./github-branch-rule.service.js";
 
 // We will use an undocumented BUT solidly production ready endpoint of the gh api. See https://github.com/octokit/octokit.js/issues/163
 // As such we'll transfer the documented endpoint types
@@ -241,23 +242,35 @@ export async function handlePushEvent(payload: {
       return;
     }
 
-    // TODO : for now, only the main production branch is auto deployed
-    if (branchName !== githubConfigWithProject.productionBranchName) {
+    const ruleResolution = await resolveBranchRule(
+      githubConfigWithProject.project.id,
+      branchName,
+    );
+
+    if (!ruleResolution) {
       log.info(
-        `Push to non-production branch "${branchName}" for project ${githubConfigWithProject.project.name}. No build triggered.`,
+        `Push to branch "${branchName}" for project ${githubConfigWithProject.project.name} without matching GitHub branch rule. No build triggered.`,
       );
       return;
     }
 
     log.info(
-      `Push to production branch "${branchName}" for project ${githubConfigWithProject.project.name}. Triggering build for commit ${commitSha}.`,
+      `Push to branch "${branchName}" for project ${githubConfigWithProject.project.name}. Triggering build for commit ${commitSha} using rule ${ruleResolution.rule.id}.`,
     );
 
     const buildReference = await triggerBuildTask(
       githubConfigWithProject.project.id,
       branchName,
       commitSha,
+      { ruleResolution },
     );
+
+    if (buildReference?.error) {
+      log.error(
+        `Failed to trigger build for project ${githubConfigWithProject.project.name} on branch ${branchName}: ${buildReference.error}`,
+      );
+      return;
+    }
 
     return buildReference;
   } catch (error) {

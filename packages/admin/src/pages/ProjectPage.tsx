@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, Route, useLocation, useParams } from "wouter";
+import { BranchRulesManager } from "../components/BranchRulesManager";
 import { CustomDomainsManager } from "../components/CustomDomainsManager";
 import { DeployModal } from "../components/DeployModal";
 import { EnvironmentManager } from "../components/EnvironmentManager";
@@ -245,6 +246,7 @@ export const ProjectPage = () => {
   const getActiveTab = () => {
     if (location.includes("/domains")) return "domains";
     if (location.includes("/environments")) return "environments";
+    if (location.includes("/github")) return "github";
     return "deployments";
   };
   const activeTab = getActiveTab();
@@ -324,6 +326,14 @@ export const ProjectPage = () => {
             >
               Environments
             </TabLink>
+            {project.githubConfig && (
+              <TabLink
+                href={`/projects/${projectReference}/github`}
+                isActive={activeTab === "github"}
+              >
+                GitHub Rules
+              </TabLink>
+            )}
           </Group>
         </Box>
 
@@ -336,6 +346,19 @@ export const ProjectPage = () => {
         </Route>
         <Route path="/projects/:reference/environments">
           {() => <ProjectSettings projectReference={projectReference} />}
+        </Route>
+        <Route path="/projects/:reference/github">
+          {() =>
+            project.githubConfig ? (
+              <BranchRulesManager projectReference={projectReference} />
+            ) : (
+              <Card withBorder padding="xl">
+                <Text c="dimmed">
+                  Connect this project to GitHub to manage branch automation.
+                </Text>
+              </Card>
+            )
+          }
         </Route>
       </Stack>
 

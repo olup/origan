@@ -16,16 +16,23 @@ import { triggerTask } from "../../utils/task.js";
 import { generateDeployToken, hashToken } from "../../utils/token.js";
 import { initiateDeployment } from "../deployment.service.js";
 import {
-  getEnvironmentByName,
+  getEnvironmentById,
   getLatestRevision,
 } from "../environment.service.js";
 import { generateGitHubInstallationToken } from "../github.service.js";
+import type { BranchRuleResolution } from "../github-branch-rule.service.js";
+import { resolveBranchRule } from "../github-branch-rule.service.js";
 import type { BuildLogEntry } from "./types.js";
+
+type TriggerBuildTaskOptions = {
+  ruleResolution?: BranchRuleResolution | null;
+};
 
 export async function triggerBuildTask(
   projectId: string,
   branchName: string,
   commitSha: string,
+  options: TriggerBuildTaskOptions = {},
 ) {
   const log = getLogger();
   log.info(
@@ -58,6 +65,16 @@ export async function triggerBuildTask(
   if (!githubConfig?.githubAppInstallation?.githubInstallationId) {
     log.error(`GitHub App Installation not found for project ${projectId}.`);
     return { error: "GitHub App Installation not found for project" };
+  }
+
+  const resolvedRule =
+    options.ruleResolution ?? (await resolveBranchRule(projectId, branchName));
+
+  if (!resolvedRule) {
+    log.info(
+      `No branch rule matched for project ${projectId} and branch ${branchName}. Skipping deployment creation.`,
+    );
+    return { error: "No matching branch rule" };
   }
 
   let githubToken: string;
@@ -97,33 +114,29 @@ export async function triggerBuildTask(
     throw new Error("Failed to create build record");
   }
 
-  // Create deployment for this build
-  // on the right track
-
-  let trackName = branchName;
-  if (branchName === githubConfig.productionBranchName) {
-    trackName = "prod";
-  }
+  const trackName = resolvedRule.trackName;
 
   const initiateDeploymentResult = await initiateDeployment({
     projectRef: project.reference,
     buildId: build.id,
     trackName,
+    environmentId: resolvedRule.rule.environmentId,
+    isSystemTrack: resolvedRule.rule.isPrimary,
   });
 
   // Get environment variables for the build
   let buildEnvVars: Record<string, string> = {};
   try {
-    // Determine environment name based on track
-    const environmentName = trackName === "prod" ? "production" : "preview";
-    const environment = await getEnvironmentByName(projectId, environmentName);
+    const environment = resolvedRule.rule.environmentId
+      ? await getEnvironmentById(resolvedRule.rule.environmentId)
+      : null;
 
     if (environment) {
       const latestRevision = await getLatestRevision(environment.id);
       if (latestRevision?.variables) {
         buildEnvVars = latestRevision.variables as Record<string, string>;
         log.info(
-          `Found ${Object.keys(buildEnvVars).length} environment variables for ${environmentName}`,
+          `Found ${Object.keys(buildEnvVars).length} environment variables for ${environment.name}`,
         );
       }
     }
