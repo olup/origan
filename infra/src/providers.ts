@@ -1,14 +1,6 @@
-import * as aws from "@pulumi/aws";
 import * as docker from "@pulumi/docker";
 import * as kubernetes from "@pulumi/kubernetes";
-import * as pulumi from "@pulumi/pulumi";
-import {
-  garageAccessKey,
-  garageEndpoint,
-  garageSecretKey,
-  kubeconfig,
-  registryEndpoint,
-} from "./config.js";
+import { kubeconfig, registryEndpoint } from "./config.js";
 
 // Kubernetes provider
 export const k8sProvider = new kubernetes.Provider("k8s", {

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import * as docker from "@pulumi/docker";
 import * as kubernetes from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { adminUrl, labels, namespace } from "../config.js";
+import { labels, namespace } from "../config.js";
 import { k8sProvider } from "../providers.js";
 
 // Get project root
@@ -68,7 +68,7 @@ const adminImage = new docker.Image(
 );
 
 // Create admin nginx deployment
-const adminDeployment = new kubernetes.apps.v1.Deployment(
+const _adminDeployment = new kubernetes.apps.v1.Deployment(
   "admin-nginx-server",
   {
     metadata: {

@@ -1,11 +1,12 @@
 #!/usr/bin/env tsx
+
 /**
  * Register an ACME account with Let's Encrypt
  * This script should be run once to register the account key
  */
 
+import { readFileSync } from "node:fs";
 import * as acme from "acme-client";
-import { readFileSync } from "fs";
 
 const ACME_SERVER_URL =
   process.env.ACME_SERVER_URL ||

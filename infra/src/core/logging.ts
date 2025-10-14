@@ -48,7 +48,7 @@ const fluentbitClusterRole = new kubernetes.rbac.v1.ClusterRole(
 );
 
 // Create ClusterRoleBinding
-const fluentbitClusterRoleBinding = new kubernetes.rbac.v1.ClusterRoleBinding(
+const _fluentbitClusterRoleBinding = new kubernetes.rbac.v1.ClusterRoleBinding(
   "fluentbit-binding",
   {
     metadata: {
@@ -101,7 +101,7 @@ const fluentbitConfig = new kubernetes.core.v1.ConfigMap(
             .split(":");
           const host = urlParts[0];
           const port = urlParts[1] || "80";
-          const authString = Buffer.from(`${username}:${password}`).toString(
+          const _authString = Buffer.from(`${username}:${password}`).toString(
             "base64",
           );
           return `

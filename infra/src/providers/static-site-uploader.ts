@@ -1,3 +1,6 @@
+import * as crypto from "node:crypto";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import {
   DeleteObjectsCommand,
   ListObjectsV2Command,
@@ -5,11 +8,8 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import * as pulumi from "@pulumi/pulumi";
-import * as crypto from "crypto";
-import * as fs from "fs";
 import { glob } from "glob";
 import * as mime from "mime-types";
-import * as path from "path";
 
 interface StaticSiteUploaderInputs {
   bucketName: pulumi.Input<string>;
@@ -40,7 +40,7 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
   }
 
   async update(
-    id: string,
+    _id: string,
     olds: StaticSiteUploaderOutputs,
     news: any,
   ): Promise<pulumi.dynamic.UpdateResult<StaticSiteUploaderOutputs>> {
@@ -55,7 +55,7 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
     return { outs: olds };
   }
 
-  async delete(id: string, props: StaticSiteUploaderOutputs) {
+  async delete(_id: string, props: StaticSiteUploaderOutputs) {
     // Optionally clean up bucket contents
     // For now, we'll leave files in place as bucket has forceDestroy
     pulumi.log.info(

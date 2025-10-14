@@ -1,6 +1,6 @@
+import * as crypto from "node:crypto";
 import * as kubernetes from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import * as crypto from "crypto";
 import {
   apiUrl,
   imageTag,
@@ -85,7 +85,7 @@ const clusterRole = new kubernetes.rbac.v1.ClusterRole(
 );
 
 // Create ClusterRoleBinding
-const clusterRoleBinding = new kubernetes.rbac.v1.ClusterRoleBinding(
+const _clusterRoleBinding = new kubernetes.rbac.v1.ClusterRoleBinding(
   "control-api-binding",
   {
     metadata: {
@@ -304,7 +304,7 @@ const controlApiService = new kubernetes.core.v1.Service(
 );
 
 // Ingress
-const controlApiIngress = new kubernetes.networking.v1.Ingress(
+const _controlApiIngress = new kubernetes.networking.v1.Ingress(
   "control-api-ingress",
   {
     metadata: {

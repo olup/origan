@@ -5,7 +5,7 @@ import { k8sProvider } from "../providers.js";
 import { adminServiceName } from "./admin-deployment.js";
 
 // Ingress for admin panel - points to nginx static server
-const adminIngress = new kubernetes.networking.v1.Ingress(
+const _adminIngress = new kubernetes.networking.v1.Ingress(
   "admin-ingress",
   {
     metadata: {

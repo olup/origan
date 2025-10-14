@@ -91,7 +91,7 @@ export class GarageBucket extends pulumi.dynamic.Resource {
         };
       },
 
-      async update(id: string, olds: any, news: any) {
+      async update(_id: string, olds: any, news: any) {
         // For updates, we only handle website configuration changes
         if (JSON.stringify(olds.website) !== JSON.stringify(news.website)) {
           const { S3Client, PutBucketWebsiteCommand } = await import(
@@ -136,7 +136,7 @@ export class GarageBucket extends pulumi.dynamic.Resource {
         };
       },
 
-      async delete(id: string, props: any) {
+      async delete(_id: string, props: any) {
         const {
           S3Client,
           ListObjectsV2Command,
@@ -182,12 +182,12 @@ export class GarageBucket extends pulumi.dynamic.Resource {
               Bucket: props.bucketName,
             }),
           );
-        } catch (error: any) {
+        } catch (_error: any) {
           // Silently fail on delete - bucket might not exist
         }
       },
 
-      async diff(id: string, olds: any, news: any) {
+      async diff(_id: string, olds: any, news: any) {
         const changes =
           JSON.stringify(olds.website) !== JSON.stringify(news.website);
         return {

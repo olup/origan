@@ -1,7 +1,4 @@
-import * as aws from "@pulumi/aws";
-import * as pulumi from "@pulumi/pulumi";
 import { garageEndpoint, resourceName } from "../config.js";
-import { garageProvider } from "../providers.js";
 
 // TODO: Fix AWS provider smithy error, then uncomment
 // Create deployment bucket

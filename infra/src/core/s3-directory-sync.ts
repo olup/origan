@@ -1,8 +1,8 @@
+import * as crypto from "node:crypto";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import * as command from "@pulumi/command";
 import * as pulumi from "@pulumi/pulumi";
-import * as crypto from "crypto";
-import * as fs from "fs";
-import * as path from "path";
 
 export interface S3DirectorySyncArgs {
   sourceDir: string;
@@ -87,7 +87,7 @@ export class S3DirectorySync extends pulumi.ComponentResource {
     countFiles(args.sourceDir);
 
     // Build S3 URI
-    const bucketUri = pulumi.interpolate`s3://${args.bucketName}${args.prefix ? "/" + args.prefix : ""}`;
+    const bucketUri = pulumi.interpolate`s3://${args.bucketName}${args.prefix ? `/${args.prefix}` : ""}`;
 
     // Build AWS CLI environment variables
     const env = pulumi

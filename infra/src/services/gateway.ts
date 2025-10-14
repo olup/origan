@@ -222,7 +222,7 @@ const gatewayService = new kubernetes.core.v1.Service(
 
 // TCP passthrough for HTTPS (gateway handles TLS termination)
 // Note: Using HostSNIRegexp with low priority to catch all domains after more specific routes
-const gatewayIngressRouteTCP = new kubernetes.apiextensions.CustomResource(
+const _gatewayIngressRouteTCP = new kubernetes.apiextensions.CustomResource(
   "gateway-ingress-tcp",
   {
     apiVersion: "traefik.io/v1alpha1",
@@ -260,7 +260,7 @@ const gatewayIngressRouteTCP = new kubernetes.apiextensions.CustomResource(
 // HTTP ingress (redirect to HTTPS or handle HTTP)
 // Note: Using a catch-all rule to handle both *.origan.app and custom domains
 // This is necessary for ACME HTTP-01 challenge validation on custom domains
-const gatewayIngressHTTP = new kubernetes.networking.v1.Ingress(
+const _gatewayIngressHTTP = new kubernetes.networking.v1.Ingress(
   "gateway-ingress-http",
   {
     metadata: {

@@ -5,7 +5,7 @@ import { k8sProvider } from "../providers.js";
 import { landingServiceName } from "./landing-deployment.js";
 
 // Ingress for landing page - points to nginx static server
-const landingIngress = new kubernetes.networking.v1.Ingress(
+const _landingIngress = new kubernetes.networking.v1.Ingress(
   "landing-ingress",
   {
     metadata: {
