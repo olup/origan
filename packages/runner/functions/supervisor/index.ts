@@ -1,5 +1,5 @@
-import { resolve } from "https://deno.land/std@0.224.0/path/mod.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { resolve } from "https://deno.land/std@0.224.0/path/mod.ts";
 import { GetObjectCommand, S3Client } from "npm:@aws-sdk/client-s3";
 import { startCleanupInterval } from "./cleanup.ts";
 
@@ -157,7 +157,7 @@ const handler = async (req: Request) => {
       ...envVars,
       ["ORIGAN_FUNCTION_PATH", functionPath] as [string, string],
     ];
-    
+
     const worker = await EdgeRuntime.userWorkers.create({
       servicePath: workerPath,
       memoryLimitMb,

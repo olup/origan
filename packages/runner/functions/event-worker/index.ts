@@ -54,26 +54,27 @@ for await (const data of eventManager) {
   const pathParts = data.metadata.service_path.split("/");
   const deploymentId = pathParts[pathParts.length - 2];
   const projectId = pathParts[pathParts.length - 3];
-  
+
   // Extract function path from the last part of service_path (hash)
   // The actual function path needs to be passed through metadata
   // For now, we'll use the hash from the path as the function identifier
   const functionHash = pathParts[pathParts.length - 1];
-  
+
   // TODO: Get the actual function path from metadata when available
   // For now, we'll include the hash in the message
-  const functionPath = data.metadata.function_path || `function-${functionHash}`;
+  const functionPath =
+    data.metadata.function_path || `function-${functionHash}`;
 
   // Handle different event types
   const topic = `logs.${projectId}.${deploymentId}.${functionHash}`;
-  
+
   if (data.event_type === "Log") {
     try {
       const message = {
         timestamp: data.timestamp,
         message: data.event.msg,
         level: data.event.level,
-        functionPath: functionPath,  // Include clear text function path
+        functionPath: functionPath, // Include clear text function path
       };
       console.log(`Publishing log to ${topic}:`, message);
       // Use regular NATS publish instead of JetStream
@@ -124,7 +125,7 @@ for await (const data of eventManager) {
       console.error("Error publishing to NATS:", e);
     }
   }
-  
+
   // Log all events for debugging
   console.dir(data, { depth: Number.POSITIVE_INFINITY });
 }

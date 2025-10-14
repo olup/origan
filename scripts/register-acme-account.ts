@@ -7,13 +7,17 @@
 import * as acme from "acme-client";
 import { readFileSync } from "fs";
 
-const ACME_SERVER_URL = process.env.ACME_SERVER_URL || "https://acme-v02.api.letsencrypt.org/directory";
+const ACME_SERVER_URL =
+  process.env.ACME_SERVER_URL ||
+  "https://acme-v02.api.letsencrypt.org/directory";
 const ACME_ACCOUNT_KEY_PATH = process.env.ACME_ACCOUNT_KEY_PATH;
 
 async function registerAccount() {
   if (!ACME_ACCOUNT_KEY_PATH) {
     console.error("ACME_ACCOUNT_KEY_PATH environment variable is required");
-    console.error("Usage: ACME_ACCOUNT_KEY_PATH=/path/to/account-key.pem tsx scripts/register-acme-account.ts");
+    console.error(
+      "Usage: ACME_ACCOUNT_KEY_PATH=/path/to/account-key.pem tsx scripts/register-acme-account.ts",
+    );
     process.exit(1);
   }
 

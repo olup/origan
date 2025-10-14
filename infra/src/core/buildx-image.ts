@@ -1,5 +1,5 @@
-import * as pulumi from "@pulumi/pulumi";
 import * as command from "@pulumi/command";
+import * as pulumi from "@pulumi/pulumi";
 import { gitFingerprint, gitFingerprintSuffix } from "./git.js";
 
 export interface BuildxImageArgs {
@@ -34,34 +34,48 @@ function buildRepositoryReference(imageName: string, suffix: string): string {
   return `${repository}:${suffix}`;
 }
 
-export function buildxImage(name: string, args: BuildxImageArgs): BuildxImageResult {
+export function buildxImage(
+  name: string,
+  args: BuildxImageArgs,
+): BuildxImageResult {
   const primaryTag = pulumi.output(args.imageName);
   const suffix = pulumi.output(args.tagSuffix ?? gitFingerprintSuffix);
-  const uniqueTag = pulumi.all([primaryTag, suffix]).apply(([tag, suffixValue]) =>
-    buildRepositoryReference(tag, suffixValue),
+  const uniqueTag = pulumi
+    .all([primaryTag, suffix])
+    .apply(([tag, suffixValue]) => buildRepositoryReference(tag, suffixValue));
+
+  const additionalTags = pulumi
+    .output(args.additionalTags ?? [])
+    .apply(
+      (tags) => tags?.map((tag) => (typeof tag === "string" ? tag : "")) ?? [],
+    );
+
+  const allTags = pulumi
+    .all([primaryTag, uniqueTag, additionalTags])
+    .apply(([primary, unique, extras]) => {
+      const merged = new Set<string>();
+      if (primary) merged.add(primary);
+      if (unique) merged.add(unique);
+      (extras ?? []).filter(Boolean).forEach((tag) => merged.add(tag));
+      return Array.from(merged);
+    });
+
+  const tagArgs = allTags.apply((tags) =>
+    tags.map((tag) => `--tag ${tag}`).join(" "),
   );
 
-  const additionalTags = pulumi.output(args.additionalTags ?? []).apply(tags =>
-    tags?.map(tag => (typeof tag === "string" ? tag : "")) ?? [],
-  );
-
-  const allTags = pulumi.all([primaryTag, uniqueTag, additionalTags]).apply(([primary, unique, extras]) => {
-    const merged = new Set<string>();
-    if (primary) merged.add(primary);
-    if (unique) merged.add(unique);
-    (extras ?? []).filter(Boolean).forEach(tag => merged.add(tag));
-    return Array.from(merged);
-  });
-
-  const tagArgs = allTags.apply(tags => tags.map(tag => `--tag ${tag}`).join(" "));
-
-  const buildArgs = pulumi.output(args.buildArgs ?? {}).apply(resolvedArgs =>
-    stringifyBuildArgs(
-      Object.fromEntries(
-        Object.entries(resolvedArgs ?? {}).map(([key, value]) => [key, value ?? ""]),
+  const buildArgs = pulumi
+    .output(args.buildArgs ?? {})
+    .apply((resolvedArgs) =>
+      stringifyBuildArgs(
+        Object.fromEntries(
+          Object.entries(resolvedArgs ?? {}).map(([key, value]) => [
+            key,
+            value ?? "",
+          ]),
+        ),
       ),
-    ),
-  );
+    );
 
   const buildCommand = pulumi
     .all([
@@ -79,9 +93,9 @@ export function buildxImage(name: string, args: BuildxImageArgs): BuildxImageRes
       return `docker buildx build --progress plain --file ${dockerfile}${targetFragment}${platformFragment}${buildArgsFragment} ${tags} --push --provenance=false ${context}`;
     });
 
-  const trigger = pulumi.all([pulumi.output(gitFingerprint), allTags]).apply(([fingerprint, tags]) =>
-    JSON.stringify({ fingerprint, tags }),
-  );
+  const trigger = pulumi
+    .all([pulumi.output(gitFingerprint), allTags])
+    .apply(([fingerprint, tags]) => JSON.stringify({ fingerprint, tags }));
 
   const buildResource = new command.local.Command(`${name}-buildx`, {
     create: buildCommand,
@@ -92,33 +106,42 @@ export function buildxImage(name: string, args: BuildxImageArgs): BuildxImageRes
     triggers: [trigger],
   });
 
-  const inspectCommand = primaryTag.apply(tag =>
-    `docker buildx imagetools inspect ${tag} --format '{{json .Manifest}}'`,
+  const inspectCommand = primaryTag.apply(
+    (tag) =>
+      `docker buildx imagetools inspect ${tag} --format '{{json .Manifest}}'`,
   );
 
-  const digestResource = new command.local.Command(`${name}-digest`, {
-    create: inspectCommand,
-    triggers: [trigger],
-  }, { dependsOn: [buildResource] });
+  const digestResource = new command.local.Command(
+    `${name}-digest`,
+    {
+      create: inspectCommand,
+      triggers: [trigger],
+    },
+    { dependsOn: [buildResource] },
+  );
 
-  const repoDigest = pulumi.all([primaryTag, digestResource.stdout]).apply(([tag, manifestJson]) => {
-    const repository = (tag ?? "").replace(/:[^:@]+$/, "");
-    const trimmed = (manifestJson ?? "").trim();
-    if (!trimmed) {
-      throw new Error(`Failed to inspect manifest for image ${tag}`);
-    }
-    let digest: string | undefined;
-    try {
-      const parsed = JSON.parse(trimmed);
-      digest = parsed?.digest;
-    } catch (error) {
-      throw new Error(`Unable to parse manifest JSON for image ${tag}: ${error}`);
-    }
-    if (!digest || typeof digest !== "string") {
-      throw new Error(`Manifest for image ${tag} does not contain a digest`);
-    }
-    return `${repository}@${digest}`;
-  });
+  const repoDigest = pulumi
+    .all([primaryTag, digestResource.stdout])
+    .apply(([tag, manifestJson]) => {
+      const repository = (tag ?? "").replace(/:[^:@]+$/, "");
+      const trimmed = (manifestJson ?? "").trim();
+      if (!trimmed) {
+        throw new Error(`Failed to inspect manifest for image ${tag}`);
+      }
+      let digest: string | undefined;
+      try {
+        const parsed = JSON.parse(trimmed);
+        digest = parsed?.digest;
+      } catch (error) {
+        throw new Error(
+          `Unable to parse manifest JSON for image ${tag}: ${error}`,
+        );
+      }
+      if (!digest || typeof digest !== "string") {
+        throw new Error(`Manifest for image ${tag} does not contain a digest`);
+      }
+      return `${repository}@${digest}`;
+    });
 
   return {
     imageName: primaryTag,

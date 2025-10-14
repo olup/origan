@@ -1,90 +1,82 @@
 import * as pulumi from "@pulumi/pulumi";
-
-// Import core infrastructure
-import { namespaceName_ } from "./src/core/namespace.js";
-import { postgresEndpoint, postgresConnectionString } from "./src/core/database.js";
-import { natsEndpoint, natsMonitorEndpoint } from "./src/core/nats.js";
-import { 
-  registryServiceName,
-  registryEndpointInternal,
-  registryEndpointExternal,
-} from "./src/core/registry.js";
-import { 
-  garageServiceName,
-  garageEndpointInternal,
+import {
+  postgresConnectionString,
+  postgresEndpoint,
+} from "./src/core/database.js";
+import {
+  deploymentBucketName,
   garageEndpointExternal,
-  deploymentBucketName, 
+  garageEndpointInternal,
+  garageServiceName,
   logsBucketName,
 } from "./src/core/garage.js";
-import { 
+import { fluentbitDaemonSetName } from "./src/core/logging.js";
+// Import core infrastructure
+import { namespaceName_ } from "./src/core/namespace.js";
+import { natsEndpoint, natsMonitorEndpoint } from "./src/core/nats.js";
+import {
+  parseablePasswordValue,
   parseableServiceName,
   parseableUrl,
   parseableUsername,
-  parseablePasswordValue,
 } from "./src/core/parseable.js";
-import { 
-  fluentbitDaemonSetName,
-} from "./src/core/logging.js";
-
+import {
+  registryEndpointExternal,
+  registryEndpointInternal,
+  registryServiceName,
+} from "./src/core/registry.js";
+import { builderImage, builderImageUrl } from "./src/services/builder.js";
 // Import services
-import { 
-  controlApiUrl, 
-  controlApiServiceName, 
+import {
   controlApiImage,
+  controlApiServiceName,
+  controlApiUrl,
 } from "./src/services/control-api.js";
 import {
+  gatewayImage,
   gatewayServiceName,
   gatewayWildcardDomain,
-  gatewayImage,
 } from "./src/services/gateway.js";
 import {
-  builderImage,
-  builderImageUrl,
-} from "./src/services/builder.js";
-import {
-  runnerServiceName,
   runnerEndpoint,
   runnerImage,
+  runnerServiceName,
 } from "./src/services/runner.js";
 
 // Import static sites
-import { 
-  adminPanelUrl, 
-} from "./src/static/admin.js";
-import { 
-  landingPageUrl, 
-} from "./src/static/landing.js";
+import { adminPanelUrl } from "./src/static/admin.js";
 import {
-  adminServiceName,
   adminContentHash,
+  adminServiceName,
 } from "./src/static/admin-deployment.js";
+import { landingPageUrl } from "./src/static/landing.js";
 import {
-  landingServiceName,
   landingContentHash,
+  landingServiceName,
 } from "./src/static/landing-deployment.js";
 
 // Stack outputs
 export const infrastructure = {
   // Namespace
   namespace: namespaceName_,
-  
+
   // Core services
   registry: {
     service: registryServiceName,
     internalEndpoint: registryEndpointInternal,
     externalUrl: registryEndpointExternal,
   },
-  
+
   database: {
     endpoint: postgresEndpoint,
     connectionString: postgresConnectionString,
   },
-  
+
   nats: {
     endpoint: natsEndpoint,
     monitorEndpoint: natsMonitorEndpoint,
   },
-  
+
   storage: {
     service: garageServiceName,
     internalEndpoint: garageEndpointInternal,
@@ -94,7 +86,7 @@ export const infrastructure = {
       logs: logsBucketName,
     },
   },
-  
+
   logging: {
     parseable: {
       service: parseableServiceName,
@@ -106,7 +98,7 @@ export const infrastructure = {
       daemonSet: fluentbitDaemonSetName,
     },
   },
-  
+
   // Application services - TEMPORARILY DISABLED
   services: {
     controlApi: {
@@ -132,7 +124,7 @@ export const infrastructure = {
       imageTags: runnerImage.allTags,
     },
   },
-  
+
   // Static sites
   staticSites: {
     admin: {
@@ -149,35 +141,39 @@ export const infrastructure = {
 };
 
 // Print summary on successful deployment
-pulumi.all([
-  namespaceName_,
-  // controlApiUrl,  // Commented out temporarily
-  adminPanelUrl,
-  landingPageUrl,
-  // gatewayWildcardDomain,  // Commented out temporarily
-  parseableUrl,
-]).apply(([namespace, adminUrl, landingUrl, logsUrl]) => {
-  console.log("\n✅ Origan Infrastructure Deployed Successfully!");
-  console.log("\n📊 Resource Summary:");
-  console.log(`- Namespace: ${namespace}`);
-  // console.log(`- Control API: ${apiUrl}`);
-  console.log(`- Admin Panel: ${adminUrl}`);
-  console.log(`- Landing Page: ${landingUrl}`);
-  // console.log(`- Gateway (User Apps): ${gatewayDomain}`);
-  console.log(`- Logs UI: ${logsUrl}`);
-  console.log("\n🔧 Core Infrastructure:");
-  console.log("- Docker Registry: ⏸️  TEMPORARILY DISABLED");
-  console.log("- PostgreSQL: ✅ Deployed with persistent storage");
-  console.log("- NATS with JetStream: ✅ Deployed");
-  console.log("- Garage S3: ✅ Deployed with 2 buckets");
-  console.log("- Parseable: ✅ Deployed for log aggregation");
-  console.log("- Fluent-bit: ✅ DaemonSet collecting logs");
-  console.log("\n🚀 Next Steps:");
-  console.log("1. Wait for all services to be ready");
-  console.log("2. Access the admin panel to configure GitHub integration");
-  console.log("3. Create your first deployment!");
-  console.log("\n📝 Notes:");
-  console.log("- Logs from pods with 'origan.dev/collect-logs: true' annotation are sent to Parseable");
-  console.log("- All services use the 'origan-pulumi-prod' namespace");
-  console.log("- Garage S3 is accessible at https://s3.origan.dev");
-});
+pulumi
+  .all([
+    namespaceName_,
+    // controlApiUrl,  // Commented out temporarily
+    adminPanelUrl,
+    landingPageUrl,
+    // gatewayWildcardDomain,  // Commented out temporarily
+    parseableUrl,
+  ])
+  .apply(([namespace, adminUrl, landingUrl, logsUrl]) => {
+    console.log("\n✅ Origan Infrastructure Deployed Successfully!");
+    console.log("\n📊 Resource Summary:");
+    console.log(`- Namespace: ${namespace}`);
+    // console.log(`- Control API: ${apiUrl}`);
+    console.log(`- Admin Panel: ${adminUrl}`);
+    console.log(`- Landing Page: ${landingUrl}`);
+    // console.log(`- Gateway (User Apps): ${gatewayDomain}`);
+    console.log(`- Logs UI: ${logsUrl}`);
+    console.log("\n🔧 Core Infrastructure:");
+    console.log("- Docker Registry: ⏸️  TEMPORARILY DISABLED");
+    console.log("- PostgreSQL: ✅ Deployed with persistent storage");
+    console.log("- NATS with JetStream: ✅ Deployed");
+    console.log("- Garage S3: ✅ Deployed with 2 buckets");
+    console.log("- Parseable: ✅ Deployed for log aggregation");
+    console.log("- Fluent-bit: ✅ DaemonSet collecting logs");
+    console.log("\n🚀 Next Steps:");
+    console.log("1. Wait for all services to be ready");
+    console.log("2. Access the admin panel to configure GitHub integration");
+    console.log("3. Create your first deployment!");
+    console.log("\n📝 Notes:");
+    console.log(
+      "- Logs from pods with 'origan.dev/collect-logs: true' annotation are sent to Parseable",
+    );
+    console.log("- All services use the 'origan-pulumi-prod' namespace");
+    console.log("- Garage S3 is accessible at https://s3.origan.dev");
+  });

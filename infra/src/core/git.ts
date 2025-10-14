@@ -23,7 +23,12 @@ function runGit(command: string): string {
 }
 
 export const gitCommit = runGit("git rev-parse HEAD");
-export const gitStatus = runGit("git status --porcelain=v2 --untracked-files=all");
+export const gitStatus = runGit(
+  "git status --porcelain=v2 --untracked-files=all",
+);
 export const gitFingerprint = `${gitCommit}\n${gitStatus}`;
-export const gitFingerprintHash = crypto.createHash("sha256").update(gitFingerprint).digest("hex");
+export const gitFingerprintHash = crypto
+  .createHash("sha256")
+  .update(gitFingerprint)
+  .digest("hex");
 export const gitFingerprintSuffix = gitFingerprintHash.slice(0, 12);

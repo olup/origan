@@ -59,9 +59,8 @@ interface BaseEventValue {
   metadata: EventMetadata;
 }
 
-declare type EventValue =
-  & BaseEventValue
-  & (
+declare type EventValue = BaseEventValue &
+  (
     | EventBoot
     | EventBootFailure
     | EventShutdown

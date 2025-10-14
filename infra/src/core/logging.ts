@@ -1,79 +1,110 @@
-import * as pulumi from "@pulumi/pulumi";
 import * as kubernetes from "@pulumi/kubernetes";
+import * as pulumi from "@pulumi/pulumi";
+import { labels, resourceName } from "../config.js";
 import { k8sProvider } from "../providers.js";
 import { namespaceName_ } from "./namespace.js";
-import { resourceName, labels } from "../config.js";
-import { parseableIngestEndpoint, parseableUsername, parseablePasswordValue } from "./parseable.js";
+import {
+  parseableIngestEndpoint,
+  parseablePasswordValue,
+  parseableUsername,
+} from "./parseable.js";
 
 // Create ServiceAccount for Fluent Bit
-const fluentbitServiceAccount = new kubernetes.core.v1.ServiceAccount("fluentbit-sa", {
-  metadata: {
-    name: resourceName("fluentbit-sa"),
-    namespace: namespaceName_,
-    labels: {
-      ...labels,
-      component: "fluentbit",
+const fluentbitServiceAccount = new kubernetes.core.v1.ServiceAccount(
+  "fluentbit-sa",
+  {
+    metadata: {
+      name: resourceName("fluentbit-sa"),
+      namespace: namespaceName_,
+      labels: {
+        ...labels,
+        component: "fluentbit",
+      },
     },
   },
-}, { provider: k8sProvider });
+  { provider: k8sProvider },
+);
 
 // Create ClusterRole for Fluent Bit
-const fluentbitClusterRole = new kubernetes.rbac.v1.ClusterRole("fluentbit-role", {
-  metadata: {
-    name: resourceName("fluentbit-role"),
-    labels: {
-      ...labels,
-      component: "fluentbit",
+const fluentbitClusterRole = new kubernetes.rbac.v1.ClusterRole(
+  "fluentbit-role",
+  {
+    metadata: {
+      name: resourceName("fluentbit-role"),
+      labels: {
+        ...labels,
+        component: "fluentbit",
+      },
     },
+    rules: [
+      {
+        apiGroups: [""],
+        resources: ["pods", "namespaces"],
+        verbs: ["get", "list", "watch"],
+      },
+    ],
   },
-  rules: [
-    {
-      apiGroups: [""],
-      resources: ["pods", "namespaces"],
-      verbs: ["get", "list", "watch"],
-    },
-  ],
-}, { provider: k8sProvider });
+  { provider: k8sProvider },
+);
 
 // Create ClusterRoleBinding
-const fluentbitClusterRoleBinding = new kubernetes.rbac.v1.ClusterRoleBinding("fluentbit-binding", {
-  metadata: {
-    name: resourceName("fluentbit-binding"),
-    labels: {
-      ...labels,
-      component: "fluentbit",
+const fluentbitClusterRoleBinding = new kubernetes.rbac.v1.ClusterRoleBinding(
+  "fluentbit-binding",
+  {
+    metadata: {
+      name: resourceName("fluentbit-binding"),
+      labels: {
+        ...labels,
+        component: "fluentbit",
+      },
     },
+    roleRef: {
+      apiGroup: "rbac.authorization.k8s.io",
+      kind: "ClusterRole",
+      name: fluentbitClusterRole.metadata.name,
+    },
+    subjects: [
+      {
+        kind: "ServiceAccount",
+        name: fluentbitServiceAccount.metadata.name,
+        namespace: namespaceName_,
+      },
+    ],
   },
-  roleRef: {
-    apiGroup: "rbac.authorization.k8s.io",
-    kind: "ClusterRole",
-    name: fluentbitClusterRole.metadata.name,
-  },
-  subjects: [{
-    kind: "ServiceAccount",
-    name: fluentbitServiceAccount.metadata.name,
-    namespace: namespaceName_,
-  }],
-}, { provider: k8sProvider });
+  { provider: k8sProvider },
+);
 
 // Fluent Bit ConfigMap
-const fluentbitConfig = new kubernetes.core.v1.ConfigMap("fluentbit-config", {
-  metadata: {
-    name: resourceName("fluentbit-config"),
-    namespace: namespaceName_,
-    labels: {
-      ...labels,
-      component: "fluentbit",
+const fluentbitConfig = new kubernetes.core.v1.ConfigMap(
+  "fluentbit-config",
+  {
+    metadata: {
+      name: resourceName("fluentbit-config"),
+      namespace: namespaceName_,
+      labels: {
+        ...labels,
+        component: "fluentbit",
+      },
     },
-  },
-  data: {
-    "fluent-bit.conf": pulumi.all([parseableIngestEndpoint, parseableUsername, parseablePasswordValue]).apply(([endpoint, username, password]) => {
-      // Extract host and port from endpoint like "http://parseable.platform.svc.cluster.local:8000/api/v1/ingest"
-      const urlParts = endpoint.replace('http://', '').replace('/api/v1/ingest', '').split(':');
-      const host = urlParts[0];
-      const port = urlParts[1] || '80';
-      const authString = Buffer.from(`${username}:${password}`).toString('base64');
-      return `
+    data: {
+      "fluent-bit.conf": pulumi
+        .all([
+          parseableIngestEndpoint,
+          parseableUsername,
+          parseablePasswordValue,
+        ])
+        .apply(([endpoint, username, password]) => {
+          // Extract host and port from endpoint like "http://parseable.platform.svc.cluster.local:8000/api/v1/ingest"
+          const urlParts = endpoint
+            .replace("http://", "")
+            .replace("/api/v1/ingest", "")
+            .split(":");
+          const host = urlParts[0];
+          const port = urlParts[1] || "80";
+          const authString = Buffer.from(`${username}:${password}`).toString(
+            "base64",
+          );
+          return `
 [SERVICE]
     Flush        5
     Daemon       off
@@ -121,8 +152,8 @@ const fluentbitConfig = new kubernetes.core.v1.ConfigMap("fluentbit-config", {
     tls               off
     Retry_Limit       5
 `;
-    }),
-    "parsers.conf": `
+        }),
+      "parsers.conf": `
 [PARSER]
     Name        docker
     Format      json
@@ -138,100 +169,109 @@ const fluentbitConfig = new kubernetes.core.v1.ConfigMap("fluentbit-config", {
     Time_Key    time
     Time_Format %b %d %H:%M:%S
 `,
-  },
-}, { provider: k8sProvider });
-
-// Fluent Bit DaemonSet
-const fluentbitDaemonSet = new kubernetes.apps.v1.DaemonSet("fluentbit", {
-  metadata: {
-    name: resourceName("fluentbit"),
-    namespace: namespaceName_,
-    labels: {
-      ...labels,
-      component: "fluentbit",
     },
   },
-  spec: {
-    selector: {
-      matchLabels: {
+  { provider: k8sProvider },
+);
+
+// Fluent Bit DaemonSet
+const fluentbitDaemonSet = new kubernetes.apps.v1.DaemonSet(
+  "fluentbit",
+  {
+    metadata: {
+      name: resourceName("fluentbit"),
+      namespace: namespaceName_,
+      labels: {
         ...labels,
         component: "fluentbit",
       },
     },
-    template: {
-      metadata: {
-        labels: {
+    spec: {
+      selector: {
+        matchLabels: {
           ...labels,
           component: "fluentbit",
         },
-        annotations: {
-          "origan.dev/collect-logs": "false", // Don't collect logs from fluent-bit itself
-        },
       },
-      spec: {
-        serviceAccountName: fluentbitServiceAccount.metadata.name,
-        containers: [{
-          name: "fluent-bit",
-          image: "fluent/fluent-bit:2.1.8",
-          imagePullPolicy: "Always",
-          volumeMounts: [
+      template: {
+        metadata: {
+          labels: {
+            ...labels,
+            component: "fluentbit",
+          },
+          annotations: {
+            "origan.dev/collect-logs": "false", // Don't collect logs from fluent-bit itself
+          },
+        },
+        spec: {
+          serviceAccountName: fluentbitServiceAccount.metadata.name,
+          containers: [
+            {
+              name: "fluent-bit",
+              image: "fluent/fluent-bit:2.1.8",
+              imagePullPolicy: "Always",
+              volumeMounts: [
+                {
+                  name: "varlog",
+                  mountPath: "/var/log",
+                },
+                {
+                  name: "varlibdockercontainers",
+                  mountPath: "/var/lib/docker/containers",
+                  readOnly: true,
+                },
+                {
+                  name: "config",
+                  mountPath: "/fluent-bit/etc/",
+                },
+              ],
+              resources: {
+                requests: {
+                  memory: "100Mi",
+                  cpu: "50m",
+                },
+                limits: {
+                  memory: "200Mi",
+                  cpu: "100m",
+                },
+              },
+            },
+          ],
+          terminationGracePeriodSeconds: 10,
+          volumes: [
             {
               name: "varlog",
-              mountPath: "/var/log",
+              hostPath: {
+                path: "/var/log",
+              },
             },
             {
               name: "varlibdockercontainers",
-              mountPath: "/var/lib/docker/containers",
-              readOnly: true,
+              hostPath: {
+                path: "/var/lib/docker/containers",
+              },
             },
             {
               name: "config",
-              mountPath: "/fluent-bit/etc/",
+              configMap: {
+                name: fluentbitConfig.metadata.name,
+              },
             },
           ],
-          resources: {
-            requests: {
-              memory: "100Mi",
-              cpu: "50m",
+          tolerations: [
+            {
+              key: "node-role.kubernetes.io/master",
+              effect: "NoSchedule",
             },
-            limits: {
-              memory: "200Mi",
-              cpu: "100m",
-            },
-          },
-        }],
-        terminationGracePeriodSeconds: 10,
-        volumes: [
-          {
-            name: "varlog",
-            hostPath: {
-              path: "/var/log",
-            },
-          },
-          {
-            name: "varlibdockercontainers",
-            hostPath: {
-              path: "/var/lib/docker/containers",
-            },
-          },
-          {
-            name: "config",
-            configMap: {
-              name: fluentbitConfig.metadata.name,
-            },
-          },
-        ],
-        tolerations: [
-          {
-            key: "node-role.kubernetes.io/master",
-            effect: "NoSchedule",
-          },
-        ],
+          ],
+        },
       },
     },
   },
-}, { provider: k8sProvider });
+  { provider: k8sProvider },
+);
 
 // Exports
 export const fluentbitDaemonSetName = fluentbitDaemonSet.metadata.name;
-export const fluentbitServiceAccountName = fluentbitServiceAccount.metadata.name;
+export const fluentbitServiceAccountName =
+  fluentbitServiceAccount.metadata.name;

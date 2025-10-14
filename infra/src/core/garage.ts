@@ -13,9 +13,11 @@ const garageSecretKey = config.requireSecret("garageSecretKey");
 
 // Export values for existing Garage deployment
 export const garageServiceName = "garage"; // Existing service name in platform namespace
-export const garageEndpointInternal = "http://garage.platform.svc.cluster.local:3900";
+export const garageEndpointInternal =
+  "http://garage.platform.svc.cluster.local:3900";
 export const garageEndpointExternal = "https://s3.platform.origan.dev";
-export const garageAdminEndpoint = "http://garage.platform.svc.cluster.local:3903";
+export const garageAdminEndpoint =
+  "http://garage.platform.svc.cluster.local:3903";
 
 // Note: AWS provider was removed since we now use direct S3 client in S3DirectorySync
 

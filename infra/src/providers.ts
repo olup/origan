@@ -1,8 +1,14 @@
-import * as pulumi from "@pulumi/pulumi";
-import * as kubernetes from "@pulumi/kubernetes";
-import * as docker from "@pulumi/docker";
 import * as aws from "@pulumi/aws";
-import { garageEndpoint, garageAccessKey, garageSecretKey, registryEndpoint, kubeconfig } from "./config.js";
+import * as docker from "@pulumi/docker";
+import * as kubernetes from "@pulumi/kubernetes";
+import * as pulumi from "@pulumi/pulumi";
+import {
+  garageAccessKey,
+  garageEndpoint,
+  garageSecretKey,
+  kubeconfig,
+  registryEndpoint,
+} from "./config.js";
 
 // Kubernetes provider
 export const k8sProvider = new kubernetes.Provider("k8s", {
@@ -11,12 +17,14 @@ export const k8sProvider = new kubernetes.Provider("k8s", {
 
 // Docker provider for building and pushing images
 export const dockerProvider = new docker.Provider("docker", {
-  registryAuth: [{
-    address: registryEndpoint,
-    // Add username/password if your registry requires auth
-    // username: process.env.REGISTRY_USERNAME,
-    // password: process.env.REGISTRY_PASSWORD,
-  }],
+  registryAuth: [
+    {
+      address: registryEndpoint,
+      // Add username/password if your registry requires auth
+      // username: process.env.REGISTRY_USERNAME,
+      // password: process.env.REGISTRY_PASSWORD,
+    },
+  ],
 });
 
 // AWS provider configured for Garage (S3-compatible)

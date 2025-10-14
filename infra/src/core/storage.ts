@@ -1,7 +1,7 @@
-import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
+import * as pulumi from "@pulumi/pulumi";
+import { garageEndpoint, resourceName } from "../config.js";
 import { garageProvider } from "../providers.js";
-import { resourceName, garageEndpoint } from "../config.js";
 
 // TODO: Fix AWS provider smithy error, then uncomment
 // Create deployment bucket
@@ -57,6 +57,7 @@ export const adminBucketName = resourceName("origan-admin");
 export const landingBucketName = resourceName("origan-landing");
 
 // For internal cluster access (if Garage is in the cluster)
-export const internalGarageEndpoint = "http://garage.garage.svc.cluster.local:3900";
+export const internalGarageEndpoint =
+  "http://garage.garage.svc.cluster.local:3900";
 // For external access
 export const externalGarageEndpoint = garageEndpoint;
