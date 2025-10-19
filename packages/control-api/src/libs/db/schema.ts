@@ -320,8 +320,8 @@ export const authSessionSchema = pgTable("auth_sessions", {
 
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 
-  accessToken: text("access_token"),
-  refreshToken: text("refresh_token"),
+  // Store userId instead of tokens - tokens generated fresh on retrieval
+  userId: uuid("user_id").references(() => userSchema.id),
 });
 
 export const refreshTokenSchema = pgTable("refresh_tokens", {

@@ -21,7 +21,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/templates dist/",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "dotenvx run --env-file=.env -- tsx watch src/index.ts",
     "lint": "biome check .",

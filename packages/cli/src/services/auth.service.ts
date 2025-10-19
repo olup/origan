@@ -58,14 +58,26 @@ async function pollSession(sessionId: string): Promise<SessionTokens> {
  * Attempt to refresh the tokens
  */
 async function refreshTokens(
-  _currentRefreshToken: string,
+  currentRefreshToken: string,
 ): Promise<{ accessToken: string; refreshToken: string } | null> {
   try {
-    // tRPC doesn't support cookies from CLI, so we'll need to handle this differently
-    // For now, return null to force re-login
-    // TODO: Update server to accept refresh token in header or body for CLI
-    return null;
-  } catch (_error) {
+    const data = await trpc.auth.refreshTokenCLI.mutate({
+      refreshToken: currentRefreshToken,
+    });
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+    };
+  } catch (error) {
+    log.error(
+      "Failed to refresh token:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     return null;
   }
 }

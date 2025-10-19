@@ -83,10 +83,26 @@ export async function getCliSessionStatus(
     return { status: "pending" };
   }
 
-  if (!session.accessToken || !session.refreshToken) {
-    throw new AuthServiceError("NOT_FOUND", "Session tokens are not available");
+  if (!session.userId) {
+    throw new AuthServiceError(
+      "NOT_FOUND",
+      "Session completed but no user ID found",
+    );
   }
 
+  // Generate fresh tokens for the user
+  const { token: accessToken } = createAccessToken(session.userId);
+  const refreshToken = generateRandomToken();
+  const hashedRefreshToken = hashToken(refreshToken);
+
+  // Store refresh token in database
+  await db.insert(refreshTokenSchema).values({
+    userId: session.userId,
+    tokenHash: hashedRefreshToken,
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+  });
+
+  // Delete the session immediately after token generation
   await db
     .delete(authSessionSchema)
     .where(eq(authSessionSchema.id, session.id));
@@ -94,8 +110,8 @@ export async function getCliSessionStatus(
   return {
     status: "completed",
     tokens: {
-      accessToken: session.accessToken,
-      refreshToken: session.refreshToken,
+      accessToken,
+      refreshToken,
     },
   };
 }
@@ -126,11 +142,29 @@ export async function exchangeRefreshToken(refreshToken: string) {
     throw new AuthServiceError("NOT_FOUND", "User not found");
   }
 
-  const { token, expiresIn } = createAccessToken(user.id);
+  // Mark old refresh token as rotated
+  await db
+    .update(refreshTokenSchema)
+    .set({ rotatedAt: new Date() })
+    .where(eq(refreshTokenSchema.id, tokenRecord.id));
+
+  // Generate new access token
+  const { token: accessToken, expiresIn } = createAccessToken(user.id);
+
+  // Generate new refresh token (token rotation)
+  const newRefreshToken = generateRandomToken();
+  const hashedNewRefreshToken = hashToken(newRefreshToken);
+
+  await db.insert(refreshTokenSchema).values({
+    userId: user.id,
+    tokenHash: hashedNewRefreshToken,
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+  });
 
   return {
-    accessToken: token,
+    accessToken,
     expiresIn,
+    refreshToken: newRefreshToken, // Return new refresh token
   };
 }
 

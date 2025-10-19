@@ -40,7 +40,7 @@ export const authRouter = router({
       }
     }),
 
-  // Refresh access token
+  // Refresh access token (for web - uses cookies)
   refreshToken: publicProcedure.mutation(async ({ ctx }) => {
     const refreshToken = ctx.honoCtx
       ? getCookie(ctx.honoCtx, "refreshToken")
@@ -72,6 +72,27 @@ export const authRouter = router({
       translateAuthError(error);
     }
   }),
+
+  // Refresh access token for CLI (accepts token in body, returns new tokens with rotation)
+  refreshTokenCLI: publicProcedure
+    .input(z.object({ refreshToken: z.string() }))
+    .mutation(async ({ input }) => {
+      try {
+        const {
+          accessToken,
+          expiresIn,
+          refreshToken: newRefreshToken,
+        } = await exchangeRefreshToken(input.refreshToken);
+
+        return {
+          accessToken,
+          expiresIn,
+          refreshToken: newRefreshToken,
+        };
+      } catch (error) {
+        translateAuthError(error);
+      }
+    }),
 
   // Get current user
   me: protectedProcedure.query(async ({ ctx }) => {

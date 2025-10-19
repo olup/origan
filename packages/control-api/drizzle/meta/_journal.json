@@ -176,6 +176,13 @@
       "when": 1760388518672,
       "tag": "0024_big_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1760651191783,
+      "tag": "0025_charming_grandmaster",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
@@ -21,6 +23,17 @@ const REFRESH_TOKEN_EXPIRY_DAYS = 30;
 const generateRandomToken = () => crypto.randomBytes(32).toString("hex");
 const hashToken = (token: string) =>
   crypto.createHash("sha256").update(token).digest("hex");
+
+// PKCE helper: verify code_verifier matches code_challenge
+const verifyPKCE = (codeVerifier: string, codeChallenge: string): boolean => {
+  const hash = crypto.createHash("sha256").update(codeVerifier).digest();
+  const calculatedChallenge = hash
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+  return calculatedChallenge === codeChallenge;
+};
 
 const generateTokens = async (
   userId: string,
@@ -50,11 +63,13 @@ export const authRouter = new Hono();
 authRouter.get("/login", async (c) => {
   const type = c.req.query("type") || "web";
   const sessionId = c.req.query("sessionId");
+  const codeChallenge = c.req.query("code_challenge"); // PKCE parameter from SPA
 
   const stateObject: z.infer<typeof oauthStateSchema> = {
     provider: "github",
     type: type as "cli" | "web",
     sessionId,
+    codeChallenge, // Store code_challenge in state for verification later
   };
 
   const state = Buffer.from(JSON.stringify(stateObject)).toString("base64");
@@ -182,21 +197,35 @@ authRouter.get("/github/callback", async (c) => {
       }
     }
 
-    // Generate tokens
-    const payload: z.infer<typeof jwtPayloadSchema> = {
-      userId: user.id,
-    };
+    // PKCE verification for web flow
+    if (stateData?.type === "web" && stateData.codeChallenge) {
+      // For PKCE, we need code_verifier from the client
+      // Since this is a redirect from GitHub, we'll get it from a cookie
+      const codeVerifier = c.req
+        .header("cookie")
+        ?.match(/code_verifier=([^;]+)/)?.[1];
 
-    const tokens = await generateTokens(user.id, payload);
+      if (!codeVerifier) {
+        log.error("PKCE enabled but code_verifier cookie not found");
+        return c.json({ error: "PKCE verification failed" }, 400);
+      }
 
-    // Handle CLI flow
+      if (!verifyPKCE(codeVerifier, stateData.codeChallenge)) {
+        log.error("PKCE verification failed: code_verifier does not match");
+        return c.json({ error: "PKCE verification failed" }, 400);
+      }
+
+      // PKCE verified successfully, clear the cookie
+      setCookie(c, "code_verifier", "", { maxAge: 0 });
+    }
+
+    // Handle CLI flow - store userId only, generate fresh tokens on retrieval
     if (stateData?.type === "cli" && stateData.sessionId) {
       await db
         .update(authSessionSchema)
         .set({
           status: "completed",
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
+          userId: user.id,
         })
         .where(
           and(
@@ -205,11 +234,22 @@ authRouter.get("/github/callback", async (c) => {
           ),
         );
 
-      // Redirect to CLI success page
-      return c.redirect(`${env.ORIGAN_ADMIN_PANEL_URL}/auth/cli/success`);
+      // Serve CLI success page directly (no redirect)
+      const htmlPath = path.join(
+        import.meta.dirname,
+        "../templates/cli-success.html",
+      );
+      const html = fs.readFileSync(htmlPath, "utf-8");
+      return c.html(html);
     }
 
-    // Web flow - set cookies and redirect
+    // Web flow - generate tokens and set cookies
+    const payload: z.infer<typeof jwtPayloadSchema> = {
+      userId: user.id,
+    };
+
+    const tokens = await generateTokens(user.id, payload);
+
     setCookie(c, "accessToken", tokens.accessToken, {
       httpOnly: true,
       secure: true,
@@ -223,6 +263,16 @@ authRouter.get("/github/callback", async (c) => {
       secure: true,
       sameSite: "Lax",
       maxAge: 60 * 60 * 24 * REFRESH_TOKEN_EXPIRY_DAYS,
+      path: "/",
+    });
+
+    // Generate and set CSRF token (not httpOnly so SPA can read it)
+    const csrfToken = generateRandomToken();
+    setCookie(c, "csrf_token", csrfToken, {
+      httpOnly: false, // SPA needs to read this
+      secure: true,
+      sameSite: "Strict",
+      maxAge: 60 * 60 * 24 * REFRESH_TOKEN_EXPIRY_DAYS, // Same as refresh token
       path: "/",
     });
 
