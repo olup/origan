@@ -85,6 +85,7 @@ export const deploymentsRouter = router({
         const initiateDeploymentResult = await initiateDeployment({
           projectRef,
           trackName: typeof trackName === "string" ? trackName : undefined,
+          triggerSource: "api",
         });
 
         // Operate the deployment

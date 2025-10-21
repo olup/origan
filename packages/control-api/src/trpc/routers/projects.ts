@@ -253,6 +253,9 @@ export const projectsRouter = router({
         project.id,
         input.branch,
         selectedBranch.commit.sha,
+        {
+          triggerSource: "api",
+        },
       );
 
       if (buildTaskResult?.error) {

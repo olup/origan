@@ -263,7 +263,14 @@ export async function handlePushEvent(payload: {
       githubConfigWithProject.project.id,
       branchName,
       commitSha,
-      { ruleResolution },
+      {
+        ruleResolution,
+        triggerSource: "integration.github",
+        githubMetadata: {
+          commitSha,
+          branch: branchName,
+        },
+      },
     );
 
     if (buildReference?.error) {
@@ -383,7 +390,15 @@ export async function handlePullRequestEvent(payload: PullRequestEventPayload) {
       githubConfigWithProject.project.id,
       sourceBranchName,
       commitSha,
-      { ruleResolution: ruleResolutionForPr },
+      {
+        ruleResolution: ruleResolutionForPr,
+        triggerSource: "integration.github",
+        githubMetadata: {
+          commitSha,
+          branch: sourceBranchName,
+          prNumber: payload.pull_request.number,
+        },
+      },
     );
 
     if (buildReference?.error) {

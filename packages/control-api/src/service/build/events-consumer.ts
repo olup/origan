@@ -14,6 +14,10 @@ import {
   type buildStatusEnum,
   deploymentSchema,
 } from "../../libs/db/schema.js";
+import {
+  updateGithubCheckToFailure,
+  updateGithubCheckToInProgress,
+} from "../github-integration.service.js";
 
 interface LogBatch {
   buildId: string;
@@ -194,8 +198,12 @@ export class BuildEventsDatabaseConsumer {
         // Map build status to deployment status
         if (status === "in_progress") {
           deploymentStatus = "building";
+          // Update GitHub check to in_progress
+          await updateGithubCheckToInProgress(deployment.id);
         } else if (status === "failed") {
           deploymentStatus = "error";
+          // Update GitHub check to failure
+          await updateGithubCheckToFailure(deployment.id, message);
         }
         // Note: "completed" build doesn't change deployment status here
         // as it will be set to "deploying" or "success" by deployment.service.ts

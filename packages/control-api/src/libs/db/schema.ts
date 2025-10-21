@@ -192,6 +192,12 @@ export const certificateStatusEnum = pgEnum("certificate_status", [
   "error",
 ]);
 
+export const deploymentTriggerSourceEnum = pgEnum("deployment_trigger_source", [
+  "integration.github",
+  "cli",
+  "api",
+]);
+
 export const deploymentSchema = pgTable(
   "deployment",
   {
@@ -211,6 +217,7 @@ export const deploymentSchema = pgTable(
     environmentRevisionId: uuid("environment_revision_id").references(
       () => environmentRevisionsSchema.id,
     ),
+    triggerSource: deploymentTriggerSourceEnum("trigger_source").notNull(),
 
     ...timestamps,
   },
@@ -223,6 +230,23 @@ export const deploymentSchema = pgTable(
         table.reference,
       ),
     };
+  },
+);
+
+// GitHub integration tracking for deployments triggered by GitHub
+export const deploymentGithubIntegrationSchema = pgTable(
+  "deployment_github_integration",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    deploymentId: uuid("deployment_id")
+      .references(() => deploymentSchema.id, { onDelete: "cascade" })
+      .notNull()
+      .unique(),
+    checkRunId: text("check_run_id"), // NULL until check created
+    commitSha: text("commit_sha").notNull(),
+    branch: text("branch").notNull(),
+    prNumber: integer("pr_number"), // NULL for push events, set for PR events
+    ...timestamps,
   },
 );
 
@@ -247,6 +271,17 @@ export const deploymentRelations = relations(
     environmentRevision: one(environmentRevisionsSchema, {
       fields: [deploymentSchema.environmentRevisionId],
       references: [environmentRevisionsSchema.id],
+    }),
+    githubIntegration: one(deploymentGithubIntegrationSchema),
+  }),
+);
+
+export const deploymentGithubIntegrationRelations = relations(
+  deploymentGithubIntegrationSchema,
+  ({ one }) => ({
+    deployment: one(deploymentSchema, {
+      fields: [deploymentGithubIntegrationSchema.deploymentId],
+      references: [deploymentSchema.id],
     }),
   }),
 );

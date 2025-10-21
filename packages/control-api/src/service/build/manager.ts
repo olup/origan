@@ -22,16 +22,26 @@ import {
 import { generateGitHubInstallationToken } from "../github.service.js";
 import type { BranchRuleResolution } from "../github-branch-rule.service.js";
 import { resolveBranchRule } from "../github-branch-rule.service.js";
+import {
+  createGithubCheckRun,
+  createGithubIntegrationRecord,
+} from "../github-integration.service.js";
 
 type TriggerBuildTaskOptions = {
   ruleResolution?: BranchRuleResolution | null;
+  triggerSource: "integration.github" | "cli" | "api";
+  githubMetadata?: {
+    commitSha: string;
+    branch: string;
+    prNumber?: number;
+  };
 };
 
 export async function triggerBuildTask(
   projectId: string,
   branchName: string,
   commitSha: string,
-  options: TriggerBuildTaskOptions = {},
+  options: TriggerBuildTaskOptions,
 ) {
   const log = getLogger();
   log.info(
@@ -121,7 +131,23 @@ export async function triggerBuildTask(
     trackName,
     environmentId: resolvedRule.rule.environmentId,
     isSystemTrack: resolvedRule.rule.isPrimary,
+    triggerSource: options.triggerSource,
   });
+
+  // Create GitHub integration record and check run if triggered by GitHub
+  if (
+    options.triggerSource === "integration.github" &&
+    options.githubMetadata
+  ) {
+    await createGithubIntegrationRecord({
+      deploymentId: initiateDeploymentResult.deployment.id,
+      commitSha: options.githubMetadata.commitSha,
+      branch: options.githubMetadata.branch,
+      prNumber: options.githubMetadata.prNumber,
+    });
+
+    await createGithubCheckRun(initiateDeploymentResult.deployment.id);
+  }
 
   // Get environment variables for the build
   let buildEnvVars: Record<string, string> = {};
