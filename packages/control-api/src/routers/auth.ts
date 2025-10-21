@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
-import { setCookie } from "hono/cookie";
+import { getCookie, setCookie } from "hono/cookie";
 import jwt from "jsonwebtoken";
 import type { z } from "zod";
 import { env } from "../config.js";
@@ -52,10 +52,13 @@ export const authRouter = new Hono();
 authRouter.get("/login", async (c) => {
   const type = c.req.query("type") || "web";
   const sessionId = c.req.query("sessionId");
+  const stateNonce = generateRandomToken();
+
   const stateObject: z.infer<typeof oauthStateSchema> = {
     provider: "github",
     type: type as "cli" | "web",
     sessionId,
+    nonce: stateNonce,
   };
 
   const state = Buffer.from(JSON.stringify(stateObject)).toString("base64");
@@ -68,6 +71,14 @@ authRouter.get("/login", async (c) => {
   });
 
   const authUrl = `https://github.com/login/oauth/authorize?${params.toString()}`;
+
+  setCookie(c, "oauth_state", stateNonce, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Strict",
+    maxAge: 60 * 10, // 10 minutes
+    path: "/",
+  });
 
   // Redirect directly to GitHub OAuth
   return c.redirect(authUrl);
@@ -183,9 +194,30 @@ authRouter.get("/github/callback", async (c) => {
       }
     }
 
+    const stateNonceCookie = getCookie(c, "oauth_state");
+
+    if (!stateData?.nonce || !stateNonceCookie) {
+      log.warn("Missing OAuth state or nonce cookie");
+      return c.json({ error: "Invalid OAuth state" }, 400);
+    }
+
+    if (stateData.nonce !== stateNonceCookie) {
+      log.warn("OAuth state nonce mismatch");
+      return c.json({ error: "Invalid OAuth state" }, 400);
+    }
+
+    // State verified, clear the nonce cookie
+    setCookie(c, "oauth_state", "", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      maxAge: 0,
+      path: "/",
+    });
+
     // Handle CLI flow - store userId only, generate fresh tokens on retrieval
-    if (stateData?.type === "cli" && stateData.sessionId) {
-      await db
+    if (stateData.type === "cli" && stateData.sessionId) {
+      const updatedSessions = await db
         .update(authSessionSchema)
         .set({
           status: "completed",
@@ -193,10 +225,19 @@ authRouter.get("/github/callback", async (c) => {
         })
         .where(
           and(
-            eq(authSessionSchema.id, stateData.sessionId),
+            eq(authSessionSchema.sessionId, stateData.sessionId),
             eq(authSessionSchema.status, "pending"),
           ),
+        )
+        .returning({ id: authSessionSchema.id });
+
+      if (updatedSessions.length === 0) {
+        log.warn(
+          "CLI OAuth callback received invalid or expired session",
+          stateData.sessionId,
         );
+        return c.json({ error: "Session expired or invalid" }, 400);
+      }
 
       // Serve CLI success page directly (no redirect)
       const htmlPath = path.join(

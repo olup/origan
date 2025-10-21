@@ -6,6 +6,7 @@ import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 import { env } from "./config.js";
 import { getLogger, loggerMiddleware } from "./instrumentation.js";
+import { csrf } from "./middleware/csrf.js";
 import { authRouter } from "./routers/auth.js";
 import { githubRouter } from "./routers/github.js";
 import { startBuildEventsConsumer } from "./service/build/index.js";
@@ -36,6 +37,7 @@ const app = new Hono()
       credentials: true,
     }),
   )
+  .use(csrf())
   .get("/.healthz", (c) => c.json({ message: "OK" }))
   .route("/auth", authRouter)
   .route("/github", githubRouter)

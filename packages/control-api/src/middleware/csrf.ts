@@ -16,6 +16,17 @@ export const csrf = () => {
 
     // Get CSRF token from cookie
     const csrfTokenCookie = getCookie(c, "csrf_token");
+    const accessTokenCookie = getCookie(c, "accessToken");
+    const refreshTokenCookie = getCookie(c, "refreshToken");
+
+    const requiresCsrfCheck =
+      Boolean(csrfTokenCookie) ||
+      Boolean(accessTokenCookie) ||
+      Boolean(refreshTokenCookie);
+
+    if (!requiresCsrfCheck) {
+      return next();
+    }
 
     // Get CSRF token from header
     const csrfTokenHeader = c.req.header("x-csrf-token");
