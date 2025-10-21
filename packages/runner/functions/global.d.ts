@@ -82,5 +82,6 @@ declare class SupabaseEventListener {
 export { SupabaseEventListener };
 
 declare global {
+  // deno-lint-ignore no-var
   var EventManager: typeof SupabaseEventListener;
 }

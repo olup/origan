@@ -2,7 +2,7 @@ import * as nkeys from "jsr:@nats-io/nkeys";
 import * as nats from "jsr:@nats-io/transport-deno";
 import { Buffer } from "node:buffer";
 
-async function sha1(message: string): Promise<string> {
+async function _sha1(message: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
   const hashBuffer = await crypto.subtle.digest("SHA-1", data);
