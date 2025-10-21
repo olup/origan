@@ -1,11 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext } from "react";
 import { getConfig } from "../config";
-import {
-  generateCodeChallenge,
-  generateCodeVerifier,
-  storeCodeVerifierInCookie,
-} from "../utils/pkce";
 import { trpc } from "../utils/trpc";
 
 interface User {
@@ -29,20 +24,8 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const doLogin = useCallback(async () => {
-    // Generate PKCE code verifier and challenge
-    const codeVerifier = generateCodeVerifier();
-    const codeChallenge = await generateCodeChallenge(codeVerifier);
-
-    // Store verifier in cookie so it's available during OAuth callback
-    storeCodeVerifierInCookie(codeVerifier);
-
-    // Navigate to auth endpoint with PKCE challenge
     const config = getConfig();
-    const params = new URLSearchParams({
-      type: "web",
-      code_challenge: codeChallenge,
-    });
-    window.location.href = `${config.apiUrl}/auth/login?${params.toString()}`;
+    window.location.href = `${config.apiUrl}/auth/login?type=web`;
   }, []);
 
   const getUserQuery = useQuery(

@@ -24,17 +24,6 @@ const generateRandomToken = () => crypto.randomBytes(32).toString("hex");
 const hashToken = (token: string) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
-// PKCE helper: verify code_verifier matches code_challenge
-const verifyPKCE = (codeVerifier: string, codeChallenge: string): boolean => {
-  const hash = crypto.createHash("sha256").update(codeVerifier).digest();
-  const calculatedChallenge = hash
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
-  return calculatedChallenge === codeChallenge;
-};
-
 const generateTokens = async (
   userId: string,
   payload: z.infer<typeof jwtPayloadSchema>,
@@ -63,13 +52,10 @@ export const authRouter = new Hono();
 authRouter.get("/login", async (c) => {
   const type = c.req.query("type") || "web";
   const sessionId = c.req.query("sessionId");
-  const codeChallenge = c.req.query("code_challenge"); // PKCE parameter from SPA
-
   const stateObject: z.infer<typeof oauthStateSchema> = {
     provider: "github",
     type: type as "cli" | "web",
     sessionId,
-    codeChallenge, // Store code_challenge in state for verification later
   };
 
   const state = Buffer.from(JSON.stringify(stateObject)).toString("base64");
@@ -195,28 +181,6 @@ authRouter.get("/github/callback", async (c) => {
       } catch (e) {
         log.withError(e).warn("Failed to parse OAuth state");
       }
-    }
-
-    // PKCE verification for web flow
-    if (stateData?.type === "web" && stateData.codeChallenge) {
-      // For PKCE, we need code_verifier from the client
-      // Since this is a redirect from GitHub, we'll get it from a cookie
-      const codeVerifier = c.req
-        .header("cookie")
-        ?.match(/code_verifier=([^;]+)/)?.[1];
-
-      if (!codeVerifier) {
-        log.error("PKCE enabled but code_verifier cookie not found");
-        return c.json({ error: "PKCE verification failed" }, 400);
-      }
-
-      if (!verifyPKCE(codeVerifier, stateData.codeChallenge)) {
-        log.error("PKCE verification failed: code_verifier does not match");
-        return c.json({ error: "PKCE verification failed" }, 400);
-      }
-
-      // PKCE verified successfully, clear the cookie
-      setCookie(c, "code_verifier", "", { maxAge: 0 });
     }
 
     // Handle CLI flow - store userId only, generate fresh tokens on retrieval
