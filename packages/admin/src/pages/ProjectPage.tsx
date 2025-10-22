@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, Route, useLocation, useParams } from "wouter";
+import { BranchRulesManager } from "../components/BranchRulesManager";
+import { CustomDomainsManager } from "../components/CustomDomainsManager";
 import { DeployModal } from "../components/DeployModal";
 import { EnvironmentManager } from "../components/EnvironmentManager";
 import { trpc } from "../utils/trpc";
@@ -241,8 +243,13 @@ export const ProjectPage = () => {
   if (!projectReference || !project) return null;
 
   // Determine active tab based on current route
-  const isSettingsTab = location.includes("/settings");
-  const activeTab = isSettingsTab ? "settings" : "deployments";
+  const getActiveTab = () => {
+    if (location.includes("/domains")) return "domains";
+    if (location.includes("/environments")) return "environments";
+    if (location.includes("/github")) return "github";
+    return "deployments";
+  };
+  const activeTab = getActiveTab();
 
   return (
     <Container size="xl">
@@ -308,11 +315,25 @@ export const ProjectPage = () => {
               Deployments
             </TabLink>
             <TabLink
-              href={`/projects/${projectReference}/settings`}
-              isActive={activeTab === "settings"}
+              href={`/projects/${projectReference}/domains`}
+              isActive={activeTab === "domains"}
             >
-              Settings
+              Domains
             </TabLink>
+            <TabLink
+              href={`/projects/${projectReference}/environments`}
+              isActive={activeTab === "environments"}
+            >
+              Environments
+            </TabLink>
+            {project.githubConfig && (
+              <TabLink
+                href={`/projects/${projectReference}/github`}
+                isActive={activeTab === "github"}
+              >
+                GitHub Rules
+              </TabLink>
+            )}
           </Group>
         </Box>
 
@@ -320,8 +341,24 @@ export const ProjectPage = () => {
         <Route path="/projects/:reference">
           {() => <ProjectDeployments projectReference={projectReference} />}
         </Route>
-        <Route path="/projects/:reference/settings">
+        <Route path="/projects/:reference/domains">
+          {() => <CustomDomainsManager projectReference={projectReference} />}
+        </Route>
+        <Route path="/projects/:reference/environments">
           {() => <ProjectSettings projectReference={projectReference} />}
+        </Route>
+        <Route path="/projects/:reference/github">
+          {() =>
+            project.githubConfig ? (
+              <BranchRulesManager projectReference={projectReference} />
+            ) : (
+              <Card withBorder padding="xl">
+                <Text c="dimmed">
+                  Connect this project to GitHub to manage branch automation.
+                </Text>
+              </Card>
+            )
+          }
         </Route>
       </Stack>
 

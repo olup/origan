@@ -8,6 +8,7 @@ import { type Env, getLogger } from "../instrumentation.js";
 import {
   handleInstallationCreated,
   handleInstallationDeleted,
+  handlePullRequestEvent,
   handlePushEvent,
 } from "../service/github.service.js";
 
@@ -32,6 +33,24 @@ const PushEventPayloadSchema = z.object({
       id: z.string(),
     })
     .nullable(),
+});
+
+const PullRequestEventPayloadSchema = z.object({
+  action: z.string(),
+  pull_request: z.object({
+    number: z.number(),
+    head: z.object({
+      ref: z.string(),
+      sha: z.string(),
+    }),
+    base: z.object({
+      ref: z.string(),
+    }),
+  }),
+  repository: z.object({
+    id: z.number(),
+    full_name: z.string(),
+  }),
 });
 
 export const githubRouter = new Hono<Env>().post("/webhook", async (c) => {
@@ -111,6 +130,15 @@ export const githubRouter = new Hono<Env>().post("/webhook", async (c) => {
         );
       } catch (error) {
         log.withError(error).error("Error handling push event");
+        throw new HTTPException(500, { message: "Internal server error" });
+      }
+    } else if (event === "pull_request") {
+      const pullRequestPayload = PullRequestEventPayloadSchema.parse(payload);
+
+      try {
+        await handlePullRequestEvent(pullRequestPayload);
+      } catch (error) {
+        log.withError(error).error("Error handling pull request event");
         throw new HTTPException(500, { message: "Internal server error" });
       }
     } else {

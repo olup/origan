@@ -10,7 +10,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts",
+    "dev": "dotenvx run -- tsx src/index.ts",
     "start": "node dist/index.js",
     "lint": "biome check .",
     "format": "biome format . --write",

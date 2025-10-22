@@ -18,6 +18,10 @@ import { deploymentConfigSchema } from "../schemas/deploy.js";
 import { generateReference, REFERENCE_PREFIXES } from "../utils/reference.js";
 import { generateDeploymentSubdomain } from "../utils/subdomain.js";
 import { getLatestRevision } from "./environment.service.js";
+import {
+  updateGithubCheckToFailure,
+  updateGithubCheckToSuccess,
+} from "./github-integration.service.js";
 import { getOrCreateTrack, updateTrackDomains } from "./track.service.js";
 
 // Custom Error Types
@@ -170,10 +174,16 @@ export async function initiateDeployment({
   projectRef,
   buildId,
   trackName,
+  environmentId,
+  isSystemTrack,
+  triggerSource,
 }: {
   projectRef: string;
   buildId?: string;
   trackName?: string;
+  environmentId?: string;
+  isSystemTrack?: boolean;
+  triggerSource: "integration.github" | "cli" | "api";
 }) {
   const log = getLogger();
 
@@ -194,7 +204,8 @@ export async function initiateDeployment({
     ? await getOrCreateTrack({
         projectId: project.id,
         name: trackName,
-        isSystem: false,
+        isSystem: isSystemTrack,
+        environmentId,
       })
     : undefined;
 
@@ -211,6 +222,7 @@ export async function initiateDeployment({
       projectId: project.id,
       status: "pending",
       buildId,
+      triggerSource,
       ...(trackName ? { trackId: trackObject?.id } : {}),
     })
     .returning();
@@ -360,6 +372,9 @@ export async function operateDeployment({
         },
       });
 
+    // Update GitHub check to success once domains are persisted
+    await updateGithubCheckToSuccess(deploymentId);
+
     log.info("Database records created");
     return {
       projectRef,
@@ -372,6 +387,12 @@ export async function operateDeployment({
       .update(deploymentSchema)
       .set({ status: "error" })
       .where(eq(deploymentSchema.id, deploymentId));
+
+    // Update GitHub check to failure
+    const errorMessage =
+      err instanceof Error ? err.message : "Unknown deployment error";
+    await updateGithubCheckToFailure(deploymentId, errorMessage);
+
     log.withError(err).error("woops");
     throw err;
   }

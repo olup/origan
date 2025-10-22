@@ -3,8 +3,21 @@ import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
 import * as schema from "../libs/db/schema.js";
 import { generateReference } from "../utils/reference.js";
-import { createDefaultEnvironments } from "./environment.service.js";
+import {
+  createDefaultEnvironments,
+  getEnvironmentByName,
+} from "./environment.service.js";
+import {
+  createBranchRule,
+  updateBranchRule,
+} from "./github-branch-rule.service.js";
 import { createTrack } from "./track.service.js";
+
+type GithubConfigInput = {
+  githubRepositoryId: number;
+  githubRepositoryFullName: string;
+  projectRootPath?: string;
+};
 
 export async function createProject(
   data: Omit<typeof schema.projectSchema.$inferInsert, "id" | "reference">,
@@ -149,10 +162,8 @@ export async function setProjectGithubConfig(
   reference: string,
   organizationId: string,
   userId: string, // Still need userId for GitHub installation lookup
-  githubData: Omit<
-    typeof schema.githubConfigSchema.$inferInsert,
-    "projectId" | "githubAppInstallationId"
-  >,
+  githubData: GithubConfigInput,
+  productionBranchName: string,
 ) {
   // Verify project exists and belongs to organization
   const project = await getProject({ reference: reference, organizationId });
@@ -174,6 +185,8 @@ export async function setProjectGithubConfig(
   }
 
   // Use upsert operation instead of separate query and update/insert
+  const primaryBranch = productionBranchName.trim() || "main";
+
   const [githubConfig] = await db
     .insert(schema.githubConfigSchema)
     .values({
@@ -181,8 +194,7 @@ export async function setProjectGithubConfig(
       githubRepositoryId: githubData.githubRepositoryId,
       githubRepositoryFullName: githubData.githubRepositoryFullName,
       githubAppInstallationId: installation.id,
-      productionBranchName: githubData.productionBranchName,
-      projectRootPath: githubData.projectRootPath,
+      projectRootPath: githubData.projectRootPath ?? "",
     })
     .onConflictDoUpdate({
       target: schema.githubConfigSchema.projectId,
@@ -190,11 +202,40 @@ export async function setProjectGithubConfig(
         githubRepositoryId: githubData.githubRepositoryId,
         githubRepositoryFullName: githubData.githubRepositoryFullName,
         githubAppInstallationId: installation.id,
-        productionBranchName: githubData.productionBranchName,
-        projectRootPath: githubData.projectRootPath,
+        projectRootPath: githubData.projectRootPath ?? "",
       },
     })
     .returning();
+
+  // Ensure we have a primary branch rule for the configured production branch
+  const productionEnvironment = await getEnvironmentByName(
+    project.id,
+    "production",
+  );
+
+  if (productionEnvironment) {
+    const existingRule = await db.query.githubBranchRuleSchema.findFirst({
+      where: and(
+        eq(schema.githubBranchRuleSchema.projectId, project.id),
+        eq(schema.githubBranchRuleSchema.branchPattern, primaryBranch),
+      ),
+    });
+
+    if (existingRule) {
+      await updateBranchRule(project.id, existingRule.id, {
+        environmentId: productionEnvironment.id,
+        isPrimary: true,
+      });
+    } else {
+      await createBranchRule({
+        projectId: project.id,
+        branchPattern: primaryBranch,
+        environmentId: productionEnvironment.id,
+        enablePreviews: false,
+        isPrimary: true,
+      });
+    }
+  }
 
   return githubConfig;
 }

@@ -1,129 +1,26 @@
-import { verify } from "@octokit/webhooks-methods";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { env } from "../../config.js";
 import { getLogger } from "../../instrumentation.js";
 import { db } from "../../libs/db/index.js";
-import { githubAppInstallationSchema } from "../../libs/db/schema.js";
+import {
+  githubAppInstallationSchema,
+  projectSchema,
+} from "../../libs/db/schema.js";
 import {
   getRepoBranches,
-  handleInstallationCreated,
-  handleInstallationDeleted,
-  handlePushEvent,
   listInstallationRepositories,
 } from "../../service/github.service.js";
-import { protectedProcedure, publicProcedure, router } from "../init.js";
-
-const InstallationEventPayloadSchema = z.object({
-  action: z.enum(["created", "deleted"]),
-  installation: z.object({
-    id: z.number(),
-    account: z.object({
-      id: z.number(),
-    }),
-  }),
-});
-
-const PushEventPayloadSchema = z.object({
-  ref: z.string(),
-  repository: z.object({
-    id: z.number(),
-    full_name: z.string(),
-  }),
-  head_commit: z
-    .object({
-      id: z.string(),
-    })
-    .nullable(),
-});
+import {
+  createBranchRule,
+  deleteBranchRule,
+  listBranchRules,
+  resolveBranchRule,
+  updateBranchRule,
+} from "../../service/github-branch-rule.service.js";
+import { protectedProcedure, router } from "../init.js";
 
 export const githubRouter = router({
-  // Webhook endpoint
-  webhook: publicProcedure
-    .input(
-      z.object({
-        signature: z.string(),
-        event: z.string(),
-        delivery: z.string().optional(),
-        body: z.string(),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      const log = getLogger();
-
-      const isValid = await verify(
-        env.GITHUB_WEBHOOK_SECRET,
-        input.body,
-        input.signature,
-      );
-      if (!isValid) {
-        log.warn("Invalid webhook signature received.");
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Invalid signature",
-        });
-      }
-
-      log.info(
-        `Received GitHub event: ${input.event} (Delivery: ${input.delivery})`,
-      );
-
-      let payload: unknown;
-      try {
-        payload = JSON.parse(input.body);
-      } catch (error) {
-        log.withError(error).error("Failed to parse webhook payload");
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invalid JSON payload",
-        });
-      }
-
-      if (input.event === "installation") {
-        const installationEventPayload =
-          InstallationEventPayloadSchema.parse(payload);
-
-        if (installationEventPayload.action === "created") {
-          await handleInstallationCreated({
-            installationId: installationEventPayload.installation.id,
-            githubAccountId:
-              installationEventPayload.installation.account.id.toString(),
-          });
-        } else if (installationEventPayload.action === "deleted") {
-          await handleInstallationDeleted({
-            installationId: installationEventPayload.installation.id,
-            githubAccountId:
-              installationEventPayload.installation.account.id.toString(),
-          });
-        } else {
-          log.info(
-            `Unhandled installation action: ${installationEventPayload.action}`,
-          );
-        }
-      } else if (input.event === "push") {
-        const pushEventPayload = PushEventPayloadSchema.parse(payload);
-
-        if (!pushEventPayload.head_commit?.id) {
-          log.info("Push event without head_commit, skipping.");
-          return { received: true };
-        }
-
-        await handlePushEvent(
-          pushEventPayload as Omit<
-            z.infer<typeof PushEventPayloadSchema>,
-            "head_commit"
-          > & {
-            head_commit: { id: string };
-          },
-        );
-      } else {
-        log.info(`Received unhandled event type: ${input.event}`);
-      }
-
-      return { received: true };
-    }),
-
   // List repositories for the authenticated user
   listRepos: protectedProcedure.query(async ({ ctx }) => {
     const log = getLogger();
@@ -190,5 +87,139 @@ export const githubRouter = router({
       }));
 
       return branches;
+    }),
+
+  listBranchRules: protectedProcedure
+    .input(
+      z.object({
+        projectReference: z.string().min(1),
+      }),
+    )
+    .query(async ({ input }) => {
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, input.projectReference),
+      });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Project not found: ${input.projectReference}`,
+        });
+      }
+
+      const rules = await listBranchRules(project.id);
+      return rules;
+    }),
+
+  createBranchRule: protectedProcedure
+    .input(
+      z.object({
+        projectReference: z.string().min(1),
+        branchPattern: z.string().min(1),
+        environmentId: z.string().uuid(),
+        enablePreviews: z.boolean().optional(),
+        isPrimary: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, input.projectReference),
+      });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Project not found: ${input.projectReference}`,
+        });
+      }
+
+      const rule = await createBranchRule({
+        projectId: project.id,
+        branchPattern: input.branchPattern,
+        environmentId: input.environmentId,
+        enablePreviews: input.enablePreviews,
+        isPrimary: input.isPrimary,
+      });
+
+      return rule;
+    }),
+
+  updateBranchRule: protectedProcedure
+    .input(
+      z.object({
+        projectReference: z.string().min(1),
+        ruleId: z.string().uuid(),
+        branchPattern: z.string().optional(),
+        environmentId: z.string().uuid().optional(),
+        enablePreviews: z.boolean().optional(),
+        isPrimary: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, input.projectReference),
+      });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Project not found: ${input.projectReference}`,
+        });
+      }
+
+      const updatedRule = await updateBranchRule(project.id, input.ruleId, {
+        branchPattern: input.branchPattern,
+        environmentId: input.environmentId,
+        enablePreviews: input.enablePreviews,
+        isPrimary: input.isPrimary,
+      });
+
+      return updatedRule;
+    }),
+
+  deleteBranchRule: protectedProcedure
+    .input(
+      z.object({
+        projectReference: z.string().min(1),
+        ruleId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, input.projectReference),
+      });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Project not found: ${input.projectReference}`,
+        });
+      }
+
+      await deleteBranchRule(project.id, input.ruleId);
+      return { success: true };
+    }),
+
+  resolveBranchRule: protectedProcedure
+    .input(
+      z.object({
+        projectReference: z.string().min(1),
+        branchName: z.string().min(1),
+      }),
+    )
+    .query(async ({ input }) => {
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, input.projectReference),
+      });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Project not found: ${input.projectReference}`,
+        });
+      }
+
+      const resolution = await resolveBranchRule(project.id, input.branchName);
+      return resolution;
     }),
 });

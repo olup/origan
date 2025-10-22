@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { env } from "../config.js";
 import { db } from "../libs/db/index.js";
 import {
@@ -101,7 +101,7 @@ export async function getOrCreateTrack({
 }: {
   projectId: string;
   name: string;
-  isSystem: boolean;
+  isSystem?: boolean;
   environmentId?: string;
 }) {
   let track = await db.query.trackSchema.findFirst({
@@ -111,7 +111,44 @@ export async function getOrCreateTrack({
     ),
   });
   if (!track) {
-    track = await createTrack({ projectId, name, isSystem, environmentId });
+    track = await createTrack({
+      projectId,
+      name,
+      isSystem: isSystem ?? false,
+      environmentId,
+    });
+  } else {
+    const updates: Partial<typeof trackSchema.$inferInsert> = {};
+
+    if (environmentId && track.environmentId !== environmentId) {
+      updates.environmentId = environmentId;
+    }
+
+    if (typeof isSystem === "boolean" && track.isSystem !== isSystem) {
+      updates.isSystem = isSystem;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      const [updated] = await db
+        .update(trackSchema)
+        .set(updates)
+        .where(eq(trackSchema.id, track.id))
+        .returning();
+      track = updated ?? track;
+    }
   }
   return track;
+}
+
+/**
+ * Get all tracks for a project by project ID
+ */
+export async function getTracksForProject(projectId: string) {
+  return await db.query.trackSchema.findMany({
+    where: eq(trackSchema.projectId, projectId),
+    orderBy: [
+      desc(trackSchema.isSystem), // System tracks first (prod)
+      asc(trackSchema.name), // Then alphabetical
+    ],
+  });
 }

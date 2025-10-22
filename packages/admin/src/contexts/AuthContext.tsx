@@ -24,7 +24,6 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const doLogin = useCallback(async () => {
-    // Directly navigate to the auth login endpoint
     const config = getConfig();
     window.location.href = `${config.apiUrl}/auth/login?type=web`;
   }, []);

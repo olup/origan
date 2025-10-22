@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { env } from "../../config.js";
 import { getLogger } from "../../instrumentation.js";
 import { db } from "../../libs/db/index.js";
@@ -16,16 +16,32 @@ import { triggerTask } from "../../utils/task.js";
 import { generateDeployToken, hashToken } from "../../utils/token.js";
 import { initiateDeployment } from "../deployment.service.js";
 import {
-  getEnvironmentByName,
+  getEnvironmentById,
   getLatestRevision,
 } from "../environment.service.js";
 import { generateGitHubInstallationToken } from "../github.service.js";
-import type { BuildLogEntry } from "./types.js";
+import type { BranchRuleResolution } from "../github-branch-rule.service.js";
+import { resolveBranchRule } from "../github-branch-rule.service.js";
+import {
+  createGithubCheckRun,
+  createGithubIntegrationRecord,
+} from "../github-integration.service.js";
+
+type TriggerBuildTaskOptions = {
+  ruleResolution?: BranchRuleResolution | null;
+  triggerSource: "integration.github" | "cli" | "api";
+  githubMetadata?: {
+    commitSha: string;
+    branch: string;
+    prNumber?: number;
+  };
+};
 
 export async function triggerBuildTask(
   projectId: string,
   branchName: string,
   commitSha: string,
+  options: TriggerBuildTaskOptions,
 ) {
   const log = getLogger();
   log.info(
@@ -58,6 +74,16 @@ export async function triggerBuildTask(
   if (!githubConfig?.githubAppInstallation?.githubInstallationId) {
     log.error(`GitHub App Installation not found for project ${projectId}.`);
     return { error: "GitHub App Installation not found for project" };
+  }
+
+  const resolvedRule =
+    options.ruleResolution ?? (await resolveBranchRule(projectId, branchName));
+
+  if (!resolvedRule) {
+    log.info(
+      `No branch rule matched for project ${projectId} and branch ${branchName}. Skipping deployment creation.`,
+    );
+    return { error: "No matching branch rule" };
   }
 
   let githubToken: string;
@@ -97,33 +123,45 @@ export async function triggerBuildTask(
     throw new Error("Failed to create build record");
   }
 
-  // Create deployment for this build
-  // on the right track
-
-  let trackName = branchName;
-  if (branchName === githubConfig.productionBranchName) {
-    trackName = "prod";
-  }
+  const trackName = resolvedRule.trackName;
 
   const initiateDeploymentResult = await initiateDeployment({
     projectRef: project.reference,
     buildId: build.id,
     trackName,
+    environmentId: resolvedRule.rule.environmentId,
+    isSystemTrack: resolvedRule.rule.isPrimary,
+    triggerSource: options.triggerSource,
   });
+
+  // Create GitHub integration record and check run if triggered by GitHub
+  if (
+    options.triggerSource === "integration.github" &&
+    options.githubMetadata
+  ) {
+    await createGithubIntegrationRecord({
+      deploymentId: initiateDeploymentResult.deployment.id,
+      commitSha: options.githubMetadata.commitSha,
+      branch: options.githubMetadata.branch,
+      prNumber: options.githubMetadata.prNumber,
+    });
+
+    await createGithubCheckRun(initiateDeploymentResult.deployment.id);
+  }
 
   // Get environment variables for the build
   let buildEnvVars: Record<string, string> = {};
   try {
-    // Determine environment name based on track
-    const environmentName = trackName === "prod" ? "production" : "preview";
-    const environment = await getEnvironmentByName(projectId, environmentName);
+    const environment = resolvedRule.rule.environmentId
+      ? await getEnvironmentById(resolvedRule.rule.environmentId)
+      : null;
 
     if (environment) {
       const latestRevision = await getLatestRevision(environment.id);
       if (latestRevision?.variables) {
         buildEnvVars = latestRevision.variables as Record<string, string>;
         log.info(
-          `Found ${Object.keys(buildEnvVars).length} environment variables for ${environmentName}`,
+          `Found ${Object.keys(buildEnvVars).length} environment variables for ${environment.name}`,
         );
       }
     }
@@ -152,8 +190,7 @@ export async function triggerBuildTask(
       EVENTS_NATS_SERVER: env.EVENTS_NATS_SERVER,
       EVENTS_NATS_NKEY_CREDS: env.EVENTS_NATS_NKEY_CREDS || "",
       DEPLOY_TOKEN: deployToken,
-      CONTROL_API_URL:
-        "http://control-api-prod.origan-pulumi-prod.svc.cluster.local",
+      CONTROL_API_URL: env.ORIGAN_API_URL,
       ...(Object.keys(buildEnvVars).length > 0 && {
         BUILD_ENV: JSON.stringify(buildEnvVars),
       }),
@@ -177,15 +214,17 @@ export async function triggerBuildTask(
         ? error.message
         : "Unknown error triggering build task";
 
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      level: "error" as const,
+      message: `Failed to trigger build task: ${errorMessage}`,
+    };
+
     await db
       .update(buildSchema)
       .set({
         status: "failed",
-        logs: sql`jsonb_build_array(${JSON.stringify({
-          timestamp: new Date().toISOString(),
-          level: "error",
-          message: `Failed to trigger build task: ${errorMessage}`,
-        } as BuildLogEntry)})`,
+        logs: [logEntry],
       })
       .where(eq(buildSchema.id, build.id));
 

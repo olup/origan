@@ -60,12 +60,27 @@ function isNonJsonSerializable(value: unknown): boolean {
   );
 }
 
-// Create custom fetch with authentication
+// Helper to get CSRF token from cookie
+function getCsrfToken(): string | null {
+  const match = document.cookie.match(/csrf_token=([^;]+)/);
+  return match ? match[1] : null;
+}
+
+// Create custom fetch with authentication and CSRF protection
 const authenticatedFetch: typeof fetch = async (input, init) => {
   const headers = new Headers(init?.headers);
 
   if (state.accessToken) {
     headers.set("Authorization", `Bearer ${state.accessToken}`);
+  }
+
+  // Add CSRF token for state-changing operations
+  const method = init?.method?.toUpperCase() || "GET";
+  if (["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers.set("X-CSRF-Token", csrfToken);
+    }
   }
 
   const response = await fetch(input, {

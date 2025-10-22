@@ -1,10 +1,15 @@
+import * as crypto from "node:crypto";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import {
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import * as pulumi from "@pulumi/pulumi";
-import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
-import * as fs from "fs";
-import * as path from "path";
-import * as mime from "mime-types";
 import { glob } from "glob";
-import * as crypto from "crypto";
+import * as mime from "mime-types";
 
 interface StaticSiteUploaderInputs {
   bucketName: pulumi.Input<string>;
@@ -24,7 +29,9 @@ interface StaticSiteUploaderOutputs {
 }
 
 class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
-  async create(inputs: any): Promise<pulumi.dynamic.CreateResult<StaticSiteUploaderOutputs>> {
+  async create(
+    inputs: any,
+  ): Promise<pulumi.dynamic.CreateResult<StaticSiteUploaderOutputs>> {
     const uploadResult = await this.uploadFiles(inputs);
     return {
       id: `${inputs.bucketName}-${Date.now()}`,
@@ -32,22 +39,28 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
     };
   }
 
-  async update(id: string, olds: StaticSiteUploaderOutputs, news: any): Promise<pulumi.dynamic.UpdateResult<StaticSiteUploaderOutputs>> {
+  async update(
+    _id: string,
+    olds: StaticSiteUploaderOutputs,
+    news: any,
+  ): Promise<pulumi.dynamic.UpdateResult<StaticSiteUploaderOutputs>> {
     // Calculate content hash to detect changes
     const newHash = await this.calculateContentHash(news.sourcePath);
-    
+
     if (olds.contentHash !== newHash || news.invalidateOnChange) {
       const uploadResult = await this.uploadFiles(news);
       return { outs: uploadResult };
     }
-    
+
     return { outs: olds };
   }
 
-  async delete(id: string, props: StaticSiteUploaderOutputs) {
+  async delete(_id: string, props: StaticSiteUploaderOutputs) {
     // Optionally clean up bucket contents
     // For now, we'll leave files in place as bucket has forceDestroy
-    pulumi.log.info(`Static site ${props.bucketName} resources marked for deletion`);
+    pulumi.log.info(
+      `Static site ${props.bucketName} resources marked for deletion`,
+    );
   }
 
   private async uploadFiles(inputs: any): Promise<StaticSiteUploaderOutputs> {
@@ -57,7 +70,8 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
       region: "us-east-1", // Garage doesn't care about region
       credentials: {
         accessKeyId: inputs.accessKeyId || process.env.GARAGE_ACCESS_KEY || "",
-        secretAccessKey: inputs.secretAccessKey || process.env.GARAGE_SECRET_KEY || "",
+        secretAccessKey:
+          inputs.secretAccessKey || process.env.GARAGE_SECRET_KEY || "",
       },
       forcePathStyle: true, // Required for S3-compatible services
     });
@@ -87,13 +101,15 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
       const contentType = mime.lookup(file) || "application/octet-stream";
 
       try {
-        await s3Client.send(new PutObjectCommand({
-          Bucket: inputs.bucketName as string,
-          Key: file,
-          Body: fileContent,
-          ContentType: contentType,
-          CacheControl: this.getCacheControl(file),
-        }));
+        await s3Client.send(
+          new PutObjectCommand({
+            Bucket: inputs.bucketName as string,
+            Key: file,
+            Body: fileContent,
+            ContentType: contentType,
+            CacheControl: this.getCacheControl(file),
+          }),
+        );
 
         uploadedFiles.push(file);
         pulumi.log.debug(`Uploaded: ${file} (${contentType})`);
@@ -105,12 +121,18 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
 
     // Delete orphaned files if requested
     if (inputs.deleteOrphaned) {
-      await this.deleteOrphanedFiles(s3Client, inputs.bucketName as string, uploadedFiles);
+      await this.deleteOrphanedFiles(
+        s3Client,
+        inputs.bucketName as string,
+        uploadedFiles,
+      );
     }
 
     const contentHash = await this.calculateContentHash(inputs.sourcePath);
 
-    pulumi.log.info(`Uploaded ${uploadedFiles.length} files to ${inputs.bucketName}`);
+    pulumi.log.info(
+      `Uploaded ${uploadedFiles.length} files to ${inputs.bucketName}`,
+    );
 
     return {
       bucketName: inputs.bucketName as string,
@@ -120,28 +142,38 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
     };
   }
 
-  private async deleteOrphanedFiles(s3Client: S3Client, bucketName: string, uploadedFiles: string[]) {
+  private async deleteOrphanedFiles(
+    s3Client: S3Client,
+    bucketName: string,
+    uploadedFiles: string[],
+  ) {
     try {
       // List all objects in the bucket
-      const listResponse = await s3Client.send(new ListObjectsV2Command({
-        Bucket: bucketName,
-      }));
+      const listResponse = await s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: bucketName,
+        }),
+      );
 
       if (!listResponse.Contents) return;
 
       const uploadedSet = new Set(uploadedFiles);
-      const toDelete = listResponse.Contents
-        .filter(obj => obj.Key && !uploadedSet.has(obj.Key))
-        .map(obj => ({ Key: obj.Key! }));
+      const toDelete = listResponse.Contents.filter(
+        (obj) => obj.Key && !uploadedSet.has(obj.Key),
+      ).map((obj) => ({ Key: obj.Key! }));
 
       if (toDelete.length > 0) {
-        await s3Client.send(new DeleteObjectsCommand({
-          Bucket: bucketName,
-          Delete: {
-            Objects: toDelete,
-          },
-        }));
-        pulumi.log.info(`Deleted ${toDelete.length} orphaned files from ${bucketName}`);
+        await s3Client.send(
+          new DeleteObjectsCommand({
+            Bucket: bucketName,
+            Delete: {
+              Objects: toDelete,
+            },
+          }),
+        );
+        pulumi.log.info(
+          `Deleted ${toDelete.length} orphaned files from ${bucketName}`,
+        );
       }
     } catch (error) {
       pulumi.log.warn(`Failed to delete orphaned files: ${error}`);
@@ -151,14 +183,14 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
   private async calculateContentHash(sourcePath: string): Promise<string> {
     const files = glob.sync("**/*", { cwd: sourcePath, nodir: true }).sort();
     const hash = crypto.createHash("sha256");
-    
+
     for (const file of files) {
       const filePath = path.join(sourcePath, file);
       const content = fs.readFileSync(filePath);
       hash.update(file);
       hash.update(content);
     }
-    
+
     return hash.digest("hex").substring(0, 16); // Use first 16 chars for brevity
   }
 
@@ -187,10 +219,19 @@ export class StaticSiteUploader extends pulumi.dynamic.Resource {
   public readonly contentHash!: pulumi.Output<string>;
   public readonly uploadedFiles!: pulumi.Output<string[]>;
 
-  constructor(name: string, args: StaticSiteUploaderInputs, opts?: pulumi.CustomResourceOptions) {
-    super(new StaticSiteUploaderProvider(), name, {
-      ...args,
-      bucketName: pulumi.output(args.bucketName),
-    }, opts);
+  constructor(
+    name: string,
+    args: StaticSiteUploaderInputs,
+    opts?: pulumi.CustomResourceOptions,
+  ) {
+    super(
+      new StaticSiteUploaderProvider(),
+      name,
+      {
+        ...args,
+        bucketName: pulumi.output(args.bucketName),
+      },
+      opts,
+    );
   }
 }

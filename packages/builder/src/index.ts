@@ -52,14 +52,14 @@ async function runBuild() {
     // Clone repository
     await logger.info("Cloning repository...");
     await execWithLogs(
-      `git clone --depth 1 --branch ${config.BRANCH} https://x-access-token:${config.GITHUB_TOKEN}@github.com/${config.REPO_FULL_NAME}.git /app`,
+      `git clone --depth 1 --branch ${config.BRANCH} https://x-access-token:${config.GITHUB_TOKEN}@github.com/${config.REPO_FULL_NAME}.git ${config.WORK_DIR}`,
       logger,
     );
-    process.chdir("/app");
+    process.chdir(config.WORK_DIR);
 
     const projectRootPath = config.PROJECT_ROOT_PATH?.trim() || "";
     if (projectRootPath) {
-      const targetDir = join("/app", projectRootPath);
+      const targetDir = join(config.WORK_DIR, projectRootPath);
       await logger.info(`Switching to project root path: ${targetDir}`);
       process.chdir(targetDir);
     }
@@ -85,11 +85,20 @@ async function runBuild() {
 
     // Build
     await logger.info("Starting build...");
-    const buildResult = await executeBuild(execWithLogs, logger);
+    const buildResult = await executeBuild(
+      execWithLogs,
+      logger,
+      config.WORK_DIR,
+    );
 
     // Deploy
     await logger.info("Creating deployment...");
-    await createDeployment(config.BUILD_ID, buildResult.buildDir, logger);
+    await createDeployment({
+      buildId: config.BUILD_ID,
+      buildDir: buildResult.buildDir,
+      logger,
+      workDir: config.WORK_DIR,
+    });
 
     await updateBuildStatus(
       nc,

@@ -88,6 +88,20 @@ export async function getLatestRevision(environmentId: string) {
   return revision;
 }
 
+export async function getEnvironmentById(environmentId: string) {
+  const environment = await db.query.environmentsSchema.findFirst({
+    where: eq(schema.environmentsSchema.id, environmentId),
+    with: {
+      revisions: {
+        orderBy: [desc(schema.environmentRevisionsSchema.revisionNumber)],
+        limit: 1,
+      },
+    },
+  });
+
+  return environment;
+}
+
 export async function createEnvironmentRevision(
   environmentId: string,
   variables: Record<string, string>,

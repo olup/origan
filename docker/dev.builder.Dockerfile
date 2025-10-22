@@ -21,7 +21,10 @@ COPY packages/control-api/package.json ./packages/control-api/
 COPY shared/nats/package.json ./shared/nats/
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --no-frozen-lockfile --filter=@origan/builder...
+    pnpm install --no-frozen-lockfile \
+      --filter=@origan/control-api... \
+      --filter=@origan/builder... \
+      --filter=@origan/nats...
 
 COPY packages/builder ./packages/builder/
 COPY packages/control-api ./packages/control-api/

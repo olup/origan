@@ -1,6 +1,8 @@
 services:
   runner:
-    image: origan-runner
+    build:
+      context: .
+      dockerfile: docker/dev.runner.Dockerfile
     working_dir: /app/packages/runner
     environment:
       - BUCKET_URL=http://minio:9000
@@ -12,9 +14,11 @@ services:
       - EVENTS_NATS_SERVER=nats://nats:4222
     volumes:
       - runner_workers:/workers
-    command: -r -e ts,js --stop-timeout 2 -w . -- "edge-runtime start --port 8000 --ip 0.0.0.0 --main-service functions/supervisor --event-worker functions/event-worker"
+      - ./packages/runner:/app/packages/runner
+    command: ["start", "--port", "8000", "--ip", "0.0.0.0", "--main-service", "/app/packages/runner/functions/supervisor", "--event-worker", "/app/packages/runner/functions/event-worker"]
     networks:
-      - origan-network
+      origan-network:
+        ipv4_address: 172.20.0.20
 
   db:
     image: postgres:16
@@ -27,7 +31,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - origan-network
+      origan-network:
+        ipv4_address: 172.20.0.30
 
   minio:
     image: minio/minio
@@ -49,16 +54,20 @@ services:
     volumes:
       - minio_data:/data
     networks:
-      - origan-network
+      origan-network:
+        ipv4_address: 172.20.0.40
 
   nats:
     image: nats
     ports:
       - "4222:4222"
       - "8222:8222"
-    command: "-js"
+    command: ["-js", "-sd", "/data", "-m", "8222", "--store_dir", "/data/jetstream"]
+    volumes:
+      - nats_data:/data
     networks:
-      - origan-network
+      origan-network:
+        ipv4_address: 172.20.0.50
 
   # This is used to catch the webhook from GitHub
   # Note: Update target to http://host.docker.internal:9999/github/webhook when running control-api locally
@@ -66,13 +75,19 @@ services:
     image: deltaprojects/smee-client
     command: smee --url https://smee.io/origaneulocal-8MVxlEzBDRVUKj --target http://host.docker.internal:9999/github/webhook
     networks:
-      - origan-network
+      origan-network:
+        ipv4_address: 172.20.0.60
 
 networks:
   origan-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
 
 volumes:
   minio_data:
   postgres_data:
   runner_workers:
+  nats_data:

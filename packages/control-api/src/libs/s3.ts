@@ -6,7 +6,7 @@ import {
 import { env } from "../config.js";
 import { getLogger } from "../instrumentation.js";
 
-const s3Client = new S3Client({
+export const s3Client = new S3Client({
   endpoint: env.BUCKET_URL,
   region: env.BUCKET_REGION || "us-east-1", // Use configured region or default to MinIO's default
   forcePathStyle: true, // Required for MinIO/Garage - use path-style URLs instead of virtual-hosted-style

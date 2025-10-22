@@ -237,14 +237,19 @@ async function detectApiRoutes(
   return routes;
 }
 
-export async function createDeployment(
-  buildId: string,
-  buildDir: string,
-  logger: Logger,
-  track?: string,
-) {
+export interface CreateDeploymentOptions {
+  buildId: string;
+  buildDir: string;
+  logger: Logger;
+  workDir: string;
+  track?: string;
+}
+
+export async function createDeployment(options: CreateDeploymentOptions) {
+  const { buildId, buildDir, logger, workDir, track } = options;
+
   // Ensure artifacts directory exists
-  const artifactsDir = join("/app", ".origan", "artifacts");
+  const artifactsDir = join(workDir, ".origan", "artifacts");
   if (!existsSync(artifactsDir)) {
     mkdirSync(artifactsDir, { recursive: true });
   }

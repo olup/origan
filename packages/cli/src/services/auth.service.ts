@@ -10,19 +10,40 @@ import {
 // Polling interval for checking auth status (3 seconds)
 const POLLING_INTERVAL = 3000;
 
+type SessionTokens = {
+  accessToken: string;
+  refreshToken: string;
+};
+
+type InitializeSessionResponse = {
+  sessionId: string;
+  authUrl: string;
+  expiresIn: number;
+};
+
 /**
  * Initialize device flow authentication
  */
-async function initializeDeviceFlow() {
-  return await trpc.auth.initializeCLISession.mutate();
+async function initializeDeviceFlow(): Promise<InitializeSessionResponse> {
+  const data = await trpc.auth.initializeCLISession.mutate();
+
+  if (!data) {
+    throw new Error("Failed to initialize CLI session");
+  }
+
+  return data;
 }
 
 /**
  * Poll for session completion
  */
-async function pollSession(sessionId: string) {
+async function pollSession(sessionId: string): Promise<SessionTokens> {
   while (true) {
     const data = await trpc.auth.checkCLISession.query({ sessionId });
+
+    if (!data) {
+      throw new Error("Session not found or expired");
+    }
 
     if (data.status === "completed") {
       return data.tokens;
@@ -37,14 +58,26 @@ async function pollSession(sessionId: string) {
  * Attempt to refresh the tokens
  */
 async function refreshTokens(
-  _currentRefreshToken: string,
+  currentRefreshToken: string,
 ): Promise<{ accessToken: string; refreshToken: string } | null> {
   try {
-    // tRPC doesn't support cookies from CLI, so we'll need to handle this differently
-    // For now, return null to force re-login
-    // TODO: Update server to accept refresh token in header or body for CLI
-    return null;
-  } catch (_error) {
+    const data = await trpc.auth.refreshTokenCLI.mutate({
+      refreshToken: currentRefreshToken,
+    });
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+    };
+  } catch (error) {
+    log.error(
+      "Failed to refresh token:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     return null;
   }
 }
@@ -65,8 +98,15 @@ export async function login(): Promise<void> {
     // Poll for completion
     const tokens = await pollSession(sessionId);
 
+    if (!tokens?.accessToken || !tokens?.refreshToken) {
+      throw new Error("Failed to retrieve authentication tokens.");
+    }
+
     // Save tokens
-    await saveTokens(tokens);
+    await saveTokens({
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    });
 
     // Fetch user's organizations and set the first one as current
     try {

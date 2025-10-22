@@ -162,6 +162,34 @@
       "when": 1754298207254,
       "tag": "0022_luxuriant_otto_octavius",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1759518694344,
+      "tag": "0023_solid_risque",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1760388518672,
+      "tag": "0024_big_rictor",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1760651191783,
+      "tag": "0025_charming_grandmaster",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1760944090206,
+      "tag": "0026_shocking_bulldozer",
+      "breakpoints": true
     }
   ]
 }

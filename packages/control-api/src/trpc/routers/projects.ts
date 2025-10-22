@@ -17,6 +17,7 @@ import {
   setProjectGithubConfig,
   updateProject,
 } from "../../service/project.service.js";
+import { getTracksForProject } from "../../service/track.service.js";
 import { protectedProcedure, router } from "../init.js";
 
 export const projectsRouter = router({
@@ -141,12 +142,12 @@ export const projectsRouter = router({
         reference: z.string().min(1),
         githubRepositoryId: z.number(),
         githubRepositoryFullName: z.string(),
-        productionBranchName: z.string(),
+        productionBranchName: z.string().min(1),
         projectRootPath: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { reference, ...githubData } = input;
+      const { reference, productionBranchName, ...githubData } = input;
 
       const project = await db.query.projectSchema.findFirst({
         where: eq(projectSchema.reference, reference),
@@ -161,6 +162,7 @@ export const projectsRouter = router({
         project.organizationId,
         ctx.userId, // Still need userId for GitHub installation lookup
         githubData,
+        productionBranchName,
       );
       return githubConfig;
     }),
@@ -192,7 +194,7 @@ export const projectsRouter = router({
         branch: z.string().min(1),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const log = getLogger();
 
       // Get the project with GitHub config
@@ -247,15 +249,50 @@ export const projectsRouter = router({
       );
 
       // Trigger the build task
-      const buildReference = await triggerBuildTask(
+      const buildTaskResult = await triggerBuildTask(
         project.id,
         input.branch,
         selectedBranch.commit.sha,
+        {
+          triggerSource: "api",
+        },
       );
+
+      if (buildTaskResult?.error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: buildTaskResult.error,
+        });
+      }
 
       return {
         success: true,
-        buildReference,
+        buildReference: buildTaskResult,
       };
+    }),
+
+  // List tracks for a project
+  listTracks: protectedProcedure
+    .input(
+      z.object({
+        projectReference: z.string().min(1),
+      }),
+    )
+    .query(async ({ input }) => {
+      // Convert reference to ID
+      const project = await db.query.projectSchema.findFirst({
+        where: eq(projectSchema.reference, input.projectReference),
+      });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Project not found: ${input.projectReference}`,
+        });
+      }
+
+      // Call service with ID
+      const tracks = await getTracksForProject(project.id);
+      return tracks;
     }),
 });

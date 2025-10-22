@@ -18,16 +18,21 @@ export interface GarageBucketProps {
  * Only uses S3 operations that Garage actually supports
  */
 export class GarageBucket extends pulumi.dynamic.Resource {
-  declare public readonly bucket: pulumi.Output<string>;
-  declare public readonly id: pulumi.Output<string>;
-  declare public readonly arn: pulumi.Output<string>;
-  
-  constructor(name: string, props: GarageBucketProps, opts?: pulumi.CustomResourceOptions) {
+  public declare readonly bucket: pulumi.Output<string>;
+  public declare readonly id: pulumi.Output<string>;
+  public declare readonly arn: pulumi.Output<string>;
+
+  constructor(
+    name: string,
+    props: GarageBucketProps,
+    opts?: pulumi.CustomResourceOptions,
+  ) {
     const provider: pulumi.dynamic.ResourceProvider = {
       async create(inputs: any) {
         // Dynamic import to avoid closure serialization issues
-        const { S3Client, CreateBucketCommand, PutBucketWebsiteCommand } = await import("@aws-sdk/client-s3");
-        
+        const { S3Client, CreateBucketCommand, PutBucketWebsiteCommand } =
+          await import("@aws-sdk/client-s3");
+
         const s3Client = new S3Client({
           endpoint: inputs.endpoint,
           region: inputs.region || "garage",
@@ -40,35 +45,42 @@ export class GarageBucket extends pulumi.dynamic.Resource {
 
         try {
           // Create bucket
-          await s3Client.send(new CreateBucketCommand({
-            Bucket: inputs.bucketName,
-          }));
-          
+          await s3Client.send(
+            new CreateBucketCommand({
+              Bucket: inputs.bucketName,
+            }),
+          );
+
           // Configure website if requested
           if (inputs.website) {
-            await s3Client.send(new PutBucketWebsiteCommand({
-              Bucket: inputs.bucketName,
-              WebsiteConfiguration: {
-                IndexDocument: {
-                  Suffix: inputs.website.indexDocument,
+            await s3Client.send(
+              new PutBucketWebsiteCommand({
+                Bucket: inputs.bucketName,
+                WebsiteConfiguration: {
+                  IndexDocument: {
+                    Suffix: inputs.website.indexDocument,
+                  },
+                  ErrorDocument: inputs.website.errorDocument
+                    ? {
+                        Key: inputs.website.errorDocument,
+                      }
+                    : undefined,
                 },
-                ErrorDocument: inputs.website.errorDocument ? {
-                  Key: inputs.website.errorDocument,
-                } : undefined,
-              },
-            }));
-            
+              }),
+            );
           }
         } catch (error: any) {
           // If bucket already exists, that's OK
-          if (error.name === 'BucketAlreadyOwnedByYou' || error.name === 'BucketAlreadyExists') {
+          if (
+            error.name === "BucketAlreadyOwnedByYou" ||
+            error.name === "BucketAlreadyExists"
+          ) {
             // Silently continue - bucket exists
           } else {
             throw new Error(`Failed to create bucket: ${error.message}`);
           }
         }
 
-        
         return {
           id: inputs.bucketName,
           outs: {
@@ -78,12 +90,14 @@ export class GarageBucket extends pulumi.dynamic.Resource {
           },
         };
       },
-      
-      async update(id: string, olds: any, news: any) {
+
+      async update(_id: string, olds: any, news: any) {
         // For updates, we only handle website configuration changes
         if (JSON.stringify(olds.website) !== JSON.stringify(news.website)) {
-          const { S3Client, PutBucketWebsiteCommand } = await import("@aws-sdk/client-s3");
-          
+          const { S3Client, PutBucketWebsiteCommand } = await import(
+            "@aws-sdk/client-s3"
+          );
+
           const s3Client = new S3Client({
             endpoint: news.endpoint,
             region: news.region || "garage",
@@ -93,23 +107,26 @@ export class GarageBucket extends pulumi.dynamic.Resource {
             },
             forcePathStyle: true,
           });
-          
+
           if (news.website) {
-            await s3Client.send(new PutBucketWebsiteCommand({
-              Bucket: news.bucketName,
-              WebsiteConfiguration: {
-                IndexDocument: {
-                  Suffix: news.website.indexDocument,
+            await s3Client.send(
+              new PutBucketWebsiteCommand({
+                Bucket: news.bucketName,
+                WebsiteConfiguration: {
+                  IndexDocument: {
+                    Suffix: news.website.indexDocument,
+                  },
+                  ErrorDocument: news.website.errorDocument
+                    ? {
+                        Key: news.website.errorDocument,
+                      }
+                    : undefined,
                 },
-                ErrorDocument: news.website.errorDocument ? {
-                  Key: news.website.errorDocument,
-                } : undefined,
-              },
-            }));
+              }),
+            );
           }
         }
 
-        
         return {
           outs: {
             bucket: news.bucketName,
@@ -118,10 +135,15 @@ export class GarageBucket extends pulumi.dynamic.Resource {
           },
         };
       },
-      
-      async delete(id: string, props: any) {
-        const { S3Client, ListObjectsV2Command, DeleteObjectsCommand, DeleteBucketCommand } = await import("@aws-sdk/client-s3");
-        
+
+      async delete(_id: string, props: any) {
+        const {
+          S3Client,
+          ListObjectsV2Command,
+          DeleteObjectsCommand,
+          DeleteBucketCommand,
+        } = await import("@aws-sdk/client-s3");
+
         const s3Client = new S3Client({
           endpoint: props.endpoint,
           region: props.region || "garage",
@@ -131,57 +153,68 @@ export class GarageBucket extends pulumi.dynamic.Resource {
           },
           forcePathStyle: true,
         });
-        
+
         try {
           if (props.forceDestroy) {
             // First, try to empty the bucket
-            const objects = await s3Client.send(new ListObjectsV2Command({
-              Bucket: props.bucketName,
-              MaxKeys: 1000,
-            }));
-            
-            if (objects.Contents && objects.Contents.length > 0) {
-              await s3Client.send(new DeleteObjectsCommand({
+            const objects = await s3Client.send(
+              new ListObjectsV2Command({
                 Bucket: props.bucketName,
-                Delete: {
-                  Objects: objects.Contents.map(obj => ({ Key: obj.Key! })),
-                },
-              }));
+                MaxKeys: 1000,
+              }),
+            );
+
+            if (objects.Contents && objects.Contents.length > 0) {
+              await s3Client.send(
+                new DeleteObjectsCommand({
+                  Bucket: props.bucketName,
+                  Delete: {
+                    Objects: objects.Contents.map((obj) => ({ Key: obj.Key! })),
+                  },
+                }),
+              );
             }
           }
-          
+
           // Delete the bucket
-          await s3Client.send(new DeleteBucketCommand({
-            Bucket: props.bucketName,
-          }));
-          
-        } catch (error: any) {
+          await s3Client.send(
+            new DeleteBucketCommand({
+              Bucket: props.bucketName,
+            }),
+          );
+        } catch (_error: any) {
           // Silently fail on delete - bucket might not exist
         }
       },
-      
-      async diff(id: string, olds: any, news: any) {
-        const changes = JSON.stringify(olds.website) !== JSON.stringify(news.website);
+
+      async diff(_id: string, olds: any, news: any) {
+        const changes =
+          JSON.stringify(olds.website) !== JSON.stringify(news.website);
         return {
           changes,
-          replaces: olds.bucketName !== news.bucketName ? ['bucketName'] : [],
+          replaces: olds.bucketName !== news.bucketName ? ["bucketName"] : [],
           deleteBeforeReplace: true,
         };
       },
     };
-    
-    super(provider, name, {
-      bucketName: props.bucketName,
-      endpoint: props.endpoint,
-      accessKey: props.accessKey,
-      secretKey: props.secretKey,
-      region: props.region,
-      forceDestroy: props.forceDestroy,
-      website: props.website,
-      // placeholders so the dynamic provider can populate outputs later
-      bucket: undefined,
-      id: undefined,
-      arn: undefined,
-    }, opts);
+
+    super(
+      provider,
+      name,
+      {
+        bucketName: props.bucketName,
+        endpoint: props.endpoint,
+        accessKey: props.accessKey,
+        secretKey: props.secretKey,
+        region: props.region,
+        forceDestroy: props.forceDestroy,
+        website: props.website,
+        // placeholders so the dynamic provider can populate outputs later
+        bucket: undefined,
+        id: undefined,
+        arn: undefined,
+      },
+      opts,
+    );
   }
 }

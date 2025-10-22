@@ -85,8 +85,6 @@ const sniCallback = async (
   cb: (err: Error | null, ctx?: ReturnType<typeof createSecureContext>) => void,
 ) => {
   try {
-    console.log(`Loading certificate for domain: ${servername}`);
-
     const certData = await getCertificate(
       s3Client,
       envConfig.bucketName,
