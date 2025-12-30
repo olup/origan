@@ -5,6 +5,7 @@ import {
   organizationMembershipSchema,
   organizationSchema,
 } from "../../libs/db/schema.js";
+import { getOrgWithAccessCheck } from "../../service/authorization.service.js";
 import { protectedProcedure, router } from "../init.js";
 
 export const organizationsRouter = router({
@@ -31,27 +32,9 @@ export const organizationsRouter = router({
         reference: z.string(),
       }),
     )
-    .query(async ({ input }) => {
-      const result = await db
-        .select()
-        .from(organizationSchema)
-        .innerJoin(
-          organizationMembershipSchema,
-          eq(
-            organizationSchema.id,
-            organizationMembershipSchema.organizationId,
-          ),
-        )
-        .where(eq(organizationSchema.reference, input.reference))
-        .limit(1);
-
-      const organization = result[0];
-
-      if (!organization) {
-        throw new Error("Organization not found");
-      }
-
-      return organization.organization;
+    .query(async ({ input, ctx }) => {
+      const org = await getOrgWithAccessCheck(ctx.userId, input.reference);
+      return org;
     }),
 
   create: protectedProcedure

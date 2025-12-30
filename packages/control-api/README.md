@@ -163,3 +163,11 @@ For containerized deployment:
 ```bash
 docker build -t origan-control-api .
 docker run -p 3000:3000 origan-control-api
+```
+
+## TODO
+
+### Security
+
+- [ ] **Rate Limiting**: Add rate limiting to auth endpoints (`/auth/*`, `/trpc/auth.*`). Requires Redis/Valkey for multi-instance deployments. Use `hono-rate-limiter` with `@hono-rate-limiter/redis`.
+- [x] **Authorization**: Organization membership checks added to all protected routes via `authorization.service.ts`.

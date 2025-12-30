@@ -3,11 +3,15 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getLogger } from "../../instrumentation.js";
 import { db } from "../../libs/db/index.js";
-import { organizationSchema, projectSchema } from "../../libs/db/schema.js";
+import { projectSchema } from "../../libs/db/schema.js";
 import {
   projectCreateSchema,
   projectUpdateSchema,
 } from "../../schemas/project.js";
+import {
+  getOrgWithAccessCheck,
+  getProjectWithAccessCheck,
+} from "../../service/authorization.service.js";
 import { triggerBuildTask } from "../../service/build/index.js";
 import { getRepoBranches } from "../../service/github.service.js";
 import {
@@ -28,20 +32,12 @@ export const projectsRouter = router({
         organizationReference: z.string(),
       }),
     )
-    .query(async ({ input }) => {
-      // Get organization by reference
-      const [organization] = await db
-        .select()
-        .from(organizationSchema)
-        .where(eq(organizationSchema.reference, input.organizationReference))
-        .limit(1);
-
-      if (!organization) {
-        throw new Error("Organization not found");
-      }
-
-      // TODO: Add organization membership check in service layer
-      const projects = await getProjects(organization.id);
+    .query(async ({ input, ctx }) => {
+      const org = await getOrgWithAccessCheck(
+        ctx.userId,
+        input.organizationReference,
+      );
+      const projects = await getProjects(org.id);
       return projects;
     }),
 
@@ -49,19 +45,14 @@ export const projectsRouter = router({
   create: protectedProcedure
     .input(projectCreateSchema)
     .mutation(async ({ input, ctx }) => {
-      const [organization] = await db
-        .select()
-        .from(organizationSchema)
-        .where(eq(organizationSchema.reference, input.organizationReference))
-        .limit(1);
-
-      if (!organization) {
-        throw new Error("Organization not found");
-      }
+      const org = await getOrgWithAccessCheck(
+        ctx.userId,
+        input.organizationReference,
+      );
 
       const result = await createProjectWithProdTrack({
         ...input,
-        organizationId: organization.id,
+        organizationId: org.id,
         creatorId: ctx.userId,
       });
       return result.project;
@@ -74,7 +65,11 @@ export const projectsRouter = router({
         reference: z.string().min(1),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      // First check access
+      await getProjectWithAccessCheck(ctx.userId, input.reference);
+
+      // Then fetch with relations
       const project = await db.query.projectSchema.findFirst({
         where: eq(projectSchema.reference, input.reference),
         with: {
@@ -87,10 +82,6 @@ export const projectsRouter = router({
         },
       });
 
-      if (!project) {
-        throw new Error(`No project found with reference ${input.reference}`);
-      }
-
       return project;
     }),
 
@@ -102,16 +93,13 @@ export const projectsRouter = router({
         ...projectUpdateSchema.shape,
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { reference, ...updateData } = input;
 
-      const existingProject = await db.query.projectSchema.findFirst({
-        where: eq(projectSchema.reference, reference),
-      });
-
-      if (!existingProject) {
-        throw new Error(`No project found with reference ${reference}`);
-      }
+      const existingProject = await getProjectWithAccessCheck(
+        ctx.userId,
+        reference,
+      );
 
       const project = await updateProject(
         existingProject.id,
@@ -128,7 +116,9 @@ export const projectsRouter = router({
         reference: z.string().min(1),
       }),
     )
-    .mutation(async () => {
+    .mutation(async ({ input, ctx }) => {
+      await getProjectWithAccessCheck(ctx.userId, input.reference);
+
       // TODO - Implementation pending
       // Delete each remaining deployment (which involves cleaning the directory in s3)
       // Delete any remaining domain object (which involves cleaning any certificates we might have)
@@ -149,18 +139,12 @@ export const projectsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { reference, productionBranchName, ...githubData } = input;
 
-      const project = await db.query.projectSchema.findFirst({
-        where: eq(projectSchema.reference, reference),
-      });
-
-      if (!project) {
-        throw new Error("Project not found");
-      }
+      const project = await getProjectWithAccessCheck(ctx.userId, reference);
 
       const githubConfig = await setProjectGithubConfig(
         reference,
         project.organizationId,
-        ctx.userId, // Still need userId for GitHub installation lookup
+        ctx.userId,
         githubData,
         productionBranchName,
       );
@@ -173,14 +157,11 @@ export const projectsRouter = router({
         reference: z.string().min(1),
       }),
     )
-    .mutation(async ({ input }) => {
-      const project = await db.query.projectSchema.findFirst({
-        where: eq(projectSchema.reference, input.reference),
-      });
-
-      if (!project) {
-        throw new Error(`No project found with reference ${input.reference}`);
-      }
+    .mutation(async ({ input, ctx }) => {
+      const project = await getProjectWithAccessCheck(
+        ctx.userId,
+        input.reference,
+      );
 
       await removeProjectGithubConfig(project.id, project.organizationId);
       return { success: true };
@@ -194,8 +175,11 @@ export const projectsRouter = router({
         branch: z.string().min(1),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const log = getLogger();
+
+      // Check access first
+      await getProjectWithAccessCheck(ctx.userId, input.projectRef);
 
       // Get the project with GitHub config
       const project = await db.query.projectSchema.findFirst({
@@ -278,20 +262,12 @@ export const projectsRouter = router({
         projectReference: z.string().min(1),
       }),
     )
-    .query(async ({ input }) => {
-      // Convert reference to ID
-      const project = await db.query.projectSchema.findFirst({
-        where: eq(projectSchema.reference, input.projectReference),
-      });
+    .query(async ({ input, ctx }) => {
+      const project = await getProjectWithAccessCheck(
+        ctx.userId,
+        input.projectReference,
+      );
 
-      if (!project) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: `Project not found: ${input.projectReference}`,
-        });
-      }
-
-      // Call service with ID
       const tracks = await getTracksForProject(project.id);
       return tracks;
     }),

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../../libs/db/index.js";
 import { buildSchema, deploymentSchema } from "../../libs/db/schema.js";
-import { verifyToken } from "../../utils/token.js";
+import { verifyTokenWithSalt } from "../../utils/crypto.js";
 import { operateDeployment } from "../deployment.service.js";
 
 export async function deployBuild(
@@ -40,7 +40,7 @@ export async function deployBuild(
   }
 
   try {
-    if (!verifyToken(token, build.deployToken)) {
+    if (!verifyTokenWithSalt(token, build.deployToken)) {
       throw new HTTPException(401, { message: "Invalid deploy token" });
     }
   } catch {

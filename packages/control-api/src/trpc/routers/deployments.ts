@@ -9,6 +9,7 @@ import {
   deploymentConfigSchema,
   getConfigRequestSchema,
 } from "../../schemas/deploy.js";
+import { getProjectWithAccessCheck } from "../../service/authorization.service.js";
 import {
   BundleProcessingError,
   getDeployment,
@@ -25,7 +26,7 @@ export const deploymentsRouter = router({
   // Create deployment with native FormData support
   create: protectedProcedure
     .input(z.instanceof(FormData))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const log = getLogger();
       const formData = input;
 
@@ -78,8 +79,8 @@ export const deploymentsRouter = router({
         });
       }
 
-      // TODO - check user permissions
-      // TODO - add organization access control
+      // Check user has access to this project
+      await getProjectWithAccessCheck(ctx.userId, projectRef);
 
       try {
         const initiateDeploymentResult = await initiateDeployment({
@@ -149,20 +150,12 @@ export const deploymentsRouter = router({
     .input(getConfigRequestSchema)
     .query(async ({ input, ctx }) => {
       const log = getLogger();
-      const _userId = ctx.userId;
 
       try {
-        // Find the project and validate user access
-        const project = await db.query.projectSchema.findFirst({
-          where: eq(schema.projectSchema.reference, input.domain),
-        });
-
-        if (!project) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Project not found",
-          });
-        }
+        const project = await getProjectWithAccessCheck(
+          ctx.userId,
+          input.domain,
+        );
 
         return {
           projectRef: project.reference,
@@ -228,7 +221,7 @@ export const deploymentsRouter = router({
   // Get deployment by reference
   getByRef: protectedProcedure
     .input(z.object({ ref: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const deployment = await getDeployment({ reference: input.ref });
 
       if (!deployment) {
@@ -238,24 +231,20 @@ export const deploymentsRouter = router({
         });
       }
 
+      // Check user has access to the project this deployment belongs to
+      await getProjectWithAccessCheck(ctx.userId, deployment.project.reference);
+
       return deployment;
     }),
 
   // Get deployments by project reference
   listByProject: protectedProcedure
     .input(z.object({ projectRef: z.string() }))
-    .query(async ({ input }) => {
-      // First find the project by reference to get its ID
-      const project = await db.query.projectSchema.findFirst({
-        where: eq(schema.projectSchema.reference, input.projectRef),
-      });
-
-      if (!project) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: `Project not found: ${input.projectRef}`,
-        });
-      }
+    .query(async ({ input, ctx }) => {
+      const project = await getProjectWithAccessCheck(
+        ctx.userId,
+        input.projectRef,
+      );
 
       const deployments = await getDeploymentsByProject(project.id);
 

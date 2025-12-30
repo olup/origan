@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { env } from "../config.js";
@@ -8,6 +7,7 @@ import {
   refreshTokenSchema,
   userSchema,
 } from "../libs/db/schema.js";
+import { generateSecureToken, hashTokenForLookup } from "../utils/crypto.js";
 
 export type AuthErrorCode = "NOT_FOUND" | "UNAUTHORIZED";
 
@@ -25,11 +25,6 @@ export const ACCESS_TOKEN_EXPIRY = "15m";
 export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 export const AUTH_SESSION_TTL_SECONDS = 5 * 60;
 
-const generateRandomToken = () => crypto.randomBytes(32).toString("hex");
-
-export const hashToken = (token: string) =>
-  crypto.createHash("sha256").update(token).digest("hex");
-
 const createAccessToken = (userId: string) => {
   const token = jwt.sign({ userId }, env.JWT_SECRET, {
     expiresIn: ACCESS_TOKEN_EXPIRY,
@@ -42,7 +37,7 @@ const createAccessToken = (userId: string) => {
 };
 
 export async function createCliSession() {
-  const sessionId = generateRandomToken();
+  const sessionId = generateSecureToken();
   const expiresAt = new Date(Date.now() + AUTH_SESSION_TTL_SECONDS * 1000);
 
   await db.insert(authSessionSchema).values({
@@ -92,8 +87,8 @@ export async function getCliSessionStatus(
 
   // Generate fresh tokens for the user
   const { token: accessToken } = createAccessToken(session.userId);
-  const refreshToken = generateRandomToken();
-  const hashedRefreshToken = hashToken(refreshToken);
+  const refreshToken = generateSecureToken();
+  const hashedRefreshToken = hashTokenForLookup(refreshToken);
 
   // Store refresh token in database
   await db.insert(refreshTokenSchema).values({
@@ -117,7 +112,7 @@ export async function getCliSessionStatus(
 }
 
 export async function exchangeRefreshToken(refreshToken: string) {
-  const hashedToken = hashToken(refreshToken);
+  const hashedToken = hashTokenForLookup(refreshToken);
 
   const tokenRecord = await db.query.refreshTokenSchema.findFirst({
     where: and(
@@ -152,8 +147,8 @@ export async function exchangeRefreshToken(refreshToken: string) {
   const { token: accessToken, expiresIn } = createAccessToken(user.id);
 
   // Generate new refresh token (token rotation)
-  const newRefreshToken = generateRandomToken();
-  const hashedNewRefreshToken = hashToken(newRefreshToken);
+  const newRefreshToken = generateSecureToken();
+  const hashedNewRefreshToken = hashTokenForLookup(newRefreshToken);
 
   await db.insert(refreshTokenSchema).values({
     userId: user.id,
@@ -185,7 +180,7 @@ export async function getUserProfile(userId: string) {
 }
 
 export async function revokeRefreshToken(refreshToken: string) {
-  const hashedToken = hashToken(refreshToken);
+  const hashedToken = hashTokenForLookup(refreshToken);
 
   await db
     .update(refreshTokenSchema)

@@ -3,6 +3,7 @@ import type { DeploymentLogEvent } from "@origan/nats";
 import { NatsClient } from "@origan/nats";
 import { z } from "zod";
 import { env } from "../../config.js";
+import { assertProjectAccess } from "../../service/authorization.service.js";
 import { getDeployment } from "../../service/deployment.service.js";
 import { protectedProcedure, router } from "../init.js";
 
@@ -14,7 +15,7 @@ export const logsRouter = router({
         functionHash: z.string().optional(),
       }),
     )
-    .subscription(async function* ({ input, signal }) {
+    .subscription(async function* ({ input, signal, ctx }) {
       const deployment = await getDeployment({
         reference: input.deploymentRef,
       });
@@ -24,7 +25,7 @@ export const logsRouter = router({
       }
 
       // Check user has access to this deployment's project
-      // TODO: Add proper access control check
+      await assertProjectAccess(ctx.userId, deployment.projectId);
 
       let nc: NatsClient | null = null;
 

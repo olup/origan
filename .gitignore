@@ -37,3 +37,6 @@ tsconfig.tsbuildinfo
 .turbo
 
 claude.md
+
+# Pulumi
+.pulumi/

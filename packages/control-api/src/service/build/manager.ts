@@ -7,13 +7,13 @@ import {
   deploymentSchema,
   projectSchema,
 } from "../../libs/db/schema.js";
+import { generateSecureToken, hashTokenWithSalt } from "../../utils/crypto.js";
 import {
   generateReference,
   REFERENCE_PREFIXES,
 } from "../../utils/reference.js";
 import type { ResourceLimits } from "../../utils/task.js";
 import { triggerTask } from "../../utils/task.js";
-import { generateDeployToken, hashToken } from "../../utils/token.js";
 import { initiateDeployment } from "../deployment.service.js";
 import {
   getEnvironmentById,
@@ -104,7 +104,7 @@ export async function triggerBuildTask(
 
   const buildReference = generateReference(10, REFERENCE_PREFIXES.BUILD);
 
-  const deployToken = generateDeployToken();
+  const deployToken = generateSecureToken();
   const [build] = await db
     .insert(buildSchema)
     .values({
@@ -114,7 +114,7 @@ export async function triggerBuildTask(
       reference: buildReference,
       status: "pending",
       logs: [],
-      deployToken: hashToken(deployToken),
+      deployToken: hashTokenWithSalt(deployToken),
     })
     .returning();
 
