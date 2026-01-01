@@ -83,6 +83,13 @@ const authenticatedFetch: typeof fetch = async (input, init) => {
     }
   }
 
+  const requestUrl =
+    typeof input === "string"
+      ? input
+      : input instanceof Request
+        ? input.url
+        : String(input);
+
   const response = await fetch(input, {
     ...init,
     headers,
@@ -90,10 +97,13 @@ const authenticatedFetch: typeof fetch = async (input, init) => {
   });
 
   // Handle 401 - attempt token refresh
-  if (response.status === 401) {
+  if (
+    response.status === 401 &&
+    !requestUrl.includes("/trpc/auth.refreshToken")
+  ) {
     if (!state.isRefreshing) {
       state.isRefreshing = true;
-      state.refreshPromise = performTokenRefresh()
+      state.refreshPromise = refreshAccessToken()
         .catch((err: unknown) => {
           console.error("Token refresh failed:", err);
           return false;
@@ -123,8 +133,8 @@ const authenticatedFetch: typeof fetch = async (input, init) => {
   return response;
 };
 
-// Perform token refresh
-async function performTokenRefresh(): Promise<boolean> {
+// Perform token refresh and update in-memory access token
+export async function refreshAccessToken(): Promise<boolean> {
   try {
     console.log("Refreshing access token...");
 
@@ -133,6 +143,7 @@ async function performTokenRefresh(): Promise<boolean> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(getCsrfToken() ? { "X-CSRF-Token": getCsrfToken()! } : {}),
       },
       credentials: "include",
       body: JSON.stringify({}),
@@ -140,8 +151,11 @@ async function performTokenRefresh(): Promise<boolean> {
 
     if (result.ok) {
       const data = await result.json();
-      if (data.result?.data?.accessToken) {
-        state.accessToken = data.result.data.accessToken;
+      const accessToken =
+        data?.result?.data?.accessToken ??
+        data?.result?.data?.json?.accessToken;
+      if (accessToken) {
+        state.accessToken = accessToken;
         console.log("Access token refreshed successfully");
         return true;
       }

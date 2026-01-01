@@ -12,6 +12,7 @@ export const config = z.object({
   ORIGAN_DEPLOY_DOMAIN: z.string(),
   ORIGAN_ADMIN_PANEL_URL: z.string(),
   ORIGAN_API_URL: z.string(),
+  ORIGAN_COOKIE_DOMAIN: z.string().optional(),
   BUILDER_IMAGE: z.string(),
 
   GITHUB_CLIENT_ID: z.string(),

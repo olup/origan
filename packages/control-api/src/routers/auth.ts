@@ -46,6 +46,8 @@ const generateTokens = async (
   return { accessToken, refreshToken };
 };
 
+const cookieDomain = env.ORIGAN_COOKIE_DOMAIN;
+
 export const authRouter = new Hono();
 
 // Start OAuth flow - Direct REST endpoint
@@ -78,6 +80,7 @@ authRouter.get("/login", async (c) => {
     sameSite: "Strict",
     maxAge: 60 * 10, // 10 minutes
     path: "/",
+    ...(cookieDomain ? { domain: cookieDomain } : {}),
   });
 
   // Redirect directly to GitHub OAuth
@@ -213,6 +216,7 @@ authRouter.get("/github/callback", async (c) => {
       sameSite: "Strict",
       maxAge: 0,
       path: "/",
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
     });
 
     // Handle CLI flow - store userId only, generate fresh tokens on retrieval
@@ -255,20 +259,13 @@ authRouter.get("/github/callback", async (c) => {
 
     const tokens = await generateTokens(user.id, payload);
 
-    setCookie(c, "accessToken", tokens.accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "Lax",
-      maxAge: 60 * 15, // 15 minutes
-      path: "/",
-    });
-
     setCookie(c, "refreshToken", tokens.refreshToken, {
       httpOnly: true,
       secure: true,
       sameSite: "Lax",
       maxAge: 60 * 60 * 24 * REFRESH_TOKEN_EXPIRY_DAYS,
       path: "/",
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
     });
 
     // Generate and set CSRF token (not httpOnly so SPA can read it)
@@ -279,6 +276,7 @@ authRouter.get("/github/callback", async (c) => {
       sameSite: "Strict",
       maxAge: 60 * 60 * 24 * REFRESH_TOKEN_EXPIRY_DAYS, // Same as refresh token
       path: "/",
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
     });
 
     // Redirect to admin panel

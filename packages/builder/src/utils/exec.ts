@@ -2,9 +2,15 @@ import readline from "node:readline";
 import { execaCommand } from "execa";
 import type { Logger } from "./logger.js";
 
+type ExecOptions = {
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+};
+
 export async function execWithLogs(
   command: string,
   logger: Logger,
+  options: ExecOptions = {},
 ): Promise<string> {
   try {
     await logger.info(`Executing: ${command}`);
@@ -12,6 +18,8 @@ export async function execWithLogs(
     const subprocess = execaCommand(command, {
       stdio: ["ignore", "pipe", "pipe"],
       shell: true,
+      cwd: options.cwd,
+      env: options.env,
     });
 
     const handleLine = (stream: "stdout" | "stderr", line: string) => {

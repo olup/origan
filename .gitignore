@@ -40,3 +40,8 @@ claude.md
 
 # Pulumi
 .pulumi/
+
+# Docker buildx cache
+.docker-cache/
+docker-bake.generated.json
+.docker-prod/

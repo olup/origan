@@ -234,6 +234,9 @@ export async function deploy(trackName?: string): Promise<void> {
 
 export async function getDeployments(projectRef: string) {
   const data = await trpc.projects.get.query({ reference: projectRef });
+  if (!data) {
+    throw new Error(`Project not found: ${projectRef}`);
+  }
   return data.deployments;
 }
 

@@ -15,7 +15,7 @@ export const postgresPasswordResource = postgresPasswordConfig
     });
 
 export const postgresPassword =
-  postgresPasswordConfig || postgresPasswordResource!.result;
+  postgresPasswordConfig || postgresPasswordResource?.result;
 export const garageEndpoint =
   config.get("garageEndpoint") || "https://s3.platform.origan.dev";
 
@@ -90,3 +90,24 @@ export const natsConfig = {
 // Pulumi's docker.Image will automatically detect code changes via content hash
 export const imageTag = process.env.IMAGE_TAG || environment;
 export const builderImageTag = `builder-${environment}`;
+
+const prebuiltImageDigestsEnv = process.env.ORIGAN_IMAGE_DIGESTS;
+const prebuiltImageDigestsConfig = config.getObject<Record<string, string>>(
+  "prebuiltImageDigests",
+);
+
+export const prebuiltImageDigests = (() => {
+  if (prebuiltImageDigestsEnv) {
+    try {
+      return JSON.parse(prebuiltImageDigestsEnv) as Record<string, string>;
+    } catch (error) {
+      throw new Error(
+        `Failed to parse ORIGAN_IMAGE_DIGESTS JSON: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+  return prebuiltImageDigestsConfig || null;
+})();
+
+export const resolveImageTags = config.getBoolean("resolveImageTags") ?? true;
+export const singleNodeImage = config.getBoolean("singleNodeImage") ?? false;

@@ -1,7 +1,14 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { createContext, type ReactNode, useCallback, useContext } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { getConfig } from "../config";
-import { trpc } from "../utils/trpc";
+import { refreshAccessToken, trpc } from "../utils/trpc";
 
 interface User {
   username: string;
@@ -28,8 +35,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     window.location.href = `${config.apiUrl}/auth/login?type=web`;
   }, []);
 
+  const [didRefresh, setDidRefresh] = useState(false);
+
+  useEffect(() => {
+    refreshAccessToken()
+      .catch(() => {
+        // Ignore refresh failures; user may not be logged in yet.
+      })
+      .finally(() => setDidRefresh(true));
+    // Run once on mount to avoid refresh loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const getUserQuery = useQuery(
     trpc.auth.me.queryOptions(undefined, {
+      enabled: didRefresh,
       retry: false,
       refetchOnWindowFocus: false,
     }),

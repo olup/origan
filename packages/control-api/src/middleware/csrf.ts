@@ -16,15 +16,16 @@ export const csrf = () => {
 
     // Get CSRF token from cookie
     const csrfTokenCookie = getCookie(c, "csrf_token");
-    const accessTokenCookie = getCookie(c, "accessToken");
     const refreshTokenCookie = getCookie(c, "refreshToken");
+    const authHeader = c.req.header("authorization");
 
-    const requiresCsrfCheck =
-      Boolean(csrfTokenCookie) ||
-      Boolean(accessTokenCookie) ||
-      Boolean(refreshTokenCookie);
+    // If using Bearer auth, skip CSRF checks.
+    if (authHeader) {
+      return next();
+    }
 
-    if (!requiresCsrfCheck) {
+    // Only enforce CSRF when cookie-based auth is in use.
+    if (!refreshTokenCookie) {
       return next();
     }
 

@@ -1,6 +1,8 @@
+import crypto from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { getCookie, setCookie } from "hono/cookie";
 import { z } from "zod";
+import { env } from "../../config.js";
 import {
   AuthServiceError,
   createCliSession,
@@ -18,6 +20,10 @@ const translateAuthError = (error: unknown): never => {
 
   throw error;
 };
+
+const cookieDomain = env.ORIGAN_COOKIE_DOMAIN;
+const REFRESH_TOKEN_EXPIRY_DAYS = 30;
+const generateRandomToken = () => crypto.randomBytes(32).toString("hex");
 
 export const authRouter = router({
   // Initialize CLI session
@@ -54,16 +60,27 @@ export const authRouter = router({
     }
 
     try {
-      const { accessToken, expiresIn } =
+      const { accessToken, refreshToken: newRefreshToken } =
         await exchangeRefreshToken(refreshToken);
 
       if (ctx.honoCtx) {
-        setCookie(ctx.honoCtx, "accessToken", accessToken, {
+        setCookie(ctx.honoCtx, "refreshToken", newRefreshToken, {
           httpOnly: true,
           secure: true,
           sameSite: "Lax",
-          maxAge: expiresIn,
+          maxAge: 60 * 60 * 24 * REFRESH_TOKEN_EXPIRY_DAYS,
           path: "/",
+          ...(cookieDomain ? { domain: cookieDomain } : {}),
+        });
+
+        const csrfToken = generateRandomToken();
+        setCookie(ctx.honoCtx, "csrf_token", csrfToken, {
+          httpOnly: false,
+          secure: true,
+          sameSite: "Strict",
+          maxAge: 60 * 60 * 24 * REFRESH_TOKEN_EXPIRY_DAYS,
+          path: "/",
+          ...(cookieDomain ? { domain: cookieDomain } : {}),
         });
       }
 
@@ -115,20 +132,22 @@ export const authRouter = router({
 
     // Clear cookies if in web context
     if (ctx.honoCtx) {
-      setCookie(ctx.honoCtx, "accessToken", "", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "Lax",
-        maxAge: 0,
-        path: "/",
-      });
-
       setCookie(ctx.honoCtx, "refreshToken", "", {
         httpOnly: true,
         secure: true,
         sameSite: "Lax",
         maxAge: 0,
         path: "/",
+        ...(cookieDomain ? { domain: cookieDomain } : {}),
+      });
+
+      setCookie(ctx.honoCtx, "csrf_token", "", {
+        httpOnly: false,
+        secure: true,
+        sameSite: "Strict",
+        maxAge: 0,
+        path: "/",
+        ...(cookieDomain ? { domain: cookieDomain } : {}),
       });
     }
 

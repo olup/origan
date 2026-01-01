@@ -1,25 +1,18 @@
 import * as kubernetes from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { imageTag, labels, registryEndpoint, resourceName } from "../config.js";
-import { buildxImage } from "../core/buildx-image.js";
+import { labels, resourceName } from "../config.js";
 import {
   deploymentBucketName,
   garageAccessKeyValue,
   garageEndpointInternal,
   garageSecretKeyValue,
 } from "../core/garage.js";
+import { imagesBakeResource, runnerImage } from "../core/images.js";
 import { namespaceName_ } from "../core/namespace.js";
 import { natsEndpoint } from "../core/nats.js";
 import { k8sProvider } from "../providers.js";
 
-// Build Docker image via buildx push-only workflow
-export const runnerImage = buildxImage("runner-image", {
-  imageName: pulumi.interpolate`${registryEndpoint}/origan/runner:${imageTag}`,
-  context: "..", // Monorepo root (from infra directory)
-  dockerfile: "../docker/prod-optimized.Dockerfile",
-  target: "runner", // Use runner stage from multi-stage build
-  platform: "linux/amd64",
-});
+export { runnerImage };
 
 // ConfigMap
 const runnerConfig = new kubernetes.core.v1.ConfigMap(
@@ -142,7 +135,7 @@ const runnerDeployment = new kubernetes.apps.v1.Deployment(
       },
     },
   },
-  { provider: k8sProvider, dependsOn: [runnerImage.buildResource] },
+  { provider: k8sProvider, dependsOn: [imagesBakeResource] },
 );
 
 // Service (internal only, accessed by gateway)

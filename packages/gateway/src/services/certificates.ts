@@ -25,12 +25,14 @@ export const loadMainCertificateFromFiles =
 
       // The certificate file from cert-manager includes the chain
       // We need to split it to get the certificate and chain separately
-      const certParts = certificate.split(/(?=-----BEGIN CERTIFICATE-----)/);
+      const certParts = certificate
+        .split(/(?=-----BEGIN CERTIFICATE-----)/)
+        .filter((part) => part.trim().length > 0);
 
       return {
-        certificate: certParts[0],
+        certificate: certParts[0], // Leaf certificate
         privateKey,
-        chain: certParts.slice(1).join(""), // Join remaining parts as chain
+        chain: certParts.slice(1).join(""), // Intermediate and root certs
       };
     } catch (error) {
       console.error("Failed to load main certificate from files:", error);

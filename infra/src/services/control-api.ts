@@ -1,14 +1,7 @@
 import * as crypto from "node:crypto";
 import * as kubernetes from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import {
-  apiUrl,
-  imageTag,
-  labels,
-  registryEndpoint,
-  resourceName,
-} from "../config.js";
-import { buildxImage } from "../core/buildx-image.js";
+import { apiUrl, labels, resourceName } from "../config.js";
 import { postgresConnectionString } from "../core/database.js";
 import {
   deploymentBucketName,
@@ -16,11 +9,14 @@ import {
   garageEndpointInternal,
   garageSecretKeyValue,
 } from "../core/garage.js";
+import { controlApiImage, imagesBakeResource } from "../core/images.js";
 import { namespaceName_ } from "../core/namespace.js";
 import { natsEndpoint } from "../core/nats.js";
 import { registryEndpointInternal } from "../core/registry.js";
 import { k8sProvider } from "../providers.js";
 import { builderImageUrl } from "./builder.js";
+
+export { controlApiImage };
 
 // Get GitHub configuration from Pulumi config
 const config = new pulumi.Config();
@@ -111,15 +107,6 @@ const _clusterRoleBinding = new kubernetes.rbac.v1.ClusterRoleBinding(
   { provider: k8sProvider },
 );
 
-// Build Docker image via buildx push-only workflow
-export const controlApiImage = buildxImage("control-api-image", {
-  imageName: pulumi.interpolate`${registryEndpoint}/origan/control-api:${imageTag}`,
-  context: "..", // Monorepo root (from infra directory)
-  dockerfile: "../docker/prod-optimized.Dockerfile",
-  target: "control-api", // Use control-api stage from multi-stage build
-  platform: "linux/amd64",
-});
-
 // Environment variables ConfigMap
 const controlApiConfig = new kubernetes.core.v1.ConfigMap(
   "control-api-config",
@@ -140,6 +127,7 @@ const controlApiConfig = new kubernetes.core.v1.ConfigMap(
       ORIGAN_DEPLOY_DOMAIN: "origan.app",
       ORIGAN_API_URL: `https://${apiUrl}`,
       ORIGAN_ADMIN_PANEL_URL: "https://admin.origan.dev",
+      ORIGAN_COOKIE_DOMAIN: ".origan.dev",
       DATABASE_RUN_MIGRATIONS: "true",
       GATEWAY_HOSTNAME: "gateway.origan.app",
     },
@@ -270,7 +258,7 @@ const controlApiDeployment = new kubernetes.apps.v1.Deployment(
       },
     },
   },
-  { provider: k8sProvider, dependsOn: [controlApiImage.buildResource] },
+  { provider: k8sProvider, dependsOn: [imagesBakeResource] },
 );
 
 // Service
