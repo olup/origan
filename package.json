@@ -16,7 +16,7 @@
     "test": "turbo test",
     "lint": "turbo lint",
     "format": "turbo format",
-    "check": "turbo check",
+    "check": "biome check --write --unsafe .",
     "clean": "turbo clean",
     "build:cli": "turbo build --filter=@origan/cli",
     "deploy:infra": "pnpm --filter infra run deploy"
