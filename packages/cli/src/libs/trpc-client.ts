@@ -3,8 +3,10 @@ import {
   createTRPCClient,
   httpBatchLink,
   httpLink,
+  httpSubscriptionLink,
   splitLink,
 } from "@trpc/client";
+import EventSource from "eventsource";
 import superjson from "superjson";
 import { config } from "../config.js";
 import { getAccessToken } from "../services/auth.service.js";
@@ -16,36 +18,58 @@ function isFormData(op: { input?: unknown }) {
 
 import type { CreateTRPCClient } from "@trpc/client";
 
+let accessToken: string | null = null;
+
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+}
+
+if (!("EventSource" in globalThis)) {
+  (globalThis as Record<string, unknown>).EventSource = EventSource;
+}
+
 // Create tRPC client with authentication
 export const trpc: CreateTRPCClient<AppRouter> = createTRPCClient<AppRouter>({
   links: [
     splitLink({
-      condition: isFormData,
-      // Use regular httpLink for FormData (no batching)
-      true: httpLink({
+      condition: (op) => op.type === "subscription",
+      true: httpSubscriptionLink({
         url: `${config.apiUrl}/trpc`,
         transformer: superjson,
-        fetch: async (url, options) => {
-          const token = await getAccessToken();
-          const headers = {
-            ...options?.headers,
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          };
-          return fetch(url, { ...options, headers });
-        },
+        eventSourceOptions: () => ({
+          headers: {
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
+        }),
       }),
-      // Use batch link for regular JSON requests
-      false: httpBatchLink({
-        url: `${config.apiUrl}/trpc`,
-        transformer: superjson,
-        fetch: async (url, options) => {
-          const token = await getAccessToken();
-          const headers = {
-            ...options?.headers,
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          };
-          return fetch(url, { ...options, headers });
-        },
+      false: splitLink({
+        condition: isFormData,
+        // Use regular httpLink for FormData (no batching)
+        true: httpLink({
+          url: `${config.apiUrl}/trpc`,
+          transformer: superjson,
+          fetch: async (url, options) => {
+            const token = await getAccessToken();
+            const headers = {
+              ...options?.headers,
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            };
+            return fetch(url, { ...options, headers });
+          },
+        }),
+        // Use batch link for regular JSON requests
+        false: httpBatchLink({
+          url: `${config.apiUrl}/trpc`,
+          transformer: superjson,
+          fetch: async (url, options) => {
+            const token = await getAccessToken();
+            const headers = {
+              ...options?.headers,
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            };
+            return fetch(url, { ...options, headers });
+          },
+        }),
       }),
     }),
   ],

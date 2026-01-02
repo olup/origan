@@ -22,3 +22,16 @@ export const BuildArtifactFormSchema = z.object({
     }
   }),
 });
+
+export const BuildLogLevelSchema = z.enum(["info", "error", "warn", "debug"]);
+
+export const BuildLogStreamInputSchema = z.object({
+  deploymentRef: z.string(),
+});
+
+export const BuildLogStreamEventSchema = z.object({
+  buildId: z.string().uuid(),
+  timestamp: z.string().datetime(),
+  level: BuildLogLevelSchema,
+  message: z.string(),
+});

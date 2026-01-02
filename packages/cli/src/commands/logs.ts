@@ -4,7 +4,10 @@ import {
   getDeploymentByRef,
   getDeployments,
 } from "../services/deploy.service.js";
-import { streamLogs } from "../services/logs.service.js";
+import {
+  streamBuildLogs,
+  streamDeploymentLogs,
+} from "../services/logs.service.js";
 import { log } from "../utils/logger.js";
 import {
   OriganConfigInvalidError,
@@ -48,46 +51,72 @@ export class LogsCommand extends Command {
       "Deployment ID or reference. If not provided, the latest deployment will be used.",
   });
 
+  build = Option.Boolean("--build", false, {
+    description: "Stream build logs instead of runtime logs.",
+  });
+
   async execute() {
     const projectRef = this.project || (await getProjectFromConfig());
     if (!projectRef) {
       return 1;
     }
 
-    const deploymentId = await this.getDeploymentId(
-      projectRef,
-      this.deployment,
-    );
+    const deployment = await this.getDeployment(projectRef, this.deployment);
+    const deploymentRef = deployment.reference;
 
-    await streamLogs(deploymentId, (log) => {
+    const onLog = (log: {
+      timestamp: string;
+      level: string;
+      message: string;
+    }) => {
       const levelColor =
         {
           error: pc.red,
+          warn: pc.yellow,
           warning: pc.yellow,
           info: pc.green,
           debug: pc.dim,
         }[log.level.toLowerCase()] || pc.white;
       const levelStr = `${log.timestamp} ${levelColor(log.level)}`;
-      console.log(levelStr, log.msg.trimEnd());
-    });
+      console.log(levelStr, log.message.trimEnd());
+    };
+
+    if (this.build) {
+      await streamBuildLogs(deploymentRef, onLog);
+      return 0;
+    }
+
+    await streamDeploymentLogs(deploymentRef, onLog);
+    return 0;
   }
 
-  async getDeploymentId(
+  async getDeployment(
     projectId: string,
     deploymentIdOrRef: string | undefined,
-  ): Promise<string> {
+  ): Promise<{ id: string; reference: string }> {
     if (deploymentIdOrRef == null) {
       const deployments = await getDeployments(projectId);
-      return deployments[deployments.length - 1].id;
+      const latest = deployments[deployments.length - 1];
+      if (!latest) {
+        throw new Error("No deployments found for this project");
+      }
+      return { id: latest.id, reference: latest.reference };
     }
 
     if (deploymentIdOrRef.length === 36) {
-      return deploymentIdOrRef;
+      const deployments = await getDeployments(projectId);
+      const deployment = deployments.find(
+        (item) => item.id === deploymentIdOrRef,
+      );
+      if (!deployment) {
+        throw new Error(`Deployment ${deploymentIdOrRef} not found`);
+      }
+      return { id: deployment.id, reference: deployment.reference };
     }
     const deployment = await getDeploymentByRef(deploymentIdOrRef);
     if (!deployment) {
       throw new Error(`Deployment ${deploymentIdOrRef} not found`);
     }
-    return deployment.id;
+    return { id: deployment.id, reference: deployment.reference };
   }
 }

@@ -10,10 +10,12 @@ import {
   Title,
   useMantineColorScheme,
 } from "@mantine/core";
+import type { AppRouter } from "@origan/control-api/src/trpc/router";
 import { useQuery } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "wouter";
-import { trpc } from "../../utils/trpc";
+import { trpc, trpcClient } from "../../utils/trpc";
 
 // Format duration between two dates as "X min Y sec" or "X hr Y min Z sec" if hours > 0
 function formatDuration(startDate: Date, endDate: Date): string {
@@ -41,6 +43,13 @@ function getLogColor(level: string, isDark: boolean) {
   }
 }
 
+type BuildLogStreamEvent =
+  inferRouterOutputs<AppRouter>["builds"]["streamLogs"];
+
+function getLogKey(log: BuildLogStreamEvent) {
+  return `${log.timestamp}:${log.level}:${log.message}`;
+}
+
 export const BuildTab = () => {
   const params = useParams();
   const reference = params?.reference;
@@ -49,21 +58,16 @@ export const BuildTab = () => {
   const { data: deployment } = useQuery(
     trpc.deployments.getByRef.queryOptions(
       { ref: reference || "" },
-      {
-        enabled: Boolean(reference),
-        refetchInterval: (query) => {
-          const data = query.state.data;
-          if (!data || "error" in data) return false;
-          if (data.status === "success" || data.status === "error")
-            return false;
-          return 1000;
-        },
-      },
+      { enabled: Boolean(reference) },
     ),
   );
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const prevLogsLength = useRef(0);
+  const [logs, setLogs] = useState<BuildLogStreamEvent[]>([]);
+  const seenLogKeys = useRef<Set<string>>(new Set());
+  const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
+  const buildId = deployment?.build?.id;
 
   // Get the ScrollArea viewport element
   const getViewport = useCallback(() => {
@@ -105,9 +109,7 @@ export const BuildTab = () => {
 
   // Auto-scroll when new logs appear
   useEffect(() => {
-    if (!deployment || "error" in deployment) return;
-
-    const currentLogsLength = deployment.build?.logs?.length || 0;
+    const currentLogsLength = logs.length;
 
     // Scroll on initial load or when new logs appear (if auto-scroll is enabled)
     if (currentLogsLength > 0) {
@@ -121,7 +123,65 @@ export const BuildTab = () => {
     }
 
     prevLogsLength.current = currentLogsLength;
-  }, [deployment, autoScroll, scrollLogsToBottom]);
+  }, [logs, autoScroll, scrollLogsToBottom]);
+
+  useEffect(() => {
+    if (!buildId) {
+      seenLogKeys.current = new Set();
+      setLogs([]);
+      return;
+    }
+
+    seenLogKeys.current = new Set();
+    setLogs([]);
+  }, [buildId]);
+
+  useEffect(() => {
+    if (!deployment?.build?.logs?.length) return;
+    setLogs((prev) => {
+      const next = [...prev];
+      for (const log of deployment.build.logs) {
+        const key = getLogKey(log);
+        if (!seenLogKeys.current.has(key)) {
+          seenLogKeys.current.add(key);
+          next.push(log);
+        }
+      }
+      return next;
+    });
+  }, [deployment?.build?.logs]);
+
+  useEffect(() => {
+    if (!reference || !buildId) return;
+
+    const subscription = trpcClient.builds.streamLogs.subscribe(
+      { deploymentRef: reference },
+      {
+        onData: (log) => {
+          const key = getLogKey(log);
+          setLogs((prev) => {
+            if (seenLogKeys.current.has(key)) return prev;
+            seenLogKeys.current.add(key);
+            return [...prev, log];
+          });
+        },
+        onError: (error) => {
+          console.error("Build log subscription error:", error);
+          subscriptionRef.current = null;
+        },
+        onComplete: () => {
+          subscriptionRef.current = null;
+        },
+      },
+    );
+
+    subscriptionRef.current = subscription;
+
+    return () => {
+      subscription.unsubscribe();
+      subscriptionRef.current = null;
+    };
+  }, [reference, buildId]);
 
   if (!deployment || "error" in deployment) return null;
 
@@ -178,9 +238,9 @@ export const BuildTab = () => {
                       fontSize: "0.8rem",
                     }}
                   >
-                    {deployment.build.logs.length > 0 ? (
+                    {logs.length > 0 ? (
                       <>
-                        {deployment.build.logs.map((log, index) => (
+                        {logs.map((log, index) => (
                           <Box
                             // biome-ignore lint/suspicious/noArrayIndexKey: no other way to make a key
                             key={index}
@@ -198,11 +258,13 @@ export const BuildTab = () => {
                     )}
                   </Box>
                 </ScrollArea.Autosize>
-                {!autoScroll && deployment.build.status === "in_progress" && (
-                  <Text size="xs" c="dimmed" ta="center">
-                    Auto-scroll paused. Scroll to bottom to resume.
-                  </Text>
-                )}
+                {!autoScroll &&
+                  deployment.build.status === "in_progress" &&
+                  logs.length > 0 && (
+                    <Text size="xs" c="dimmed" ta="center">
+                      Auto-scroll paused. Scroll to bottom to resume.
+                    </Text>
+                  )}
               </Stack>
             </CardSection>
           </>

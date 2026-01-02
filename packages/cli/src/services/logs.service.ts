@@ -1,36 +1,63 @@
-import { fetchEventData, type ServerSentEvent } from "fetch-sse";
-import { z } from "zod";
-import { config } from "../config.js";
+import type { AppRouter } from "@origan/control-api/src/trpc/router";
+import type { inferRouterOutputs } from "@trpc/server";
+import { setAccessToken, trpc } from "../libs/trpc-client.js";
 import { getAccessToken } from "./auth.service.js";
 
-const LogEntry = z.object({
-  timestamp: z.string().datetime(),
-  msg: z.string(),
-  level: z.string(),
-});
+export type DeploymentLog = inferRouterOutputs<AppRouter>["logs"]["stream"];
+export type BuildLog = inferRouterOutputs<AppRouter>["builds"]["streamLogs"];
 
-export type DeploymentLog = z.infer<typeof LogEntry>;
-
-export async function streamLogs(
-  deploymentId: string,
+export async function streamDeploymentLogs(
+  deploymentRef: string,
   onMessage: (message: DeploymentLog) => void,
 ) {
   const token = await getAccessToken();
+  if (!token) {
+    throw new Error("You must be logged in to stream logs.");
+  }
+  setAccessToken(token);
+  await new Promise<void>((resolve, reject) => {
+    const subscription = trpc.logs.stream.subscribe(
+      { deploymentRef },
+      {
+        onData: (log) => {
+          onMessage(log);
+        },
+        onError: (error) => {
+          reject(error);
+        },
+        onComplete: () => {
+          subscription.unsubscribe();
+          resolve();
+        },
+      },
+    );
+  });
+}
 
-  await fetchEventData(`${config.apiUrl}/logs/stream/${deploymentId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-    onMessage: (message: ServerSentEvent | null) => {
-      if (!message) {
-        return;
-      }
-      const data = JSON.parse(message.data);
-      const deploymentLog = LogEntry.parse(data);
-      onMessage(deploymentLog);
-    },
+export async function streamBuildLogs(
+  deploymentRef: string,
+  onMessage: (message: BuildLog) => void,
+) {
+  const token = await getAccessToken();
+  if (!token) {
+    throw new Error("You must be logged in to stream logs.");
+  }
+  setAccessToken(token);
+  await new Promise<void>((resolve, reject) => {
+    const subscription = trpc.builds.streamLogs.subscribe(
+      { deploymentRef },
+      {
+        onData: (log) => {
+          onMessage(log);
+        },
+        onError: (error) => {
+          reject(error);
+        },
+        onComplete: () => {
+          subscription.unsubscribe();
+          resolve();
+        },
+      },
+    );
   });
 }

@@ -139,11 +139,12 @@ export async function refreshAccessToken(): Promise<boolean> {
     console.log("Refreshing access token...");
 
     // Use the tRPC client directly for refresh
+    const csrfToken = getCsrfToken();
     const result = await fetch(`${getApiUrl()}/trpc/auth.refreshToken`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(getCsrfToken() ? { "X-CSRF-Token": getCsrfToken()! } : {}),
+        ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
       },
       credentials: "include",
       body: JSON.stringify({}),

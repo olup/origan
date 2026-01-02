@@ -9,10 +9,6 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev --filter=@origan/control-api --filter=@origan/gateway --filter=@origan/admin",
-    "dev:all": "turbo dev",
-    "dev:api": "turbo dev --filter=@origan/control-api",
-    "dev:gateway": "turbo dev --filter=@origan/gateway",
-    "dev:admin": "turbo dev --filter=@origan/admin",
     "test": "turbo test",
     "lint": "turbo lint",
     "format": "turbo format",
