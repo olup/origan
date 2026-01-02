@@ -170,6 +170,13 @@ export async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
+export async function ensureAccessToken(): Promise<boolean> {
+  if (state.accessToken) {
+    return true;
+  }
+  return refreshAccessToken();
+}
+
 // Create tRPC client with split link for FormData and subscription support
 export const trpcClient = createTRPCClient<AppRouter>({
   links: [
@@ -179,9 +186,11 @@ export const trpcClient = createTRPCClient<AppRouter>({
       true: httpSubscriptionLink({
         url: `${getApiUrl()}/trpc`,
         transformer: superjson,
+        connectionParams: () =>
+          state.accessToken ? { accessToken: state.accessToken } : undefined,
         eventSourceOptions: () => ({
           headers: {
-            authorization: state.accessToken
+            Authorization: state.accessToken
               ? `Bearer ${state.accessToken}`
               : undefined,
           },

@@ -3,8 +3,13 @@ import type { inferRouterOutputs } from "@trpc/server";
 import { setAccessToken, trpc } from "../libs/trpc-client.js";
 import { getAccessToken } from "./auth.service.js";
 
-export type DeploymentLog = inferRouterOutputs<AppRouter>["logs"]["stream"];
-export type BuildLog = inferRouterOutputs<AppRouter>["builds"]["streamLogs"];
+type StreamItem<T> = T extends AsyncIterable<infer U> ? U : never;
+export type DeploymentLog = StreamItem<
+  inferRouterOutputs<AppRouter>["logs"]["stream"]
+>;
+export type BuildLog = StreamItem<
+  inferRouterOutputs<AppRouter>["builds"]["streamLogs"]
+>;
 
 export async function streamDeploymentLogs(
   deploymentRef: string,

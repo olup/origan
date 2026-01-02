@@ -146,14 +146,23 @@ const nodeServicesImage = singleNodeImage
   ? allImages.images[nodeServicesTarget]
   : null;
 
+const requireNodeServicesImage = () => {
+  if (!nodeServicesImage) {
+    throw new Error(
+      "node-services image is required when singleNodeImage is enabled",
+    );
+  }
+  return nodeServicesImage;
+};
+
 export const controlApiImage = singleNodeImage
-  ? nodeServicesImage!
+  ? requireNodeServicesImage()
   : allImages.images["control-api"];
 export const gatewayImage = singleNodeImage
-  ? nodeServicesImage!
+  ? requireNodeServicesImage()
   : allImages.images.gateway;
 export const builderImage = singleNodeImage
-  ? nodeServicesImage!
+  ? requireNodeServicesImage()
   : allImages.images.builder;
 export const runnerImage = allImages.images.runner;
 

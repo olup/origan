@@ -12,7 +12,7 @@ import {
 } from "@mantine/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "wouter";
-import { trpcClient } from "../../utils/trpc";
+import { ensureAccessToken, trpcClient } from "../../utils/trpc";
 
 function getLogColor(level: string, isDark: boolean) {
   switch (level) {
@@ -82,7 +82,7 @@ export const LogsTab = () => {
     setAutoScroll(isNearBottom());
   }, [isNearBottom]);
 
-  const onToggleSubscription = () => {
+  const onToggleSubscription = async () => {
     if (isListening) {
       // Unsubscribe
       if (subscriptionRef.current) {
@@ -93,6 +93,12 @@ export const LogsTab = () => {
     } else {
       // Subscribe to logs
       setIsListening(true);
+      const hasToken = await ensureAccessToken();
+      if (!hasToken) {
+        console.error("Unable to refresh access token for logs subscription");
+        setIsListening(false);
+        return;
+      }
       const subscription = trpcClient.logs.stream.subscribe(
         { deploymentRef: reference || "" },
         {

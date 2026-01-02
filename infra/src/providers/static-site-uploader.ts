@@ -28,9 +28,26 @@ interface StaticSiteUploaderOutputs {
   uploadedFiles: string[];
 }
 
+interface StaticSiteUploaderResolvedInputs {
+  bucketName: string;
+  sourcePath: string;
+  bucketEndpoint?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  invalidateOnChange?: boolean;
+  deleteOrphaned?: boolean;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
 class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
   async create(
-    inputs: any,
+    inputs: StaticSiteUploaderResolvedInputs,
   ): Promise<pulumi.dynamic.CreateResult<StaticSiteUploaderOutputs>> {
     const uploadResult = await this.uploadFiles(inputs);
     return {
@@ -42,7 +59,7 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
   async update(
     _id: string,
     olds: StaticSiteUploaderOutputs,
-    news: any,
+    news: StaticSiteUploaderResolvedInputs,
   ): Promise<pulumi.dynamic.UpdateResult<StaticSiteUploaderOutputs>> {
     // Calculate content hash to detect changes
     const newHash = await this.calculateContentHash(news.sourcePath);
@@ -63,7 +80,9 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
     );
   }
 
-  private async uploadFiles(inputs: any): Promise<StaticSiteUploaderOutputs> {
+  private async uploadFiles(
+    inputs: StaticSiteUploaderResolvedInputs,
+  ): Promise<StaticSiteUploaderOutputs> {
     // At this point, all Inputs are resolved to plain values
     const s3Client = new S3Client({
       endpoint: inputs.bucketEndpoint || process.env.GARAGE_ENDPOINT,
@@ -103,7 +122,7 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
       try {
         await s3Client.send(
           new PutObjectCommand({
-            Bucket: inputs.bucketName as string,
+            Bucket: inputs.bucketName,
             Key: file,
             Body: fileContent,
             ContentType: contentType,
@@ -114,7 +133,7 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
         uploadedFiles.push(file);
         pulumi.log.debug(`Uploaded: ${file} (${contentType})`);
       } catch (error) {
-        pulumi.log.error(`Failed to upload ${file}: ${error}`);
+        pulumi.log.error(`Failed to upload ${file}: ${getErrorMessage(error)}`);
         throw error;
       }
     }
@@ -123,7 +142,7 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
     if (inputs.deleteOrphaned) {
       await this.deleteOrphanedFiles(
         s3Client,
-        inputs.bucketName as string,
+        inputs.bucketName,
         uploadedFiles,
       );
     }
@@ -135,7 +154,7 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
     );
 
     return {
-      bucketName: inputs.bucketName as string,
+      bucketName: inputs.bucketName,
       filesUploaded: uploadedFiles.length,
       contentHash,
       uploadedFiles,
@@ -158,9 +177,9 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
       if (!listResponse.Contents) return;
 
       const uploadedSet = new Set(uploadedFiles);
-      const toDelete = listResponse.Contents.filter(
-        (obj) => obj.Key && !uploadedSet.has(obj.Key),
-      ).map((obj) => ({ Key: obj.Key! }));
+      const toDelete = listResponse.Contents.flatMap((obj) =>
+        obj.Key && !uploadedSet.has(obj.Key) ? [{ Key: obj.Key }] : [],
+      );
 
       if (toDelete.length > 0) {
         await s3Client.send(
@@ -176,7 +195,9 @@ class StaticSiteUploaderProvider implements pulumi.dynamic.ResourceProvider {
         );
       }
     } catch (error) {
-      pulumi.log.warn(`Failed to delete orphaned files: ${error}`);
+      pulumi.log.warn(
+        `Failed to delete orphaned files: ${getErrorMessage(error)}`,
+      );
     }
   }
 

@@ -41,12 +41,13 @@ async function registerAccount() {
     console.log("✅ Account registered successfully!");
     console.log("Account URL:", account.url);
     console.log("\nYou can now use this account key for certificate issuance.");
-  } catch (error: any) {
-    if (error.message?.includes("account already exists")) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("account already exists")) {
       console.log("✅ Account already registered!");
     } else {
       console.error("❌ Failed to register account:");
-      console.error(error.message);
+      console.error(message);
       process.exit(1);
     }
   }

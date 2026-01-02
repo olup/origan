@@ -6,7 +6,7 @@ import {
   httpSubscriptionLink,
   splitLink,
 } from "@trpc/client";
-import EventSource from "eventsource";
+import { EventSource } from "eventsource";
 import superjson from "superjson";
 import { config } from "../config.js";
 import { getAccessToken } from "../services/auth.service.js";

@@ -97,6 +97,9 @@ importers:
       '@trpc/client':
         specifier: 11.5.1
         version: 11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3)
+      '@trpc/server':
+        specifier: 11.5.1
+        version: 11.5.1(typescript@5.7.3)
       '@trpc/tanstack-react-query':
         specifier: 11.5.1
         version: 11.5.1(@tanstack/react-query@5.74.4(react@19.1.0))(@trpc/client@11.5.1(@trpc/server@11.5.1(typescript@5.7.3))(typescript@5.7.3))(@trpc/server@11.5.1(typescript@5.7.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.7.3)
@@ -237,9 +240,9 @@ importers:
       esbuild:
         specifier: ^0.25.2
         version: 0.25.3
-      fetch-sse:
-        specifier: ^1.1.2
-        version: 1.1.2
+      eventsource:
+        specifier: ^3.0.5
+        version: 3.0.7
       form-data:
         specifier: ^4.0.2
         version: 4.0.2
@@ -499,6 +502,10 @@ importers:
       typescript:
         specifier: ^5
         version: 5.8.3
+    optionalDependencies:
+      '@next/swc-darwin-arm64':
+        specifier: 15.3.1
+        version: 15.3.1
 
   shared/nats:
     dependencies:
@@ -4406,6 +4413,14 @@ packages:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
     engines: {node: '>=0.8.x'}
 
+  eventsource-parser@3.0.6:
+    resolution: {integrity: sha512-Vo1ab+QXPzZ4tCa8SwIHJFaSzy4R6SHf7BY79rFBDf0idraZWAkYrDjDj8uWaSm3S2TK+hJ7/t1CEmZ7jXw+pg==}
+    engines: {node: '>=18.0.0'}
+
+  eventsource@3.0.7:
+    resolution: {integrity: sha512-CRT1WTyuQoD771GW56XEZFQ/ZoSfWid1alKGDYMmkt2yl8UXrVR4pspqWNEcqKvVIzg6PAltWjxcSSPrboA4iA==}
+    engines: {node: '>=18.0.0'}
+
   execa@5.1.1:
     resolution: {integrity: sha512-8uSpZZocAZRBAPIEINJj3Lo9HyGitllczc27Eh5YYojjMFMn8yHMDMaUHE2Jqfq05D/wucwI4JGURyXt1vchyg==}
     engines: {node: '>=10'}
@@ -4472,10 +4487,6 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
-
-  fetch-sse@1.1.2:
-    resolution: {integrity: sha512-f0kF5bNJJrudD6A+XrnJm4RS34+uH51yv5oyoHZBCub0IhI9HCRrrRJ+90jNzC0cFUAt3mJjBH/hf1Xealdt/Q==}
-    engines: {node: '>=18.0.0'}
 
   fflate@0.8.2:
     resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
@@ -11924,6 +11935,12 @@ snapshots:
 
   events@3.3.0: {}
 
+  eventsource-parser@3.0.6: {}
+
+  eventsource@3.0.7:
+    dependencies:
+      eventsource-parser: 3.0.6
+
   execa@5.1.1:
     dependencies:
       cross-spawn: 7.0.6
@@ -12010,8 +12027,6 @@ snapshots:
   fdir@6.4.4(picomatch@4.0.2):
     optionalDependencies:
       picomatch: 4.0.2
-
-  fetch-sse@1.1.2: {}
 
   fflate@0.8.2: {}
 

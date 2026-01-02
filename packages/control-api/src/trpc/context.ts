@@ -43,6 +43,37 @@ export async function createContext(opts: {
       }
     }
 
+    // If no token in header, try connection params (SSE subscriptions)
+    if (!userId) {
+      const connectionParamsRaw = opts.c.req.query("connectionParams");
+      if (connectionParamsRaw) {
+        try {
+          const decoded = decodeURIComponent(connectionParamsRaw);
+          const params = JSON.parse(decoded) as {
+            accessToken?: string;
+          };
+          if (params?.accessToken) {
+            const payload = verifyAccessToken(params.accessToken);
+            if (payload) {
+              userId = payload.userId;
+            }
+          }
+        } catch {
+          // Ignore malformed connection params
+        }
+      }
+    }
+
+    if (!userId) {
+      const accessToken = opts.c.req.query("accessToken");
+      if (accessToken) {
+        const payload = verifyAccessToken(accessToken);
+        if (payload) {
+          userId = payload.userId;
+        }
+      }
+    }
+
     // If no token in header, try cookies (for web clients)
     if (!userId) {
       const accessToken = getCookie(opts.c, "accessToken");

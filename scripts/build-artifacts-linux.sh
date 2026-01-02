@@ -35,10 +35,10 @@ docker run --rm \
     corepack install --global pnpm@^10.7.0
     ${INSTALL_CMD}
     pnpm run build --filter=@origan/control-api --filter=@origan/gateway --filter=@origan/builder
-    pnpm deploy --filter=@origan/control-api --prod '${OUT_DIR}/control-api' & \
-    pnpm deploy --filter=@origan/gateway --prod '${OUT_DIR}/gateway' & \
-    pnpm deploy --filter=@origan/builder --prod '${OUT_DIR}/builder' & \
-    wait
+    rm -rf '${OUT_DIR}/control-api' '${OUT_DIR}/gateway' '${OUT_DIR}/builder'
+    pnpm deploy --filter=@origan/control-api --prod '${OUT_DIR}/control-api'
+    pnpm deploy --filter=@origan/gateway --prod '${OUT_DIR}/gateway'
+    pnpm deploy --filter=@origan/builder --prod '${OUT_DIR}/builder'
     cp -a docker/node-services-entrypoint.sh '${OUT_DIR}/docker/node-services-entrypoint.sh'
     cp -a packages/runner '${OUT_DIR}/runner'
   "

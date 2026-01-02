@@ -9,7 +9,7 @@ import {
 } from "../core/garage.js";
 import { imagesBakeResource, runnerImage } from "../core/images.js";
 import { namespaceName_ } from "../core/namespace.js";
-import { natsEndpoint } from "../core/nats.js";
+import { natsEndpoint, natsWsEndpoint } from "../core/nats.js";
 import { k8sProvider } from "../providers.js";
 
 export { runnerImage };
@@ -33,12 +33,9 @@ const runnerConfig = new kubernetes.core.v1.ConfigMap(
       BUCKET_URL: garageEndpointInternal,
       BUCKET_NAME: deploymentBucketName,
       BUCKET_REGION: "garage",
-      // Workers configuration
-      WORKERS_PATH: "/workers",
-      // Runtime configuration
-      MAIN_SERVICE: "/app/functions/supervisor",
       // NATS connection
       EVENTS_NATS_SERVER: natsEndpoint,
+      EVENTS_NATS_WS_SERVER: natsWsEndpoint,
     },
   },
   { provider: k8sProvider },

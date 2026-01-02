@@ -26,6 +26,11 @@ jetstream {
   max_mem: 1G
   max_file: 10G
 }
+
+websocket {
+  port: 4223
+  no_tls: true
+}
     `,
     },
   },
@@ -67,6 +72,7 @@ const natsStatefulSet = new kubernetes.apps.v1.StatefulSet(
               image: "nats:2.10-alpine",
               ports: [
                 { containerPort: 4222, name: "client" },
+                { containerPort: 4223, name: "ws" },
                 { containerPort: 8222, name: "monitor" },
               ],
               command: ["nats-server"],
@@ -158,6 +164,7 @@ const natsService = new kubernetes.core.v1.Service(
       },
       ports: [
         { port: 4222, targetPort: 4222, name: "client" },
+        { port: 4223, targetPort: 4223, name: "ws" },
         { port: 8222, targetPort: 8222, name: "monitor" },
       ],
       type: "ClusterIP",
@@ -169,4 +176,5 @@ const natsService = new kubernetes.core.v1.Service(
 // Export connection details
 export const natsEndpoint = pulumi.interpolate`nats://${natsService.metadata.name}.${namespaceName_}.svc.cluster.local:4222`;
 export const natsMonitorEndpoint = pulumi.interpolate`http://${natsService.metadata.name}.${namespaceName_}.svc.cluster.local:8222`;
+export const natsWsEndpoint = pulumi.interpolate`ws://${natsService.metadata.name}.${namespaceName_}.svc.cluster.local:4223`;
 export const natsServiceName = natsService.metadata.name;

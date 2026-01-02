@@ -13,6 +13,34 @@ export interface GarageBucketProps {
   };
 }
 
+interface GarageBucketInputs {
+  bucketName: string;
+  endpoint: string;
+  accessKey: string;
+  secretKey: string;
+  region?: string;
+  forceDestroy?: boolean;
+  website?: {
+    indexDocument: string;
+    errorDocument?: string;
+  };
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
+function getErrorName(error: unknown): string | null {
+  if (error && typeof error === "object" && "name" in error) {
+    const name = (error as { name?: unknown }).name;
+    return typeof name === "string" ? name : null;
+  }
+  return null;
+}
+
 /**
  * Custom resource for creating S3 buckets in Garage
  * Only uses S3 operations that Garage actually supports
@@ -28,7 +56,7 @@ export class GarageBucket extends pulumi.dynamic.Resource {
     opts?: pulumi.CustomResourceOptions,
   ) {
     const provider: pulumi.dynamic.ResourceProvider = {
-      async create(inputs: any) {
+      async create(inputs: GarageBucketInputs) {
         // Dynamic import to avoid closure serialization issues
         const { S3Client, CreateBucketCommand, PutBucketWebsiteCommand } =
           await import("@aws-sdk/client-s3");
@@ -69,15 +97,18 @@ export class GarageBucket extends pulumi.dynamic.Resource {
               }),
             );
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           // If bucket already exists, that's OK
+          const errorName = getErrorName(error);
           if (
-            error.name === "BucketAlreadyOwnedByYou" ||
-            error.name === "BucketAlreadyExists"
+            errorName === "BucketAlreadyOwnedByYou" ||
+            errorName === "BucketAlreadyExists"
           ) {
             // Silently continue - bucket exists
           } else {
-            throw new Error(`Failed to create bucket: ${error.message}`);
+            throw new Error(
+              `Failed to create bucket: ${getErrorMessage(error)}`,
+            );
           }
         }
 
@@ -91,7 +122,11 @@ export class GarageBucket extends pulumi.dynamic.Resource {
         };
       },
 
-      async update(_id: string, olds: any, news: any) {
+      async update(
+        _id: string,
+        olds: GarageBucketInputs,
+        news: GarageBucketInputs,
+      ) {
         // For updates, we only handle website configuration changes
         if (JSON.stringify(olds.website) !== JSON.stringify(news.website)) {
           const { S3Client, PutBucketWebsiteCommand } = await import(
@@ -136,7 +171,7 @@ export class GarageBucket extends pulumi.dynamic.Resource {
         };
       },
 
-      async delete(_id: string, props: any) {
+      async delete(_id: string, props: GarageBucketInputs) {
         const {
           S3Client,
           ListObjectsV2Command,
@@ -165,14 +200,19 @@ export class GarageBucket extends pulumi.dynamic.Resource {
             );
 
             if (objects.Contents && objects.Contents.length > 0) {
-              await s3Client.send(
-                new DeleteObjectsCommand({
-                  Bucket: props.bucketName,
-                  Delete: {
-                    Objects: objects.Contents.map((obj) => ({ Key: obj.Key! })),
-                  },
-                }),
+              const deleteTargets = objects.Contents.flatMap((obj) =>
+                obj.Key ? [{ Key: obj.Key }] : [],
               );
+              if (deleteTargets.length > 0) {
+                await s3Client.send(
+                  new DeleteObjectsCommand({
+                    Bucket: props.bucketName,
+                    Delete: {
+                      Objects: deleteTargets,
+                    },
+                  }),
+                );
+              }
             }
           }
 
@@ -182,12 +222,16 @@ export class GarageBucket extends pulumi.dynamic.Resource {
               Bucket: props.bucketName,
             }),
           );
-        } catch (_error: any) {
+        } catch (_error: unknown) {
           // Silently fail on delete - bucket might not exist
         }
       },
 
-      async diff(_id: string, olds: any, news: any) {
+      async diff(
+        _id: string,
+        olds: GarageBucketInputs,
+        news: GarageBucketInputs,
+      ) {
         const changes =
           JSON.stringify(olds.website) !== JSON.stringify(news.website);
         return {

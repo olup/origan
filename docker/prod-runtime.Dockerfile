@@ -27,8 +27,18 @@ COPY builder /prod/builder
 WORKDIR /prod/builder
 ENTRYPOINT ["node", "dist/index.js"]
 
-FROM ghcr.io/supabase/edge-runtime:v1.67.4 AS runner
+ARG WORKERD_VERSION=1.20260101.0
+FROM base AS workerd
+RUN npm install -g workerd@${WORKERD_VERSION}
+
+FROM base AS runner
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    update-ca-certificates
+COPY --from=workerd /usr/local/bin/workerd /usr/local/bin/workerd
 COPY runner /app
 WORKDIR /app
 EXPOSE 9000
-CMD ["start", "--main-service", "/app/functions/supervisor", "--event-worker", "/app/functions/event-worker"]
+CMD ["workerd", "serve", "--experimental", "/app/workerd/worker.capnp", "config"]
