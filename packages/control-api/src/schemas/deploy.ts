@@ -1,14 +1,7 @@
 import { z } from "zod";
+import { DeploymentManifestSchema } from "./manifest.js";
 
-export const routeSchema = z.object({
-  urlPath: z.string(),
-  functionPath: z.string(),
-});
-
-export const deploymentConfigSchema = z.object({
-  app: z.array(z.string()),
-  api: z.array(routeSchema),
-});
+export const deploymentConfigSchema = DeploymentManifestSchema;
 
 export const getConfigRequestSchema = z.object({
   domain: z.string().min(1, "Domain is required"),

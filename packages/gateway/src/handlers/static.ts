@@ -12,12 +12,10 @@ export async function handleStaticFile(
   config: Config,
   deploymentId: string,
 ) {
-  const requestedFile = path.slice(1); // Remove leading slash
-
   const served = await tryServeFile(
     req,
     res,
-    requestedFile,
+    path,
     undefined,
     config,
     deploymentId,
@@ -26,8 +24,8 @@ export async function handleStaticFile(
   if (served) return true;
 
   const indexPath = path.endsWith("/")
-    ? `${path}index.html`.slice(1)
-    : `${path}/index.html`.slice(1);
+    ? `${path}index.html`
+    : `${path}/index.html`;
 
   const servedIndex = await tryServeFile(
     req,
@@ -43,7 +41,7 @@ export async function handleStaticFile(
   const servedRoot = await tryServeFile(
     req,
     res,
-    "index.html",
+    "/index.html",
     "text/html",
     config,
     deploymentId,
@@ -57,7 +55,7 @@ export async function handleStaticFile(
     JSON.stringify({
       error: "Not found",
       path,
-      app: config.app,
+      resources: config.resources.length,
     }),
   );
   return true;
@@ -66,56 +64,114 @@ export async function handleStaticFile(
 async function tryServeFile(
   req: IncomingMessage,
   res: ServerResponse,
-  filePath: string,
+  urlPath: string,
   contentTypeOverride: string | undefined,
   config: Config,
   deploymentId: string,
 ): Promise<boolean> {
-  if (!config.app.includes(filePath)) {
+  const resource = findStaticResource(config, urlPath);
+  if (!resource) {
     return false;
   }
 
   const s3Response = await streamFromS3(
-    `deployments/${deploymentId}/app/${filePath}`,
+    `deployments/${deploymentId}/${resource.resourcePath}`,
   );
 
   if (!s3Response) {
     return false;
   }
 
-  const contentType = contentTypeOverride ?? getContentType(filePath);
+  const contentType =
+    contentTypeOverride ?? getContentType(resource.resourcePath);
 
   const acceptEncoding = req.headers["accept-encoding"] || "";
   const shouldGzip =
     acceptEncoding.includes("gzip") &&
     /^(text\/|application\/(javascript|json))/i.test(contentType);
 
-  const headers: Record<string, string> = {
-    "Content-Type": contentType,
-  };
-
-  // Add cache headers
-  if (s3Response.etag) {
-    headers.ETag = s3Response.etag;
-  }
-  if (s3Response.lastModified) {
-    headers["Last-Modified"] = s3Response.lastModified.toUTCString();
-  }
-  // Cache for 1 hour for immutable deployments
-  headers["Cache-Control"] = "public, max-age=3600";
+  const headers = buildStaticHeaders({
+    contentType,
+    resourceHeaders: resource.headers,
+    etag: s3Response.etag,
+    lastModified: s3Response.lastModified,
+    contentLength: s3Response.contentLength,
+    shouldGzip,
+  });
 
   if (shouldGzip) {
-    headers["Content-Encoding"] = "gzip";
     res.writeHead(200, headers);
     const gzipped = createGzip();
     await pipeline(s3Response.stream, gzipped, res);
   } else {
-    if (s3Response.contentLength) {
-      headers["Content-Length"] = s3Response.contentLength.toString();
-    }
     res.writeHead(200, headers);
     await pipeline(s3Response.stream, res);
   }
 
   return true;
+}
+
+export function findStaticResource(config: Config, urlPath: string) {
+  const normalizedPath = normalizePath(urlPath);
+  return (
+    config.resources.find(
+      (resource) =>
+        resource.kind === "static" && resource.urlPath === normalizedPath,
+    ) ?? null
+  );
+}
+
+export function normalizePath(path: string) {
+  if (!path.startsWith("/")) {
+    return `/${path}`;
+  }
+  return path;
+}
+
+export function buildStaticHeaders({
+  contentType,
+  resourceHeaders,
+  etag,
+  lastModified,
+  contentLength,
+  shouldGzip,
+}: {
+  contentType: string;
+  resourceHeaders?: Record<string, string>;
+  etag?: string;
+  lastModified?: Date;
+  contentLength?: number | null;
+  shouldGzip: boolean;
+}) {
+  const headers: Record<string, string> = {
+    "Content-Type": contentType,
+  };
+
+  if (resourceHeaders) {
+    for (const [key, value] of Object.entries(resourceHeaders)) {
+      headers[key] = value;
+    }
+  }
+
+  if (etag) {
+    headers.ETag = etag;
+  }
+  if (lastModified) {
+    headers["Last-Modified"] = lastModified.toUTCString();
+  }
+
+  const hasCacheControl = Object.keys(headers).some(
+    (key) => key.toLowerCase() === "cache-control",
+  );
+  if (!hasCacheControl) {
+    headers["Cache-Control"] = "public, max-age=3600";
+  }
+
+  if (shouldGzip) {
+    headers["Content-Encoding"] = "gzip";
+  } else if (contentLength) {
+    headers["Content-Length"] = contentLength.toString();
+  }
+
+  return headers;
 }

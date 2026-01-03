@@ -1,165 +1,43 @@
-# Origan
+# Origan Build & Deploy
 
-Origan is a platform for deploying full stack web applications in Europe. Think Vercel, Netlify, or Cloudflare Pages, but European-based and focused on developer experience.
+This repo builds Docker images locally and deploys to Kubernetes with Pulumi.
 
-## Key Features
+## Build Images
 
-- **Full-Stack Deployment**: Deploy both frontend assets and backend functions
-- **Zero Configuration**: Automatic detection of project type and build settings
-- **European Infrastructure**: All services hosted in EU data centers
-- **GitHub Integration**: Seamless deployment from GitHub repositories
-- **Custom Domains**: Support for custom domains with automatic SSL
-- **Real-Time Logs**: Live build and deployment logs
-- **Team Collaboration**: Multi-user support with role-based access
+Build and push service images (control-api, gateway, builder, runner):
 
-## Packages
-
-### CLI (`packages/cli`)
-Command line interface for developers:
-- Project initialization
-- Local development
-- Deployment management
-- Configuration handling
-
-### Control API (`packages/control-api`)
-Backend service managing:
-- Project configurations
-- Deployments and builds
-- Authentication and authorization
-- Database operations (Drizzle ORM)
-- GitHub integration
-
-### Gateway (`packages/gateway`)
-Edge proxy service handling:
-- Request routing
-- HTTPS/TLS certificates (ACME)
-- Static file serving
-- Health monitoring
-- API proxying
-
-### Runner (`packages/runner`)
-Edge functions runtime:
-- Function supervision
-- Edge runtime environment
-- Worker process management
-- Resource isolation
-
-### Admin (`packages/admin`)
-Web interface built with:
-- React & Vite
-- TypeScript
-- Real-time updates
-- Project management
-
-### Landing Page (`packages/landing`)
-Marketing site featuring:
-- Product information
-- Documentation
-- Pricing
-- Blog
-
-### Shared Libraries
-- `shared/nats`: NATS messaging client for service communication
-
-## Development
-
-This project uses [Turborepo](https://turbo.build/) to manage the monorepo build system and task orchestration.
-
-### Prerequisites
-
-- Node.js 22+
-- pnpm
-- Docker and Docker Compose
-
-### Getting Started
-
-1. Clone and install dependencies:
-```bash
-git clone https://github.com/origan-eu/origan.git
-cd origan
-pnpm install
+```sh
+IMAGE_TAG=prod scripts/build-images.sh
 ```
 
-2. Set up environment:
-```bash
-cp .env.example .env
-# Edit .env with your GitHub App credentials
+Common options:
+
+- `ORIGAN_TARGETS=control-api,gateway,builder,runner` to limit targets.
+- `ORIGAN_SEQUENTIAL=1` to build one target at a time.
+- `ORIGAN_SINGLE_IMAGE=1` to build `node-services` + `runner`.
+- `ORIGAN_LOCAL_ARTIFACTS=1` to use `.docker-prod` (requires `scripts/build-artifacts.sh`).
+- `ORIGAN_DISABLE_CACHE=1` to skip build cache.
+- `ORIGAN_CLEAN_IMAGES=1` to remove built images after push.
+- `ORIGAN_CLEAN_CACHE=1` to prune buildx cache after push.
+
+The script also prints resolved image digests for Pulumi.
+
+## Deploy with Pulumi
+
+Deploy the `prod` stack from `infra/` using image tags:
+
+```sh
+cd infra
+PULUMI_CONFIG_PASSPHRASE="" IMAGE_TAG=prod pulumi up --yes
 ```
 
-3. Start infrastructure services:
-```bash
-docker-compose up -d
-```
+Pulumi resolves the image tag to a digest at deploy time, so you only need
+to set `IMAGE_TAG`.
 
-4. Start local development:
-```bash
-pnpm dev
-```
+## Troubleshooting
 
-### GitHub Integration
-
-Origan uses GitHub Apps for repository access:
-- [Production App](https://github.com/organizations/origan-eu/settings/apps/origaneu)
-- [Development App](https://github.com/organizations/origan-eu/settings/apps/origaneu-local)
-
-Development webhooks are handled through [smee.io](https://smee.io/origaneulocal-8MVxlEzBDRVUKj).
-
-### CLI Development
-
-To use the CLI locally while developing:
-
-```bash
-cd packages/cli && pnpm link -g
-```
-
-To remove the global link when done:
-```bash
-pnpm uninstall -g @origan/cli
-```
-
-## Architecture
-
-```
-┌─────────────┐
-│    CLI      │
-└─────┬───────┘
-      │
-┌─────▼───────┐    ┌──────────────┐
-│   Gateway   │◄───┤  Admin Panel │
-└─────┬───────┘    └──────────────┘
-      │
-┌─────▼───────┐    ┌──────────────┐
-│ Control API │◄───┤   Database   │
-└─────┬───────┘    └──────────────┘
-      │
-┌─────▼───────┐    ┌──────────────┐
-│Builder      │◄───┤Object Storage│
-└─────┬───────┘    └──────────────┘
-      │
-┌─────▼───────┐
-│Edge Runtime │
-└─────────────┘
-```
-
-## Infrastructure
-
-The `infra/` directory contains infrastructure configurations for:
-- Kubernetes clusters
-- Databases
-- Object storage
-- Container registry
-- API Gateway configuration
-- Custom resources
-
-See [infra/README.md](infra/README.md) for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## License
-
-Copyright © 2024 Origan EU
+- If Docker runs out of space, clean it:
+  ```sh
+  docker system prune -af --volumes
+  ```
+- If Pulumi warns about pending operations, run `pulumi refresh` interactively.

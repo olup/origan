@@ -14,27 +14,48 @@ import {
   OriganConfigNotFoundError,
   parseOriganConfig,
 } from "../utils/origan.js";
-import type { Route, RouteConfig } from "../utils/path.js";
+import type { Route } from "../utils/path.js";
 import { createRouteFromFile } from "../utils/path.js";
 import { bundleApiRoute, createDeploymentArchive } from "../utils/zip.js";
 import { getProjectByRef } from "./project.service.js";
 
-interface ConfigJson {
-  app: string[];
-  api: RouteConfig[];
+interface ManifestResource {
+  kind: "static" | "dynamic";
+  urlPath: string;
+  resourcePath: string;
+  methods?: string[];
+  headers?: Record<string, string>;
+  wildcard?: boolean;
 }
 
-function generateConfig(
+interface DeploymentManifest {
+  version: number;
+  resources: ManifestResource[];
+}
+
+function generateManifest(
   appFiles: string[],
   api: Route[],
   appDir: string,
-): ConfigJson {
+): DeploymentManifest {
+  const toPosix = (value: string) => value.replace(/\\/g, "/");
   return {
-    app: appFiles.map((f) => join(relative(appDir, f))),
-    api: api.map((route) => ({
-      urlPath: route.urlPath,
-      functionPath: route.bundlePath,
-    })),
+    version: 1,
+    resources: [
+      ...appFiles.map((file) => {
+        const relPath = toPosix(relative(appDir, file));
+        return {
+          kind: "static",
+          urlPath: `/${relPath}`,
+          resourcePath: toPosix(join("app", relPath)),
+        };
+      }),
+      ...api.map((route) => ({
+        kind: "dynamic",
+        urlPath: route.urlPath,
+        resourcePath: toPosix(join("api", route.bundlePath)),
+      })),
+    ],
   };
 }
 
@@ -45,7 +66,7 @@ function generateUUID(): string {
 async function uploadArchive(
   archivePath: string,
   projectRef: string,
-  origanConfig: ConfigJson,
+  origanConfig: DeploymentManifest,
   trackName?: string,
 ) {
   log.info("Uploading deployment package...");
@@ -156,8 +177,8 @@ export async function deploy(trackName?: string): Promise<void> {
     }
     log.info(`Found ${appFiles.length} app files in ${config.appDir}/`);
 
-    log.info("Generating deployment configuration...");
-    const deployConfig = generateConfig(appFiles, routes, appDir);
+    log.info("Generating deployment manifest...");
+    const deployConfig = generateManifest(appFiles, routes, appDir);
 
     // Bundle routes
     if (routes.length > 0) {
@@ -191,6 +212,8 @@ export async function deploy(trackName?: string): Promise<void> {
       appFiles,
       routes,
       appDir,
+      join(buildDir, "api"),
+      deployConfig,
     );
 
     log.success("\nDeployment Summary:");

@@ -1,0 +1,46 @@
+{
+  "name": "@origan/nitro-preset",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "description": "Origan Nitro preset and manifest generator",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "default": "./dist/cli.js"
+    }
+  },
+  "bin": {
+    "origan-nitro-manifest": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist; rm -rf tsconfig.tsbuildinfo",
+    "lint": "biome check .",
+    "format": "biome format . --write",
+    "check": "biome check --write .",
+    "prepublishOnly": "pnpm run build"
+  },
+  "keywords": [
+    "origan",
+    "nitro",
+    "preset",
+    "deployment"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "nitropack": ">=2.12.0 <4"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "pnpm@10.8.0"
+}

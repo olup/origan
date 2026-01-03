@@ -1,15 +1,8 @@
 import { z } from "zod";
+import { DeploymentManifestSchema } from "./manifest.js";
 
 // TODO necessary ?
-export const BuildArtifactConfigSchema = z.object({
-  app: z.array(z.string()),
-  api: z.array(
-    z.object({
-      urlPath: z.string(),
-      functionPath: z.string(),
-    }),
-  ),
-});
+export const BuildArtifactConfigSchema = DeploymentManifestSchema;
 
 export const BuildArtifactFormSchema = z.object({
   artifact: z.instanceof(File),

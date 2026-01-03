@@ -34,6 +34,18 @@ export async function createDeploymentArchive(
   appFiles: string[],
   routes: Route[],
   distPath: string,
+  apiBundleDir: string,
+  manifest: {
+    version: number;
+    resources: {
+      kind: "static" | "dynamic";
+      urlPath: string;
+      resourcePath: string;
+      methods?: string[];
+      headers?: Record<string, string>;
+      wildcard?: boolean;
+    }[];
+  },
 ): Promise<BundleResult> {
   return new Promise((resolve, reject) => {
     const zipPath = join(artifactsDir, `${uuid}.zip`);
@@ -58,8 +70,13 @@ export async function createDeploymentArchive(
 
     // Add routes to zip
     for (const route of routes) {
-      archive.file(route.filePath, { name: join("api", route.bundlePath) });
+      const bundledPath = join(apiBundleDir, route.bundlePath);
+      archive.file(bundledPath, { name: join("api", route.bundlePath) });
     }
+
+    archive.append(JSON.stringify(manifest, null, 2), {
+      name: "manifest.json",
+    });
 
     archive.finalize();
   });

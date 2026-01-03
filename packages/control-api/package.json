@@ -22,7 +22,7 @@
   },
   "scripts": {
     "build": "tsc && cp -r src/templates dist/",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
     "dev": "dotenvx run --env-file=.env -- tsx watch src/index.ts",
     "lint": "biome check .",
     "format": "biome format . --write",
@@ -78,6 +78,7 @@
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
+    "vitest": "^2.1.9",
     "ws": "^8.18.2"
   },
   "peerDependencies": {

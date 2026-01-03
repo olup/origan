@@ -203,7 +203,7 @@ export const deploymentsRouter = router({
 
         // Return the config in the format expected by the gateway
         return {
-          config: domain.deployment.config || { app: [], api: [] },
+          config: domain.deployment.config || { version: 1, resources: [] },
           deploymentId: domain.deployment.id,
           projectId: domain.projectId,
         };

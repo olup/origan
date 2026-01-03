@@ -9,10 +9,14 @@ export async function deployBuild(
   buildId: string,
   artifact: File,
   config: {
-    app: string[];
-    api: {
+    version: number;
+    resources: {
+      kind: "static" | "dynamic";
       urlPath: string;
-      functionPath: string;
+      resourcePath: string;
+      methods?: string[];
+      headers?: Record<string, string>;
+      wildcard?: boolean;
     }[];
   },
   token: string,

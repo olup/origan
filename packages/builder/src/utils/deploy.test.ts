@@ -42,7 +42,7 @@ vi.mock("../libs/client.js", () => ({
 import {
   bundleApiRoute,
   createDeploymentArchive,
-  type DeployConfig,
+  type DeploymentManifest,
   type Route,
 } from "./deploy.js";
 
@@ -61,6 +61,24 @@ async function _getDetectApiRoutes() {
 describe("Deploy Utils", () => {
   const testDir = join(process.cwd(), "test-temp");
   const fixturesDir = join(process.cwd(), "test/fixtures/test-project");
+  const buildManifest = (
+    appFiles: string[],
+    routes: Route[],
+  ): DeploymentManifest => ({
+    version: 1,
+    resources: [
+      ...appFiles.map((file) => ({
+        kind: "static",
+        urlPath: `/${file}`,
+        resourcePath: `app/${file}`,
+      })),
+      ...routes.map((route) => ({
+        kind: "dynamic",
+        urlPath: route.urlPath,
+        resourcePath: `api/${route.functionPath}`,
+      })),
+    ],
+  });
 
   beforeEach(() => {
     if (!existsSync(testDir)) {
@@ -88,9 +106,9 @@ describe("Deploy Utils", () => {
       expect(bundledCode).toBeDefined();
       expect(bundledCode).toContain("Hello World");
       expect(bundledCode).toContain("Response");
-      // Should be minified (at most 1 newline at the end)
+      // Should be minified (allow banner/shim lines)
       const lines = bundledCode.trim().split("\n");
-      expect(lines.length).toBe(1);
+      expect(lines.length).toBeLessThanOrEqual(4);
       expect(mockLogger.info).toHaveBeenCalledWith(
         expect.stringContaining("Bundling API route /api/hello"),
       );
@@ -137,6 +155,7 @@ describe("Deploy Utils", () => {
         routes,
         join(fixturesDir, "dist"),
         null,
+        buildManifest(appFiles, routes),
         mockLogger,
       );
 
@@ -158,6 +177,7 @@ describe("Deploy Utils", () => {
       expect(existsSync(join(extractDir, "app", "assets", "app.js"))).toBe(
         true,
       );
+      expect(existsSync(join(extractDir, "manifest.json"))).toBe(true);
 
       // Verify no API directory when no routes
       expect(existsSync(join(extractDir, "api"))).toBe(false);
@@ -183,6 +203,7 @@ describe("Deploy Utils", () => {
         routes,
         join(fixturesDir, "dist"),
         join(fixturesDir, "api"),
+        buildManifest(appFiles, routes),
         mockLogger,
       );
 
@@ -240,6 +261,7 @@ describe("Deploy Utils", () => {
           routes,
           join(fixturesDir, "dist"),
           join(fixturesDir, "api"),
+          buildManifest(appFiles, routes),
           mockLogger,
         ),
       ).rejects.toThrow();
@@ -264,7 +286,7 @@ describe("Deploy Utils", () => {
       const expectedRoutes = [
         { urlPath: "/api/hello", functionPath: "hello.js" },
         { urlPath: "/api/users", functionPath: "users/index.ts" },
-        { urlPath: "/api/users/[id]", functionPath: "users/[id].js" },
+        { urlPath: "/api/users/:id", functionPath: "users/[id].js" },
         {
           urlPath: "/api/nested/deep/route",
           functionPath: "nested/deep/route.ts",
@@ -279,6 +301,7 @@ describe("Deploy Utils", () => {
         expectedRoutes, // Pass expected routes to verify bundling works
         join(fixturesDir, "dist"),
         join(fixturesDir, "api"),
+        buildManifest(appFiles, expectedRoutes),
         mockLogger,
       );
 
@@ -312,31 +335,28 @@ describe("Deploy Utils", () => {
     });
   });
 
-  describe("Config Generation", () => {
-    it("should generate correct deployment config structure", () => {
+  describe("Manifest Generation", () => {
+    it("should generate correct deployment manifest structure", () => {
       const appFiles = ["index.html", "style.css", "assets/app.js"];
       const apiRoutes: Route[] = [
         { urlPath: "/api/hello", functionPath: "hello.js" },
         { urlPath: "/api/users", functionPath: "users/index.ts" },
       ];
 
-      const config: DeployConfig = {
-        app: appFiles,
-        api: apiRoutes,
-      };
+      const manifest = buildManifest(appFiles, apiRoutes);
 
-      expect(config.app).toHaveLength(3);
-      expect(config.api).toHaveLength(2);
-      expect(config.app).toContain("index.html");
-      expect(config.api[0].urlPath).toBe("/api/hello");
-      expect(config.api[0].functionPath).toBe("hello.js");
-      expect(config.api[1].urlPath).toBe("/api/users");
-      expect(config.api[1].functionPath).toBe("users/index.ts");
+      expect(manifest.resources).toHaveLength(5);
+      expect(manifest.resources[0]?.kind).toBe("static");
+      expect(manifest.resources[3]?.kind).toBe("dynamic");
+      expect(manifest.resources[3]?.urlPath).toBe("/api/hello");
+      expect(manifest.resources[3]?.resourcePath).toBe("api/hello.js");
+      expect(manifest.resources[4]?.urlPath).toBe("/api/users");
+      expect(manifest.resources[4]?.resourcePath).toBe("api/users/index.ts");
 
       // Verify JSON serialization works
-      const jsonConfig = JSON.stringify(config);
+      const jsonConfig = JSON.stringify(manifest);
       const parsed = JSON.parse(jsonConfig);
-      expect(parsed).toEqual(config);
+      expect(parsed).toEqual(manifest);
     });
   });
 
@@ -346,7 +366,7 @@ describe("Deploy Utils", () => {
       const routes: Route[] = [
         { urlPath: "/api/hello", functionPath: "hello.js" },
         { urlPath: "/api/users", functionPath: "users/index.ts" },
-        { urlPath: "/api/users/[id]", functionPath: "users/[id].js" },
+        { urlPath: "/api/users/:id", functionPath: "users/[id].js" },
         {
           urlPath: "/api/nested/deep/route",
           functionPath: "nested/deep/route.ts",
@@ -360,6 +380,7 @@ describe("Deploy Utils", () => {
         routes,
         join(fixturesDir, "dist"),
         join(fixturesDir, "api"),
+        buildManifest(appFiles, routes),
         mockLogger,
       );
 
@@ -400,9 +421,9 @@ describe("Deploy Utils", () => {
         join(extractDir, "api", "hello.js"),
         "utf-8",
       );
-      // Should be minified (at most 1 newline at the end)
+      // Should be minified (allow banner/shim lines)
       const lines = helloBundled.trim().split("\n");
-      expect(lines.length).toBe(1);
+      expect(lines.length).toBeLessThanOrEqual(4);
 
       // Verify content includes expected functionality
       expect(helloBundled).toContain("Hello World");
@@ -410,15 +431,12 @@ describe("Deploy Utils", () => {
       expect(helloBundled).toContain("export{");
 
       // Create config to verify structure
-      const config: DeployConfig = {
-        app: appFiles,
-        api: routes,
-      };
+      const manifest = buildManifest(appFiles, routes);
 
       // Log results for debugging
       console.log("Archive created at:", result.path);
       console.log("Archive size:", result.size, "bytes");
-      console.log("Config:", JSON.stringify(config, null, 2));
+      console.log("Manifest:", JSON.stringify(manifest, null, 2));
 
       // Verify all logger calls
       expect(mockLogger.info).toHaveBeenCalledWith(

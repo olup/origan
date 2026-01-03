@@ -22,6 +22,21 @@ export function normalizeApiPath(path: string): string {
   if (!normalized.startsWith("/")) {
     normalized = `/${normalized}`;
   }
+  // Convert bracket params to :param and catch-all to *
+  const segments = normalized
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => {
+      if (segment.startsWith("[") && segment.endsWith("]")) {
+        const inner = segment.slice(1, -1);
+        if (inner.startsWith("...")) {
+          return "*";
+        }
+        return `:${inner}`;
+      }
+      return segment;
+    });
+  normalized = `/${segments.join("/")}`;
   // Add /api prefix (avoiding double slash)
   if (normalized === "/") {
     normalized = "/api";

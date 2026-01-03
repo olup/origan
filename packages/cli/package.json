@@ -13,7 +13,7 @@
     "prepublishOnly": "pnpm run build",
     "publish": "pnpm publish --access public",
     "clean": "rm -rf dist; rm -rf tsconfig.tsbuildinfo",
-    "test": "echo \"No tests specified\""
+    "test": "vitest run"
   },
   "files": [
     "dist"
@@ -64,6 +64,7 @@
     "@types/node": "^22.14.0",
     "@types/prompts": "^2.4.9",
     "typescript": "^5.8.3",
+    "vitest": "^2.1.9",
     "zod": "^3.24.3"
   },
   "publishConfig": {

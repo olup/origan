@@ -12,7 +12,7 @@ export async function handleApiRoute(
   deploymentId: string,
   projectId: string,
 ) {
-  const route = config.api.find((r) => path === r.urlPath);
+  const route = findBestDynamicRoute(config, path, req.method);
 
   if (!route) {
     return false;
@@ -32,7 +32,7 @@ export async function handleApiRoute(
 
     headers.set(
       "x-origan-function-path",
-      `deployments/${deploymentId}/api/${route.functionPath}`,
+      `deployments/${deploymentId}/${route.resourcePath}`,
     );
     headers.set("x-origan-deployment-id", deploymentId);
     headers.set("x-origan-project-id", projectId);
@@ -137,4 +137,91 @@ export async function handleApiRoute(
     res.end(JSON.stringify({ error: "Internal server error" }));
     return true;
   }
+}
+
+function findBestDynamicRoute(config: Config, path: string, method?: string) {
+  const normalizedPath = normalizePath(path);
+  const normalizedMethod = method?.toUpperCase();
+  let best: {
+    route: Config["resources"][number];
+    score: number;
+  } | null = null;
+
+  for (const resource of config.resources) {
+    if (resource.kind !== "dynamic") continue;
+    if (normalizedMethod && resource.methods) {
+      const allowed = resource.methods.map((m) => m.toUpperCase());
+      if (!allowed.includes(normalizedMethod)) continue;
+    }
+    if (!matchRoute(normalizedPath, resource.urlPath)) continue;
+    const score = scoreRoute(resource.urlPath);
+    if (!best || score > best.score) {
+      best = { route: resource, score };
+    }
+  }
+
+  return best?.route ?? null;
+}
+
+export function normalizePath(path: string) {
+  if (!path.startsWith("/")) {
+    return `/${path}`;
+  }
+  return path;
+}
+
+export function matchRoute(path: string, pattern: string) {
+  const pathSegments = splitPath(path);
+  const patternSegments = splitPath(pattern);
+
+  let i = 0;
+  let j = 0;
+  while (i < pathSegments.length && j < patternSegments.length) {
+    const segment = patternSegments[j];
+    if (segment === "*") {
+      return true;
+    }
+    if (segment.startsWith(":")) {
+      i += 1;
+      j += 1;
+      continue;
+    }
+    if (segment !== pathSegments[i]) {
+      return false;
+    }
+    i += 1;
+    j += 1;
+  }
+
+  if (j < patternSegments.length && patternSegments[j] === "*") {
+    return true;
+  }
+
+  return i === pathSegments.length && j === patternSegments.length;
+}
+
+function splitPath(path: string) {
+  const trimmed = path.replace(/^\/+/, "").replace(/\/+$/, "");
+  if (!trimmed) return [];
+  return trimmed.split("/");
+}
+
+export function scoreRoute(pattern: string) {
+  const segments = splitPath(pattern);
+  let hasWildcard = false;
+  let paramCount = 0;
+  let staticCount = 0;
+
+  for (const segment of segments) {
+    if (segment === "*") {
+      hasWildcard = true;
+    } else if (segment.startsWith(":")) {
+      paramCount += 1;
+    } else {
+      staticCount += 1;
+    }
+  }
+
+  const rank = hasWildcard ? 0 : paramCount > 0 ? 1 : 2;
+  return rank * 1000 + staticCount * 10 + segments.length;
 }

@@ -22,9 +22,18 @@ interface BundleResult {
   size: number;
 }
 
-interface DeployConfig {
-  app: string[];
-  api: Route[];
+interface ManifestResource {
+  kind: "static" | "dynamic";
+  urlPath: string;
+  resourcePath: string;
+  methods?: string[];
+  headers?: Record<string, string>;
+  wildcard?: boolean;
+}
+
+interface DeploymentManifest {
+  version: number;
+  resources: ManifestResource[];
 }
 
 const controlApiClient = createControlApiClient(
@@ -50,6 +59,27 @@ const listdirPath = async (
     }
   }
   return files;
+};
+
+const toPosixPath = (value: string) => value.replace(/\\/g, "/");
+
+const normalizeUrlPath = (value: string) => {
+  const normalized = toPosixPath(value);
+  const trimmed = normalized.replace(/^\/+/, "").replace(/\/+$/, "");
+  if (!trimmed) {
+    return "/";
+  }
+  const segments = trimmed.split("/").map((segment) => {
+    if (segment.startsWith("[") && segment.endsWith("]")) {
+      const inner = segment.slice(1, -1);
+      if (inner.startsWith("...")) {
+        return "*";
+      }
+      return `:${inner}`;
+    }
+    return segment;
+  });
+  return `/${segments.join("/")}`;
 };
 
 async function bundleApiRoute(
@@ -132,6 +162,7 @@ async function createDeploymentArchive(
   routes: Route[],
   distPath: string,
   apiPath: string | null,
+  manifest: DeploymentManifest,
   logger: Logger,
 ): Promise<BundleResult> {
   // Bundle API routes first (before creating the Promise)
@@ -176,6 +207,11 @@ async function createDeploymentArchive(
       });
     }
 
+    // Add manifest file to zip
+    archive.append(JSON.stringify(manifest, null, 2), {
+      name: "manifest.json",
+    });
+
     archive.finalize();
   });
 }
@@ -212,11 +248,9 @@ async function detectApiRoutes(
         ) {
           // Remove file extension to get the route path
           const routeName = item.replace(/\.(js|ts|jsx|tsx|mjs)$/, "");
-          const urlPath = join(
-            "/api",
-            basePath,
-            routeName === "index" ? "" : routeName,
-          ).replace(/\\/g, "/"); // Ensure forward slashes for URLs
+          const urlPath = normalizeUrlPath(
+            join("/api", basePath, routeName === "index" ? "" : routeName),
+          );
 
           const functionPath = join(basePath, item).replace(/\\/g, "/");
 
@@ -263,20 +297,35 @@ export async function createDeployment(options: CreateDeploymentOptions) {
   const apiPath = join(process.cwd(), "api");
   const apiRoutes = await detectApiRoutes(apiPath, logger);
 
-  // Create deployment config
-  const config: DeployConfig = {
-    app: appFiles,
-    api: apiRoutes,
+  // Create deployment manifest
+  const manifest: DeploymentManifest = {
+    version: 1,
+    resources: [
+      ...appFiles.map((file) => {
+        const normalized = toPosixPath(file);
+        return {
+          kind: "static" as const,
+          urlPath: `/${normalized}`,
+          resourcePath: toPosixPath(join("app", normalized)),
+        };
+      }),
+      ...apiRoutes.map((route) => ({
+        kind: "dynamic" as const,
+        urlPath: route.urlPath,
+        resourcePath: toPosixPath(join("api", route.functionPath)),
+      })),
+    ],
   };
 
   // Create archive
   const bundle = await createDeploymentArchive(
     artifactsDir,
     buildId,
-    config.app,
-    config.api,
+    appFiles,
+    apiRoutes,
     buildDir,
     existsSync(apiPath) ? apiPath : null,
+    manifest,
     logger,
   );
 
@@ -290,7 +339,7 @@ export async function createDeployment(options: CreateDeploymentOptions) {
   // Create FormData for tRPC
   const formData = new FormData();
   formData.append("buildId", buildId);
-  formData.append("config", JSON.stringify(config));
+  formData.append("config", JSON.stringify(manifest));
   formData.append("artifact", bundleFile);
   if (track) {
     formData.append("track", track);
@@ -315,5 +364,5 @@ export {
   createDeploymentArchive,
   type Route,
   type BundleResult,
-  type DeployConfig,
+  type DeploymentManifest,
 };

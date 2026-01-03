@@ -1,10 +1,16 @@
-export interface RouteConfig {
+export type ResourceKind = "static" | "dynamic";
+
+export interface ResourceConfig {
+  kind: ResourceKind;
   urlPath: string;
-  functionPath: string;
+  resourcePath: string;
+  methods?: string[];
+  headers?: Record<string, string>;
+  wildcard?: boolean;
 }
 
 export interface Config {
-  app: string[];
-  api: RouteConfig[];
+  version: number;
+  resources: ResourceConfig[];
   domain_placeholder?: string;
 }

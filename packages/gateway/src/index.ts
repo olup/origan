@@ -54,7 +54,8 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     }
 
     const { config, deploymentId, projectId } = result;
-    const path = req.url || "/";
+    const url = new URL(req.url || "/", "http://localhost");
+    const path = url.pathname;
 
     // Handle API routes
     if (await handleApiRoute(req, res, path, config, deploymentId, projectId)) {
