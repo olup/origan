@@ -38,7 +38,7 @@ export const DeploymentDetailsPage = () => {
   const reference = params?.reference;
   const [activeTab, setActiveTab] = useState<string | null>("build");
 
-  const { data: deployment, refetch } = useQuery(
+  const { data: deployment } = useQuery(
     trpc.deployments.getByRef.queryOptions(
       { ref: reference || "" },
       { enabled: Boolean(reference) },
@@ -55,17 +55,7 @@ export const DeploymentDetailsPage = () => {
     }
   }, [location, reference]);
 
-  // Refetch on interval when deployment is active
-  useEffect(() => {
-    if (!deployment || "error" in deployment) return;
-    if (deployment.status === "success" || deployment.status === "error")
-      return;
-
-    const interval = setInterval(() => {
-      refetch();
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [refetch, deployment]);
+  // Deployment refreshes are driven by SSE events in the Build/Logs tabs.
 
   if (!reference || !deployment) return null;
   if ("error" in deployment) return null;

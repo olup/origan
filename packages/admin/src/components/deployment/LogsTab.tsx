@@ -34,6 +34,34 @@ interface LogEntry {
   functionPath?: string;
 }
 
+function normalizeLogEntry(input: unknown): LogEntry | null {
+  if (!input || typeof input !== "object") return null;
+  if ("timestamp" in input && "level" in input && "message" in input) {
+    return input as LogEntry;
+  }
+  if ("json" in input) {
+    return normalizeLogEntry((input as { json?: unknown }).json);
+  }
+  if ("data" in input) {
+    return normalizeLogEntry((input as { data?: unknown }).data);
+  }
+  if ("result" in input) {
+    return normalizeLogEntry(
+      (input as { result?: { data?: unknown } }).result?.data,
+    );
+  }
+  return null;
+}
+
+function formatLogMessage(message: unknown): string {
+  if (typeof message === "string") return message;
+  try {
+    return JSON.stringify(message);
+  } catch {
+    return String(message);
+  }
+}
+
 export const LogsTab = () => {
   const params = useParams();
   const reference = params?.reference;
@@ -103,7 +131,17 @@ export const LogsTab = () => {
         { deploymentRef: reference || "" },
         {
           onData: (log) => {
-            setLogs((prev) => [...prev, log]);
+            const entry = normalizeLogEntry(log);
+            if (!entry) {
+              console.warn("Unable to normalize log entry:", log);
+              return;
+            }
+            const normalized: LogEntry = {
+              ...entry,
+              message: formatLogMessage(entry.message),
+              timestamp: entry.timestamp || new Date().toISOString(),
+            };
+            setLogs((prev) => [...prev, normalized]);
           },
           onError: (error) => {
             console.error("Log subscription error:", error);

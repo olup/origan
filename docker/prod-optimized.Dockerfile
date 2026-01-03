@@ -65,7 +65,8 @@ FROM base AS builder
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y --no-install-recommends git && \
+    apt-get install -y --no-install-recommends ca-certificates git && \
+    update-ca-certificates && \
     npm install -g @antfu/ni
 COPY --from=build /prod/builder /prod/builder
 WORKDIR /prod/builder

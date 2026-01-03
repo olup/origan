@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { trpc } from "../libs/trpc-client.js";
+import { trpc, trpcUnauthed } from "../libs/trpc-client.js";
 import { log } from "../utils/logger.js";
 import { clearTokens, readTokens, saveTokens } from "../utils/token.js";
 import {
@@ -61,7 +61,7 @@ async function refreshTokens(
   currentRefreshToken: string,
 ): Promise<{ accessToken: string; refreshToken: string } | null> {
   try {
-    const data = await trpc.auth.refreshTokenCLI.mutate({
+    const data = await trpcUnauthed.auth.refreshTokenCLI.mutate({
       refreshToken: currentRefreshToken,
     });
 
@@ -189,16 +189,24 @@ export async function getAccessToken(): Promise<string | null> {
     return null;
   }
   // Check if access token is expired by decoding it
-  const payloadRaw = JSON.parse(
-    Buffer.from(tokens.accessToken.split(".")[1], "base64").toString("utf-8"),
-  );
-  const payload = z
-    .object({
-      exp: z.number(),
-    })
-    .parse(payloadRaw);
+  let expiresAt = 0;
+  try {
+    const payloadRaw = JSON.parse(
+      Buffer.from(tokens.accessToken.split(".")[1], "base64").toString("utf-8"),
+    );
+    const payload = z
+      .object({
+        exp: z.number(),
+      })
+      .parse(payloadRaw);
 
-  const expiresAt = payload.exp * 1000; // Convert to milliseconds
+    expiresAt = payload.exp * 1000; // Convert to milliseconds
+  } catch (error) {
+    log.warn(
+      "Failed to parse access token, attempting refresh:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
+  }
 
   if (Date.now() >= expiresAt) {
     // Token is expired, attempt to refresh

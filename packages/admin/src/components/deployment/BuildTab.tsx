@@ -55,7 +55,7 @@ export const BuildTab = () => {
   const reference = params?.reference;
   const { colorScheme } = useMantineColorScheme();
 
-  const { data: deployment } = useQuery(
+  const { data: deployment, refetch } = useQuery(
     trpc.deployments.getByRef.queryOptions(
       { ref: reference || "" },
       { enabled: Boolean(reference) },
@@ -171,6 +171,7 @@ export const BuildTab = () => {
         },
         onComplete: () => {
           subscriptionRef.current = null;
+          void refetch();
         },
       },
     );
@@ -181,7 +182,7 @@ export const BuildTab = () => {
       subscription.unsubscribe();
       subscriptionRef.current = null;
     };
-  }, [reference, buildId]);
+  }, [reference, buildId, refetch]);
 
   if (!deployment || "error" in deployment) return null;
 

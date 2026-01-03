@@ -14,9 +14,15 @@ export const postgresPasswordResource = postgresPasswordConfig
       special: true,
     });
 
-export const postgresPassword = postgresPasswordConfig
-  ? postgresPasswordConfig
-  : postgresPasswordResource?.result;
+export const postgresPassword = (() => {
+  if (postgresPasswordConfig) {
+    return postgresPasswordConfig;
+  }
+  if (!postgresPasswordResource) {
+    throw new Error("postgresPasswordResource was not created");
+  }
+  return postgresPasswordResource.result;
+})();
 export const garageEndpoint =
   config.get("garageEndpoint") || "https://s3.platform.origan.dev";
 

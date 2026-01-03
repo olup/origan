@@ -74,3 +74,13 @@ export const trpc: CreateTRPCClient<AppRouter> = createTRPCClient<AppRouter>({
     }),
   ],
 });
+
+export const trpcUnauthed: CreateTRPCClient<AppRouter> =
+  createTRPCClient<AppRouter>({
+    links: [
+      httpLink({
+        url: `${config.apiUrl}/trpc`,
+        transformer: superjson,
+      }),
+    ],
+  });

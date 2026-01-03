@@ -1,7 +1,6 @@
 import type { AppRouter } from "@origan/control-api/src/trpc/router";
 import type { inferRouterOutputs } from "@trpc/server";
 import { Command, Option } from "clipanion";
-import * as R from "remeda";
 import { getDeployments } from "../services/deploy.service.js";
 import { getProjects } from "../services/project.service.js";
 import { table } from "../utils/console-ui.js";
@@ -43,25 +42,13 @@ export class ProjectsCommand extends Command {
   async execute() {
     const projects = await getProjects();
     table(
-      projects.map((p: Project) =>
-        R.pipe(
-          p,
-          R.omit([
-            "deployments",
-            "githubConfig",
-            "id",
-            "organizationId",
-            "creatorId",
-            "deletedAt",
-          ]),
-          R.merge({
-            deployments: p.deployments.map((d) => d.reference).join(", "),
-            createdAt: p.createdAt.toISOString(),
-            updatedAt: p.updatedAt,
-          }),
-        ),
-      ),
-      ["reference", "name", "deployments", "createdAt", "updatedAt"],
+      projects.map((p: Project) => ({
+        reference: p.reference,
+        name: p.name,
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt,
+      })),
+      ["reference", "name", "createdAt", "updatedAt"],
     );
   }
 }
