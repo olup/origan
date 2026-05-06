@@ -23,13 +23,6 @@ Start the main local development services:
 pnpm dev
 ```
 
-Useful workspace commands:
-
-- `pnpm build` builds the workspace with Turbo
-- `pnpm test` runs test tasks across packages
-- `pnpm lint` runs lint tasks across packages
-- `pnpm check` runs Biome checks and applies safe fixes
-
 If you need the local custom-domain flow with Pebble ACME and Docker services, see `docs/LOCAL_DOMAIN_TESTING.md`.
 
 ## Build And Deploy
