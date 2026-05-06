@@ -1,4 +1,38 @@
-# Origan Build & Deploy
+# Origan
+
+Origan is a monorepo for the platform services, apps, and infrastructure. It supports local development with `pnpm`, Docker-based supporting services, and production deployment with Pulumi.
+
+## Repo Layout
+
+- `packages/` application and service packages such as `control-api`, `admin`, `landing`, `builder`, and `cli`
+- `infra/` Pulumi infrastructure code
+- `shared/` shared runtime dependencies such as NATS configuration
+- `docs/` deeper architecture and local setup guides
+
+## Quick Start
+
+Install workspace dependencies:
+
+```sh
+pnpm install
+```
+
+Start the main local development services:
+
+```sh
+pnpm dev
+```
+
+Useful workspace commands:
+
+- `pnpm build` builds the workspace with Turbo
+- `pnpm test` runs test tasks across packages
+- `pnpm lint` runs lint tasks across packages
+- `pnpm check` runs Biome checks and applies safe fixes
+
+If you need the local custom-domain flow with Pebble ACME and Docker services, see `docs/LOCAL_DOMAIN_TESTING.md`.
+
+## Build And Deploy
 
 This repo builds Docker images locally and deploys to Kubernetes with Pulumi.
 
@@ -33,6 +67,8 @@ PULUMI_CONFIG_PASSPHRASE="" IMAGE_TAG=prod pulumi up --yes
 
 Pulumi resolves the image tag to a digest at deploy time, so you only need
 to set `IMAGE_TAG`.
+
+For infrastructure details and stack configuration, see `infra/README.md`.
 
 ## Troubleshooting
 
